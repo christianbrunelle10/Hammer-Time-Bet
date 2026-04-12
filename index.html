@@ -6,6 +6,7 @@
 <title>HammerTimeBet — Live Scores, Odds & AI Picks</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="/components/nav.js" defer></script>
 <style>
 :root {
   --bg:       #080808;
@@ -153,21 +154,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
 </head>
 <body>
 
-<!-- ── NAV ───────────────────────────────────────────────── -->
-<nav class="nav">
-  <a href="/" class="nav-brand">Hammer<span>Time</span>Bet</a>
-  <div class="nav-links">
-    <a href="/"        class="nav-link active">Home</a>
-    <a href="/mlb"     class="nav-link">MLB</a>
-    <a href="/nba"     class="nav-link">NBA</a>
-    <a href="/nfl"     class="nav-link">NFL</a>
-    <a href="/nhl"     class="nav-link">NHL</a>
-    <a href="/golf"    class="nav-link">Golf</a>
-  </div>
-  <div class="nav-right">
-    <a href="#picks" class="nav-cta">Today's Picks</a>
-  </div>
-</nav>
+<htb-nav active="home"></htb-nav>
 
 <!-- ── HERO ──────────────────────────────────────────────── -->
 <section class="hero">
