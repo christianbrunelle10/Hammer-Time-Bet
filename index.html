@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="/components/nav.js" defer></script>
+<script src="/components/live-games.js" defer></script>
 <style>
 :root {
   --bg:       #080808;
@@ -173,14 +174,12 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   <div class="section-inner">
     <div class="section-head">
       <div>
-        <div class="section-label">ESPN Live Data</div>
+        <div class="section-label">ESPN · DraftKings</div>
         <h2 class="section-title">Live Games Today</h2>
       </div>
       <a href="#" class="see-all">All Games →</a>
     </div>
-    <div class="scores-grid" id="scores-grid">
-      <div class="sc-loading"><div class="spinner"></div>Loading live scores…</div>
-    </div>
+    <htb-live-games sports="mlb,nhl" refresh="30"></htb-live-games>
   </div>
 </section>
 
@@ -485,6 +484,14 @@ async function init() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+// Listen for box score events from htb-live-games component
+document.addEventListener('htb:boxscore', (e) => {
+  const { gameId, sport, teams } = e.detail;
+  // Phase 2: replace alert with box score modal
+  console.log('Box score requested:', gameId, sport, teams);
+  alert(`Box score: ${teams.join(' vs ')} (Phase 2)`);
+});
 </script>
 </body>
 </html>
