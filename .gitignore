@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Claude
+.claude/
+
+# Screenshots (optional — remove this line if you want them tracked)
+Screen Shots/
