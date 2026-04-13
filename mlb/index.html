@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MLB — HammerTimeBet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="/components/nav.js" defer></script>
+<script src="/components/live-games.js" defer></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#080808;color:#fff;font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;font-family:inherit}
+
+/* ── PAGE HERO ── */
+.page-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(200,60,0,.07) 0%,transparent 70%)}
+.page-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.page-hero-left{display:flex;align-items:center;gap:16px}
+.page-icon{font-size:36px;line-height:1}
+.page-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
+.page-title span{color:#f0b429}
+.page-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
+.page-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.hs{text-align:center}
+.hs-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.hs-val.g{color:#00d084}
+.hs-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
+
+/* ── SECTION ── */
+.section{padding:44px 20px}
+.section+.section{border-top:1px solid #1a1a1a}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#f0b429;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.eyebrow::before{content:'';display:block;width:16px;height:2px;background:#f0b429}
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(24px,3.5vw,34px);font-weight:900;text-transform:uppercase;line-height:1}
+.see-all{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;border:1px solid #1e1e1e;padding:7px 14px;border-radius:6px;transition:border-color .15s,color .15s;white-space:nowrap}
+.see-all:hover{border-color:#2e2e2e;color:#ccc}
+
+/* ── PICKS ── */
+.picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.pick-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:18px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.pick-card:hover{transform:translateY(-3px);border-color:#2e2e2e;box-shadow:0 8px 24px var(--glow,rgba(240,180,41,.07))}
+.pick-card.value{border-top-color:#00d084;--glow:rgba(0,208,132,.07)}
+.pick-card.dog{border-top-color:#818cf8;--glow:rgba(129,140,248,.07)}
+.pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.badge{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:4px}
+.badge.strong{background:rgba(240,180,41,.1);color:#f0b429;border:1px solid rgba(240,180,41,.2)}
+.badge.value{background:rgba(0,208,132,.08);color:#00d084;border:1px solid rgba(0,208,132,.2)}
+.badge.dog{background:rgba(129,140,248,.08);color:#818cf8;border:1px solid rgba(129,140,248,.2)}
+.pc-sport-tag{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;background:#181818;border:1px solid #222;padding:3px 9px;border-radius:100px}
+.pc-matchup{font-size:11px;color:#666;margin-bottom:4px}
+.pc-pick{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:2px}
+.pc-odds{font-size:18px;font-weight:700;color:#f0b429;margin-bottom:12px}
+.pick-card.value .pc-odds{color:#00d084}
+.pick-card.dog .pc-odds{color:#818cf8}
+.pc-conf{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.pc-conf-lbl{font-size:10px;color:#444;font-weight:600;white-space:nowrap}
+.conf-track{flex:1;height:3px;background:#1e1e1e;border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px;background:#f0b429}
+.pick-card.value .conf-fill{background:#00d084}
+.pick-card.dog .conf-fill{background:#818cf8}
+.pc-conf-val{font-size:11px;font-weight:700;color:#555;white-space:nowrap}
+.pc-sep{height:1px;background:#1a1a1a;margin-bottom:12px}
+.pc-reasons{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.pc-reason{font-size:12px;color:#666;line-height:1.45;display:flex;gap:7px}
+.pc-reason::before{content:'▸';color:#444;font-size:9px;margin-top:3px;flex-shrink:0}
+
+/* Pitcher / key player strip */
+.pc-pitchers{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.pc-pitcher{background:#141414;border:1px solid #1e1e1e;border-radius:6px;padding:8px 10px}
+.pc-pitcher-role{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;margin-bottom:3px}
+.pc-pitcher-name{font-size:12px;font-weight:700;color:#bbb;margin-bottom:4px}
+.pc-pitcher-stats{font-size:11px;color:#555}
+.pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#444;margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
+.pick-card:hover .pc-hint{opacity:1}
+
+/* ── BOX SCORE MODAL ── */
+.bs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.bs-overlay.open{opacity:1;pointer-events:all}
+.bs-panel{background:#111;border:1px solid #2a2a2a;border-radius:14px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s}
+.bs-overlay.open .bs-panel{transform:translateY(0)}
+.bs-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #1e1e1e;position:sticky;top:0;background:#111;z-index:1}
+.bs-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase}
+.bs-close{background:#1a1a1a;border:1px solid #2a2a2a;color:#888;width:32px;height:32px;border-radius:6px;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .15s}
+.bs-close:hover{color:#fff}
+.bs-body{padding:20px}
+.bs-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:44px;color:#555;font-size:13px}
+.bs-spinner{width:18px;height:18px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Score summary */
+.bs-scoreboard{display:flex;gap:8px;margin-bottom:16px}
+.bs-team-box{flex:1;background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:14px;text-align:center}
+.bs-team-name{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.bs-team-score{font-family:'Barlow Condensed',sans-serif;font-size:52px;font-weight:900;line-height:1}
+.bs-team-score.lead{color:#fff}
+.bs-team-score.trail{color:#333}
+.bs-state{text-align:center;font-size:12px;color:#555;letter-spacing:.06em;margin-bottom:20px}
+
+/* Linescore table */
+.bs-sec-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0b429;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.bs-sec-lbl::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
+.bs-table{width:100%;border-collapse:collapse;margin-bottom:20px;overflow-x:auto;display:block;white-space:nowrap}
+.bs-table th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:7px 8px;text-align:center;border-bottom:1px solid #1e1e1e;min-width:28px}
+.bs-table th:first-child{text-align:left;min-width:80px}
+.bs-table td{font-size:13px;font-weight:600;color:#aaa;padding:9px 8px;text-align:center;border-bottom:1px solid #141414}
+.bs-table td:first-child{text-align:left;color:#777;font-size:12px}
+.bs-table .rhe-sep{border-left:1px solid #2a2a2a}
+.bs-table tr:last-child td{border-bottom:none;font-weight:700}
+
+/* Pitching / batting cards */
+.bs-pitcher-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.bs-pitcher-card{background:#141414;border:1px solid #1e1e1e;border-radius:8px;padding:12px 14px}
+.bs-pitcher-role{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#444;margin-bottom:4px}
+.bs-pitcher-name{font-size:14px;font-weight:700;margin-bottom:6px}
+.bs-pitcher-line{font-size:12px;color:#666;line-height:1.6}
+.bs-pitcher-line strong{color:#999}
+
+footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
+.footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.footer-brand em{font-style:normal;color:#f0b429}
+footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
+
+@media(max-width:560px){
+  .page-hero-stats{gap:16px}.hs-val{font-size:22px}
+  .bs-scoreboard{flex-direction:column}
+  .bs-pitcher-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<htb-nav active="mlb"></htb-nav>
+
+<!-- ── PAGE HERO ── -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-left">
+      <div class="page-icon">⚾</div>
+      <div>
+        <div class="page-title">MLB <span>Baseball</span></div>
+        <div class="page-sub">Live scores · DraftKings lines · AI picks</div>
+      </div>
+    </div>
+    <div class="page-hero-stats">
+      <div class="hs"><div class="hs-val g">63.8%</div><div class="hs-lbl">MLB Win Rate</div></div>
+      <div class="hs"><div class="hs-val">+22.6u</div><div class="hs-lbl">Units Profit</div></div>
+      <div class="hs"><div class="hs-val g">+4.8%</div><div class="hs-lbl">Avg CLV</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LIVE GAMES ── -->
+<section class="section" id="live-games">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">ESPN · DraftKings</div>
+        <h2 class="sec-title">Today's MLB Games</h2>
+      </div>
+      <a href="#" class="see-all">Full Schedule →</a>
+    </div>
+    <htb-live-games sports="mlb" refresh="30"></htb-live-games>
+  </div>
+</section>
+
+<!-- ── TOP PICKS ── -->
+<section class="section" id="picks">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Hammer Model</div>
+        <h2 class="sec-title">Top MLB Picks Today</h2>
+      </div>
+    </div>
+    <div class="picks-grid" id="mlb-picks-grid"></div>
+  </div>
+</section>
+
+<!-- ── BOX SCORE MODAL ── -->
+<div class="bs-overlay" id="bs-overlay" role="dialog" aria-modal="true" aria-labelledby="bs-title">
+  <div class="bs-panel">
+    <div class="bs-head">
+      <div class="bs-title" id="bs-title">Box Score</div>
+      <button class="bs-close" id="bs-close" aria-label="Close">✕</button>
+    </div>
+    <div class="bs-body" id="bs-body">
+      <div class="bs-loading"><div class="bs-spinner"></div>Loading…</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">Hammer<em>Time</em>Bet</div>
+  <p>For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.</p>
+</footer>
+
+
+<script>
+/* ============================================================
+   MLB PICKS — update daily
+   ============================================================ */
+const MLB_PICKS = [
+  {
+    matchup: 'Rangers vs Dodgers',
+    pick: 'Dodgers ML', odds: '-165', type: 'strong', badge: 'Strong Play', conf: 8.2, units: '2u',
+    sp: { away: { name: 'A. Heaney', line: '5.18 ERA · 8.7 K/9' }, home: { name: 'T. Glasnow', line: '2.47 ERA · 11.4 K/9' } },
+    reasons: [
+      'Glasnow posting 11.4 K/9 in April — elite swing-and-miss at home',
+      'Rangers ranked bottom-5 in team OPS last 14 days (.641)',
+      'Dodgers 8-2 at home this season, averaging 5.4 runs',
+      'Model line: -190 — clear value at -165',
+    ]
+  },
+  {
+    matchup: 'Rockies vs Padres',
+    pick: 'Padres ML', odds: '-195', type: 'value', badge: 'Value Play', conf: 7.6, units: '1.5u',
+    sp: { away: { name: 'A. Gomber', line: '5.62 ERA · 6.9 K/9' }, home: { name: 'D. King', line: '3.21 ERA · 9.3 K/9' } },
+    reasons: [
+      'Padres rotation top-3 in NL ERA — deep and dominant',
+      'Rockies 4-14 in last 18 games, one of the worst stretches in MLB',
+      'Padres lineup averaging 5.1 runs over last 10 games',
+      'Public inflating Coors variance — market overreacting to ballpark',
+    ]
+  },
+  {
+    matchup: 'Astros vs Mariners',
+    pick: 'Astros -1.5', odds: '-120', type: 'strong', badge: 'Strong Play', conf: 7.1, units: '1.5u',
+    sp: { away: { name: 'R. Blanco', line: '2.91 ERA · 10.1 K/9' }, home: { name: 'B. Miller', line: '4.80 ERA · 7.8 K/9' } },
+    reasons: [
+      'Astros lineup averaging 5.1 runs over last 7 games — rolling',
+      'Mariners starter carrying a 4.80 ERA in April — regression target',
+      'Houston bullpen top-3 in high-leverage situations this season',
+      'Line at -120 feels light — model projects HOU as -1.8 RL favorite',
+    ]
+  },
+  {
+    matchup: 'Red Sox vs Cardinals',
+    pick: 'Cardinals ML', odds: '-125', type: 'value', badge: 'Value Play', conf: 6.8, units: '1u',
+    sp: { away: { name: 'C. Sale', line: '3.10 ERA · 9.9 K/9' }, home: { name: 'S. Gray', line: '2.88 ERA · 10.4 K/9' } },
+    reasons: [
+      'Gray sub-3.00 ERA with heavy strikeout stuff at Busch Stadium',
+      'Red Sox 3-8 in last 11 road games — struggling away from Fenway',
+      'Sharp money on Cardinals despite public leaning Boston',
+      'STL home record: 7-3 — one of the best in the NL',
+    ]
+  },
+  {
+    matchup: 'Astros vs Mariners',
+    pick: 'Mariners +1.5', odds: '+145', type: 'dog', badge: 'Live Dog', conf: 6.5, units: '1u',
+    sp: { away: { name: 'R. Blanco', line: '2.91 ERA · 10.1 K/9' }, home: { name: 'B. Miller', line: '4.80 ERA · 7.8 K/9' } },
+    reasons: [
+      '+145 on the run line is excellent value — Mariners keep it close at home',
+      'SEA cover rate as home RL dog: 58% this season',
+      'Miller has allowed 2 or fewer runs in 3 of last 5 starts despite high ERA',
+      'Best alternative number if you want exposure to this game at lower risk',
+    ]
+  },
+];
+
+/* ============================================================
+   ESPN MLB BOX SCORE SERVICE
+   ============================================================ */
+const ESPN_MLB = id =>
+  `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${id}`;
+
+async function fetchBoxScore(gameId) {
+  try {
+    const r = await fetch(ESPN_MLB(gameId), { signal: AbortSignal.timeout(6000) });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+}
+
+/* ============================================================
+   BOX SCORE MODAL
+   ============================================================ */
+const overlay = document.getElementById('bs-overlay');
+const bsBody  = document.getElementById('bs-body');
+const bsTitle = document.getElementById('bs-title');
+
+const openModal  = () => { overlay.classList.add('open');    document.body.style.overflow = 'hidden'; };
+const closeModal = () => { overlay.classList.remove('open'); document.body.style.overflow = ''; };
+
+document.getElementById('bs-close').addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function renderBoxScore(data, teams) {
+  if (!data) {
+    bsBody.innerHTML = `<div class="bs-loading" style="flex-direction:column;gap:8px">
+      <span>📡 Box score unavailable</span>
+      <span style="font-size:11px;color:#444">ESPN data could not be loaded for this game.</span>
+    </div>`;
+    return;
+  }
+
+  const comp    = data.header?.competitions?.[0];
+  const away    = comp?.competitors?.find(c => c.homeAway === 'away');
+  const home    = comp?.competitors?.find(c => c.homeAway === 'home');
+  const status  = comp?.status?.type?.detail || '';
+  const aScore  = away?.score || '0';
+  const hScore  = home?.score || '0';
+  const aName   = away?.team?.shortDisplayName || teams[0];
+  const hName   = home?.team?.shortDisplayName || teams[1];
+  const aLead   = parseInt(aScore) > parseInt(hScore);
+
+  // Inning-by-inning linescore
+  const aInnings = away?.linescores || [];
+  const hInnings = home?.linescores || [];
+  const numInnings = Math.max(aInnings.length, hInnings.length, 9);
+  const inningHeaders = Array.from({ length: numInnings }, (_, i) => `<th>${i + 1}</th>`).join('');
+  const aRow = Array.from({ length: numInnings }, (_, i) => `<td>${aInnings[i]?.value ?? (i < aInnings.length ? '0' : '-')}</td>`).join('');
+  const hRow = Array.from({ length: numInnings }, (_, i) => `<td>${hInnings[i]?.value ?? (i < hInnings.length ? '0' : '-')}</td>`).join('');
+
+  // Team-level stats (hits, errors from boxscore)
+  const bsTeams = data.boxscore?.teams || [];
+  const awayStats = {};
+  const homeStats = {};
+  (bsTeams.find(t => t.homeAway === 'away')?.statistics || []).forEach(s => awayStats[s.name] = s.displayValue);
+  (bsTeams.find(t => t.homeAway === 'home')?.statistics  || []).forEach(s => homeStats[s.name] = s.displayValue);
+
+  const aHits   = awayStats.hits   || away?.hits   || '—';
+  const hHits   = homeStats.hits   || home?.hits   || '—';
+  const aErrors = awayStats.errors || away?.errors || '—';
+  const hErrors = homeStats.errors || home?.errors || '—';
+
+  // Starting pitchers from boxscore
+  const pitchers = (data.boxscore?.players || []).flatMap(team =>
+    (team.statistics || []).filter(s => s.name === 'pitching').flatMap(s =>
+      (s.athletes || []).slice(0, 1).map(a => ({
+        team: team.team?.abbreviation,
+        name: a.athlete?.shortName || a.athlete?.displayName,
+        stats: a.stats || [],
+        keys:  s.keys || [],
+      }))
+    )
+  );
+
+  const pitcherCard = (p) => {
+    if (!p) return '<div class="bs-pitcher-card"><div class="bs-pitcher-role">Pitcher</div><div class="bs-pitcher-name">—</div></div>';
+    const ip  = p.stats[p.keys.indexOf('IP')]  ?? '—';
+    const h   = p.stats[p.keys.indexOf('H')]   ?? '—';
+    const r   = p.stats[p.keys.indexOf('R')]   ?? '—';
+    const k   = p.stats[p.keys.indexOf('K')]   ?? '—';
+    const era = p.stats[p.keys.indexOf('ERA')] ?? '—';
+    return `
+      <div class="bs-pitcher-card">
+        <div class="bs-pitcher-role">SP · ${p.team}</div>
+        <div class="bs-pitcher-name">${p.name}</div>
+        <div class="bs-pitcher-line">
+          <strong>${ip} IP</strong> · ${h}H · ${r}R · ${k}K<br/>ERA: <strong>${era}</strong>
+        </div>
+      </div>`;
+  };
+
+  const awayPitcher = pitchers.find(p => p.team === away?.team?.abbreviation);
+  const homePitcher = pitchers.find(p => p.team === home?.team?.abbreviation);
+
+  bsBody.innerHTML = `
+    <div class="bs-scoreboard">
+      <div class="bs-team-box">
+        <div class="bs-team-name">${aName}</div>
+        <div class="bs-team-score ${aLead ? 'lead' : 'trail'}">${aScore}</div>
+      </div>
+      <div class="bs-team-box">
+        <div class="bs-team-name">${hName}</div>
+        <div class="bs-team-score ${!aLead ? 'lead' : 'trail'}">${hScore}</div>
+      </div>
+    </div>
+    <div class="bs-state">${status}</div>
+
+    <div class="bs-sec-lbl">Linescore</div>
+    <table class="bs-table">
+      <thead>
+        <tr><th>Team</th>${inningHeaders}<th class="rhe-sep">R</th><th>H</th><th>E</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>${aName}</td>${aRow}<td class="rhe-sep">${aScore}</td><td>${aHits}</td><td>${aErrors}</td></tr>
+        <tr><td>${hName}</td>${hRow}<td class="rhe-sep">${hScore}</td><td>${hHits}</td><td>${hErrors}</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bs-sec-lbl">Pitching</div>
+    <div class="bs-pitcher-grid">
+      ${pitcherCard(awayPitcher)}
+      ${pitcherCard(homePitcher)}
+    </div>
+  `;
+}
+
+async function showBoxScore(gameId, teams) {
+  bsTitle.textContent = teams.join(' vs ');
+  bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Fetching ESPN data…</div>`;
+  openModal();
+  renderBoxScore(await fetchBoxScore(gameId), teams);
+}
+
+// Wire box score events from htb-live-games component
+document.addEventListener('htb:boxscore', e => {
+  showBoxScore(e.detail.gameId, e.detail.teams);
+});
+
+/* ============================================================
+   RENDER PICKS
+   ============================================================ */
+function renderPicks() {
+  document.getElementById('mlb-picks-grid').innerHTML = MLB_PICKS.map(p => `
+    <div class="pick-card ${p.type}">
+      <div class="pc-top">
+        <span class="pc-sport-tag">MLB</span>
+        <span class="badge ${p.type}">${p.badge}</span>
+      </div>
+      <div class="pc-matchup">${p.matchup}</div>
+      <div class="pc-pick">${p.pick}</div>
+      <div class="pc-odds">${p.odds}</div>
+      <div class="pc-conf">
+        <span class="pc-conf-lbl">Confidence</span>
+        <div class="conf-track"><div class="conf-fill" style="width:${p.conf * 10}%"></div></div>
+        <span class="pc-conf-val">${p.conf}/10</span>
+      </div>
+      <div class="pc-sep"></div>
+      <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
+      <div class="pc-pitchers">
+        <div class="pc-pitcher">
+          <div class="pc-pitcher-role">Away SP</div>
+          <div class="pc-pitcher-name">${p.sp.away.name}</div>
+          <div class="pc-pitcher-stats">${p.sp.away.line}</div>
+        </div>
+        <div class="pc-pitcher">
+          <div class="pc-pitcher-role">Home SP</div>
+          <div class="pc-pitcher-name">${p.sp.home.name}</div>
+          <div class="pc-pitcher-stats">${p.sp.home.line}</div>
+        </div>
+      </div>
+      <div class="pc-hint">View Full Analysis →</div>
+    </div>`).join('');
+}
+
+document.addEventListener('DOMContentLoaded', renderPicks);
+</script>
+</body>
+</html>
