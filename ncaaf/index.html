@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NHL — HammerTimeBet</title>
+<title>NCAAF — HammerTimeBet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="/components/data.js"       defer></script>
@@ -17,18 +17,18 @@ a{color:inherit;text-decoration:none}
 button{cursor:pointer;border:none;font-family:inherit}
 
 /* ── PAGE HEADER ── */
-.nhl-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(0,100,200,.08) 0%,transparent 70%)}
-.nhl-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-.nhl-hero-left{display:flex;align-items:center;gap:16px}
-.nhl-icon{font-size:36px;line-height:1}
-.nhl-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
-.nhl-title span{color:#f0b429}
-.nhl-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
-.nhl-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
-.nhl-stat{text-align:center}
-.nhl-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
-.nhl-stat-val.g{color:#00d084}
-.nhl-stat-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
+.cf-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(200,80,0,.08) 0%,transparent 70%)}
+.cf-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.cf-hero-left{display:flex;align-items:center;gap:16px}
+.cf-icon{font-size:36px;line-height:1}
+.cf-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
+.cf-title span{color:#f0b429}
+.cf-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
+.cf-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.cf-stat{text-align:center}
+.cf-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.cf-stat-val.g{color:#00d084}
+.cf-stat-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
 
 /* ── SECTION ── */
 .section{padding:44px 20px}
@@ -56,6 +56,7 @@ button{cursor:pointer;border:none;font-family:inherit}
 .pc-badge.dog{background:rgba(129,140,248,.08);color:#818cf8;border:1px solid rgba(129,140,248,.2)}
 .pc-sport{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;background:#181818;border:1px solid #222;padding:3px 9px;border-radius:100px}
 .pc-matchup{font-size:11px;color:#666;margin-bottom:4px}
+.pc-ranked{font-size:10px;color:#f0b429;font-weight:700;letter-spacing:.06em;margin-bottom:2px}
 .pc-pick{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:2px}
 .pc-odds{font-size:18px;font-weight:700;color:#f0b429;margin-bottom:12px}
 .pick-card.value .pc-odds{color:#00d084}
@@ -93,7 +94,6 @@ button{cursor:pointer;border:none;font-family:inherit}
 .bs-spinner{width:18px;height:18px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:spin .65s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Score summary inside modal */
 .bs-score-row{display:flex;gap:8px;margin-bottom:20px}
 .bs-team-col{flex:1;background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:14px;text-align:center}
 .bs-team-name{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
@@ -102,7 +102,6 @@ button{cursor:pointer;border:none;font-family:inherit}
 .bs-team-score.trail{color:#444}
 .bs-period{text-align:center;font-size:12px;color:#555;margin-bottom:20px;letter-spacing:.06em}
 
-/* Period-by-period table */
 .bs-table{width:100%;border-collapse:collapse;margin-bottom:20px}
 .bs-table th{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;padding:8px 10px;text-align:center;border-bottom:1px solid #1e1e1e}
 .bs-table th:first-child{text-align:left}
@@ -110,14 +109,10 @@ button{cursor:pointer;border:none;font-family:inherit}
 .bs-table td:first-child{text-align:left;color:#888}
 .bs-table tr:last-child td{border-bottom:none;color:#fff;font-weight:800}
 
-/* Team stats */
-.bs-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .bs-stat-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #141414}
 .bs-stat-row:last-child{border-bottom:none}
 .bs-stat-lbl{font-size:11px;color:#555;flex:1;text-align:center}
-.bs-stat-val{font-size:13px;font-weight:700;color:#ccc;min-width:44px;text-align:center}
-.bs-stat-bar-wrap{flex:2;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden}
-.bs-stat-bar{height:100%;border-radius:2px;background:#f0b429}
+.bs-stat-val{font-size:13px;font-weight:700;color:#ccc;min-width:52px;text-align:center}
 .bs-section-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0b429;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
 .bs-section-lbl::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
 
@@ -127,28 +122,28 @@ footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-al
 .footer-brand em{font-style:normal;color:#f0b429}
 footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
-@media(max-width:560px){.nhl-hero-stats{gap:16px}.nhl-stat-val{font-size:22px}.bs-score-row{flex-direction:column}}
+@media(max-width:560px){.cf-hero-stats{gap:16px}.cf-stat-val{font-size:22px}.bs-score-row{flex-direction:column}}
 </style>
 </head>
 <body>
 
 <!-- ── NAV ─────────────────────────────────────────── -->
-<htb-nav active="nhl"></htb-nav>
+<htb-nav active="ncaaf"></htb-nav>
 
 <!-- ── PAGE HEADER ─────────────────────────────────── -->
-<div class="nhl-hero">
-  <div class="nhl-hero-inner">
-    <div class="nhl-hero-left">
-      <div class="nhl-icon">🏒</div>
+<div class="cf-hero">
+  <div class="cf-hero-inner">
+    <div class="cf-hero-left">
+      <div class="cf-icon">🏈</div>
       <div>
-        <div class="nhl-title">NHL <span>Hockey</span></div>
-        <div class="nhl-sub">Live scores · DraftKings lines · AI picks</div>
+        <div class="cf-title">College <span>Football</span></div>
+        <div class="cf-sub">Live scores · DraftKings lines · AI picks</div>
       </div>
     </div>
-    <div class="nhl-hero-stats">
-      <div class="nhl-stat"><div class="nhl-stat-val g">68.4%</div><div class="nhl-stat-lbl">NHL Win Rate</div></div>
-      <div class="nhl-stat"><div class="nhl-stat-val">+14.2u</div><div class="nhl-stat-lbl">Units Profit</div></div>
-      <div class="nhl-stat"><div class="nhl-stat-val g">+4.1%</div><div class="nhl-stat-lbl">Avg Edge</div></div>
+    <div class="cf-hero-stats">
+      <div class="cf-stat"><div class="cf-stat-val g">64.8%</div><div class="cf-stat-lbl">CFB Win Rate</div></div>
+      <div class="cf-stat"><div class="cf-stat-val">+11.7u</div><div class="cf-stat-lbl">Units Profit</div></div>
+      <div class="cf-stat"><div class="cf-stat-val g">+3.8%</div><div class="cf-stat-lbl">Avg Edge</div></div>
     </div>
   </div>
 </div>
@@ -159,11 +154,11 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
     <div class="section-head">
       <div>
         <div class="section-eyebrow">ESPN · DraftKings</div>
-        <h2 class="section-title">Tonight's NHL Games</h2>
+        <h2 class="section-title">Today's CFB Games</h2>
       </div>
       <a href="#" class="see-all">Full Schedule →</a>
     </div>
-    <htb-live-games sports="nhl" refresh="20"></htb-live-games>
+    <htb-live-games sports="ncaaf" refresh="30"></htb-live-games>
   </div>
 </section>
 
@@ -173,10 +168,23 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
     <div class="section-head">
       <div>
         <div class="section-eyebrow">Hammer Model</div>
-        <h2 class="section-title">Top NHL Picks Tonight</h2>
+        <h2 class="section-title">Top CFB Picks</h2>
       </div>
     </div>
-    <div class="picks-grid" id="nhl-picks-grid"></div>
+    <div class="picks-grid" id="ncaaf-picks-grid"></div>
+  </div>
+</section>
+
+<!-- ── UNDERDOG PICKS ────────────────────────────────── -->
+<section class="section" id="dogs">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">Best Value</div>
+        <h2 class="section-title">Best CFB Underdogs</h2>
+      </div>
+    </div>
+    <div class="picks-grid" id="ncaaf-dogs-grid"></div>
   </div>
 </section>
 
@@ -202,88 +210,147 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   NHL PICKS DATA
-   Update daily — mirror shape for any sport page
+   NCAAF PICKS DATA
    ============================================================ */
-const NHL_PICKS = [
+const NCAAF_PICKS = [
   {
-    matchup:  'Avalanche vs Golden Knights',
-    pick:     'Golden Knights ML',
-    odds:     '-130',
+    matchup:  'Ohio State vs Georgia',
+    ranked:   '#4 Ohio State · #2 Georgia',
+    pick:     'Georgia -7.5',
+    odds:     '-110',
     type:     'strong',
     badge:    'Strong Play',
-    conf:     7.9,
+    conf:     8.2,
     units:    '2u',
-    stats:    [{ lbl:'Save %', away:'91.2', home:'93.4' }, { lbl:'CF%', away:'48.3', home:'52.1' }],
+    stats:    [{ lbl:'Pts/Gm', away:'34.1', home:'38.7' }, { lbl:'Yds/Gm', away:'401', home:'463' }],
     reasons:  [
-      'VGK top-5 in 5v5 shot share over the last 14 games (52.1 CF%)',
-      'Avalanche goaltending inconsistent — 3.10 GAA in April',
-      'Golden Knights 7-3 at home this month, averaging 3.4 goals',
-      'Line opened -120, sharp action has pushed it to -130 — follow the money',
+      'Georgia ranks top-3 nationally in total defense — holding opponents to 18.4 PPG',
+      'OSU offensive line missing two starters — Bulldog pass rush will feast',
+      'Kirby Smart 18-4 ATS as home favorite of 7+ points over his career',
+      'Model projects Georgia win by 10.3 — getting a full TD and a hook',
     ]
   },
   {
-    matchup:  'Flames vs Kraken',
-    pick:     'Over 5.5',
-    odds:     '-112',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.3,
-    units:    '1u',
-    stats:    [{ lbl:'Goals/Gm', away:'3.1', home:'3.3' }, { lbl:'PP%', away:'21.4', home:'23.8' }],
-    reasons:  [
-      'Both teams ranked top-10 in goals-per-game over last 10 contests',
-      'Combined power-play percentage above 22% — high-event hockey expected',
-      'Model total: 6.2 — getting value at 5.5',
-      'Neither starting goalie has played since Thursday — rust factor in play',
-    ]
-  },
-  {
-    matchup:  'Maple Leafs vs Hurricanes',
-    pick:     'Maple Leafs +1.5',
-    odds:     '-190',
+    matchup:  'Notre Dame vs USC',
+    ranked:   '#8 Notre Dame · USC',
+    pick:     'Notre Dame -6',
+    odds:     '-108',
     type:     'value',
     badge:    'Value Play',
     conf:     7.6,
     units:    '1.5u',
-    stats:    [{ lbl:'xGF%', away:'49.8', home:'54.2' }, { lbl:'PK%', away:'81.1', home:'84.6' }],
-    reasons:  [
-      'Leafs cover the puck line at a 61% rate as road underdogs this season',
-      'Auston Matthews generating elite shot quality — 4.1 shots on net per game',
-      'Hurricanes playing their 3rd game in 4 nights — fatigue spot',
-      'Puck line at -190 is strong price for a team that keeps games close',
+    stats:    [{ lbl:'3rd Dwn%', away:'41.2', home:'36.7' }, { lbl:'TO Margin', away:'+7', home:'-3' }],
+    reasons:
+    [
+      'Notre Dame +7 turnover margin is best in their conference over last 6 weeks',
+      'USC defense ranks 108th nationally in yards per play allowed',
+      'Irish run game averaging 5.4 YPC — USC cannot stop the grind',
+      'Line opened -4.5, has climbed to -6 on sharp two-way action — follow the steam',
     ]
   },
   {
-    matchup:  'Lightning vs Senators',
-    pick:     'Lightning ML',
-    odds:     '-145',
+    matchup:  'Texas vs Oklahoma',
+    ranked:   '#11 Texas · #14 Oklahoma',
+    pick:     'Over 52.5',
+    odds:     '-115',
+    type:     'value',
+    badge:    'Value Play',
+    conf:     7.4,
+    units:    '1u',
+    stats:    [{ lbl:'Pts/Gm', away:'36.9', home:'35.2' }, { lbl:'Yds Allowed', away:'342', home:'318' }],
+    reasons:  [
+      'Both offenses rank top-20 nationally in explosive play rate',
+      'Rivalry game often produces shootout conditions at neutral site',
+      'Combined scoring average 72.1 points in last 3 meetings',
+      'Model total 55.8 — getting excellent value at 52.5',
+    ]
+  },
+  {
+    matchup:  'Alabama vs Tennessee',
+    ranked:   '#3 Alabama · #9 Tennessee',
+    pick:     'Alabama -10',
+    odds:     '-110',
     type:     'strong',
     badge:    'Strong Play',
-    conf:     8.1,
+    conf:     8.0,
     units:    '2u',
-    stats:    [{ lbl:'Save %', away:'94.1', home:'89.7' }, { lbl:'GF/Gm', away:'3.6', home:'2.8' }],
+    stats:    [{ lbl:'S&P+ Off', away:'22.4', home:'18.1' }, { lbl:'Line Yds', away:'2.31', home:'2.09' }],
     reasons:  [
-      'Vasilevskiy posting a .941 SV% over his last 7 starts — elite form',
-      'Ottawa ranked bottom-4 in goals-for over the past 2 weeks',
-      'Tampa 9-2 ATS as home favourites when Vasilevskiy starts',
-      'Model gives Lightning a 61% win probability — value at -145',
+      'Alabama\'s offensive S&P+ is 4.3 points better than Tennessee\'s defense',
+      'Tide 22-8 ATS as double-digit home favorites under current coaching staff',
+      'Tennessee QB averaging 1.6 turnovers per game against top-10 defenses',
+      'Weather forecast: clear, 68°F — ideal conditions for Alabama\'s aerial attack',
     ]
   },
   {
-    matchup:  'Jets vs Wild',
-    pick:     'Wild +1.5',
-    odds:     '+155',
+    matchup:  'Michigan vs Penn State',
+    ranked:   '#6 Michigan · #13 Penn State',
+    pick:     'Michigan -4.5',
+    odds:     '-112',
+    type:     'strong',
+    badge:    'Strong Play',
+    conf:     7.8,
+    units:    '1.5u',
+    stats:    [{ lbl:'Havoc Rate', away:'13.1', home:'15.4' }, { lbl:'Run EPA', away:'.21', home:'.18' }],
+    reasons:  [
+      'Michigan\'s defensive havoc rate is 2.3 points above Big Ten average',
+      'Penn State RB room depleted — starting back questionable with ankle injury',
+      'Wolverines 8-2 ATS at home over last two full seasons',
+      'Sharp money sitting on Michigan — line has moved a half-point in the past 48 hours',
+    ]
+  },
+];
+
+const NCAAF_DOGS = [
+  {
+    matchup:  'Tennessee vs Alabama',
+    ranked:   '#9 Tennessee · #3 Alabama',
+    pick:     'Tennessee +10',
+    odds:     '+100',
     type:     'dog',
     badge:    'Live Dog',
-    conf:     6.7,
+    conf:     6.9,
     units:    '1u',
-    stats:    [{ lbl:'ROW', away:'36', home:'34' }, { lbl:'L10', away:'5-5', home:'6-4' }],
+    stats:    [{ lbl:'ATS vs Top10', away:'6-2', home:'4-4' }, { lbl:'Cover%', away:'61%', home:'49%' }],
     reasons:  [
-      '+155 on the puck line is exceptional value — Wild keep games tight',
-      'Winnipeg 3-7 ATS as home favourites of 1.5+ goals this season',
-      'Wild play a disciplined, low-turnover system that limits blow-out losses',
-      'Best underdog number on tonight\'s board',
+      '+10 points on a top-10 team in a rivalry game is tremendous value',
+      'Tennessee 6-2 ATS as double-digit dogs versus ranked opponents',
+      'Vols offense capable of keeping it close — ranked 14th in scoring',
+      'Public hammering Alabama — fade the crowd, take the points',
+    ]
+  },
+  {
+    matchup:  'USC vs Notre Dame',
+    ranked:   'USC · #8 Notre Dame',
+    pick:     'USC +6',
+    odds:     '+110',
+    type:     'dog',
+    badge:    'Live Dog',
+    conf:     6.5,
+    units:    '1u',
+    stats:    [{ lbl:'Home Cover', away:'4-6', home:'7-3' }, { lbl:'ATS Spread', away:'-1.2', home:'+3.1' }],
+    reasons:  [
+      'USC has covered in 4 of last 5 rivalry appearances as an underdog',
+      'Notre Dame struggles to cover in primetime — only 3-7 ATS in night games',
+      '+6 is more than a full touchdown — plenty of cushion for a competitive loss',
+      'Best plus-money number on this week\'s board for a quality opponent',
+    ]
+  },
+  {
+    matchup:  'Penn State vs Michigan',
+    ranked:   '#13 Penn State · #6 Michigan',
+    pick:     'Penn State +4.5',
+    odds:     '+120',
+    type:     'dog',
+    badge:    'Live Dog',
+    conf:     6.3,
+    units:    '0.5u',
+    stats:    [{ lbl:'ATS as Dog', away:'5-3', home:'3-5' }, { lbl:'SRS Diff', away:'-2.1', home:'-0.8' }],
+    reasons:  [
+      'SRS gap between these teams is less than 2 points — line is inflated',
+      'Penn State 5-3 ATS as road dogs this season — road warriors',
+      '+120 ML has positive expected value given model\'s 44% win probability',
+      'Best value play if backing the Nittany Lions to steal one on the road',
     ]
   },
 ];
@@ -291,12 +358,12 @@ const NHL_PICKS = [
 /* ============================================================
    ESPN BOX SCORE SERVICE
    ============================================================ */
-const ESPN_NHL_SUMMARY = id =>
-  `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`;
+const ESPN_NCAAF_SUMMARY = id =>
+  `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`;
 
 async function fetchBoxScore(gameId) {
   try {
-    const r = await fetch(ESPN_NHL_SUMMARY(gameId), { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(ESPN_NCAAF_SUMMARY(gameId), { signal: AbortSignal.timeout(6000) });
     return r.ok ? await r.json() : null;
   } catch { return null; }
 }
@@ -308,7 +375,7 @@ const overlay = document.getElementById('bs-overlay');
 const bsBody  = document.getElementById('bs-body');
 const bsTitle = document.getElementById('bs-title');
 
-function openModal() { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function openModal()  { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
 function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
 
 document.getElementById('bs-close').addEventListener('click', closeModal);
@@ -324,26 +391,33 @@ function renderBoxScore(data, teams) {
     return;
   }
 
-  const bs       = data.boxscore;
-  const home     = bs?.teams?.[1];
-  const away     = bs?.teams?.[0];
+  const bs        = data.boxscore;
+  const home      = bs?.teams?.[1];
+  const away      = bs?.teams?.[0];
   const homeScore = bs?.teams?.[1]?.team?.score || '—';
   const awayScore = bs?.teams?.[0]?.team?.score || '—';
-  const status   = data.header?.competitions?.[0]?.status?.type?.detail || 'Game Data';
-  const hName    = home?.team?.shortDisplayName || teams[1] || 'Home';
-  const aName    = away?.team?.shortDisplayName || teams[0] || 'Away';
+  const status    = data.header?.competitions?.[0]?.status?.type?.detail || 'Game Data';
+  const hName     = home?.team?.shortDisplayName || teams[1] || 'Home';
+  const aName     = away?.team?.shortDisplayName || teams[0] || 'Away';
 
-  // Period scores
-  const hLine = home?.linescores || [];
-  const aLine = away?.linescores || [];
-  const periods = Math.max(hLine.length, aLine.length) || 3;
-  const pHeaders = Array.from({ length: periods }, (_, i) => `<th>${i < 3 ? `P${i+1}` : 'OT'}</th>`).join('');
-  const pHomeVals = Array.from({ length: periods }, (_, i) => `<td>${hLine[i]?.displayValue ?? '—'}</td>`).join('');
-  const pAwayVals = Array.from({ length: periods }, (_, i) => `<td>${aLine[i]?.displayValue ?? '—'}</td>`).join('');
+  // Quarter scores
+  const hLine   = home?.linescores || [];
+  const aLine   = away?.linescores || [];
+  const qtrs    = Math.max(hLine.length, aLine.length) || 4;
+  const qHdrs   = Array.from({ length: qtrs }, (_, i) => `<th>${i < 4 ? `Q${i+1}` : `OT${i-3}`}</th>`).join('');
+  const qHome   = Array.from({ length: qtrs }, (_, i) => `<td>${hLine[i]?.displayValue ?? '—'}</td>`).join('');
+  const qAway   = Array.from({ length: qtrs }, (_, i) => `<td>${aLine[i]?.displayValue ?? '—'}</td>`).join('');
 
-  // Team stats
-  const statKeys = ['saves','savePct','shots','powerPlayGoals','hits','blocked'];
-  const statLabels = { saves:'Saves', savePct:'Save %', shots:'Shots', powerPlayGoals:'PP Goals', hits:'Hits', blocked:'Blocked' };
+  // Football team stats
+  const statKeys   = ['totalYards','passingYards','rushingYards','firstDowns','turnovers','thirdDownEff'];
+  const statLabels = {
+    totalYards:   'Total Yards',
+    passingYards: 'Pass Yards',
+    rushingYards: 'Rush Yards',
+    firstDowns:   '1st Downs',
+    turnovers:    'Turnovers',
+    thirdDownEff: '3rd Down',
+  };
   const hStats = {};
   const aStats = {};
   (home?.statistics || []).forEach(s => hStats[s.name] = s.displayValue);
@@ -374,12 +448,12 @@ function renderBoxScore(data, teams) {
     </div>
     <div class="bs-period">${status}</div>
 
-    <div class="bs-section-lbl">Period by Period</div>
+    <div class="bs-section-lbl">Quarter by Quarter</div>
     <table class="bs-table">
-      <thead><tr><th>Team</th>${pHeaders}<th>T</th></tr></thead>
+      <thead><tr><th>Team</th>${qHdrs}<th>T</th></tr></thead>
       <tbody>
-        <tr><td>${aName}</td>${pAwayVals}<td>${awayScore}</td></tr>
-        <tr><td>${hName}</td>${pHomeVals}<td>${homeScore}</td></tr>
+        <tr><td>${aName}</td>${qAway}<td>${awayScore}</td></tr>
+        <tr><td>${hName}</td>${qHome}<td>${homeScore}</td></tr>
       </tbody>
     </table>
 
@@ -393,7 +467,7 @@ function renderBoxScore(data, teams) {
   `;
 }
 
-async function showBoxScore(gameId, sport, teams) {
+async function showBoxScore(gameId, teams) {
   bsTitle.textContent = teams.join(' vs ');
   bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Fetching ESPN data…</div>`;
   openModal();
@@ -403,15 +477,15 @@ async function showBoxScore(gameId, sport, teams) {
 
 /* ── Listen for box score events from htb-live-games ── */
 document.addEventListener('htb:boxscore', e => {
-  showBoxScore(e.detail.gameId, e.detail.sport, e.detail.teams);
+  showBoxScore(e.detail.gameId, e.detail.teams);
 });
 
 /* ============================================================
    RENDER PICKS
    ============================================================ */
-function renderPicks() {
-  document.getElementById('nhl-picks-grid').innerHTML = NHL_PICKS.map(p => {
-    const confPct = `${p.conf * 10}%`;
+function renderPickCards(picks, containerId) {
+  document.getElementById(containerId).innerHTML = picks.map(p => {
+    const confPct  = `${p.conf * 10}%`;
     const statsHTML = p.stats.map(s => `
       <div class="pc-stat"><div class="pc-stat-lbl">Away ${s.lbl}</div><div class="pc-stat-val">${s.away}</div></div>
       <div class="pc-stat"><div class="pc-stat-lbl">Home ${s.lbl}</div><div class="pc-stat-val">${s.home}</div></div>
@@ -419,9 +493,10 @@ function renderPicks() {
     return `
       <div class="pick-card ${p.type}">
         <div class="pc-top">
-          <span class="pc-sport">NHL</span>
+          <span class="pc-sport">NCAAF</span>
           <span class="pc-badge ${p.type}">${p.badge}</span>
         </div>
+        ${p.ranked ? `<div class="pc-ranked">${p.ranked}</div>` : ''}
         <div class="pc-matchup">${p.matchup}</div>
         <div class="pc-pick">${p.pick}</div>
         <div class="pc-odds">${p.odds}</div>
@@ -438,7 +513,10 @@ function renderPicks() {
   }).join('');
 }
 
-document.addEventListener('DOMContentLoaded', renderPicks);
+document.addEventListener('DOMContentLoaded', () => {
+  renderPickCards(NCAAF_PICKS, 'ncaaf-picks-grid');
+  renderPickCards(NCAAF_DOGS,  'ncaaf-dogs-grid');
+});
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>NHL — HammerTimeBet</title>
+<title>NBA — HammerTimeBet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="/components/data.js"       defer></script>
@@ -17,18 +17,18 @@ a{color:inherit;text-decoration:none}
 button{cursor:pointer;border:none;font-family:inherit}
 
 /* ── PAGE HEADER ── */
-.nhl-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(0,100,200,.08) 0%,transparent 70%)}
-.nhl-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-.nhl-hero-left{display:flex;align-items:center;gap:16px}
-.nhl-icon{font-size:36px;line-height:1}
-.nhl-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
-.nhl-title span{color:#f0b429}
-.nhl-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
-.nhl-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
-.nhl-stat{text-align:center}
-.nhl-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
-.nhl-stat-val.g{color:#00d084}
-.nhl-stat-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
+.nba-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(29,66,138,.1) 0%,transparent 70%)}
+.nba-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.nba-hero-left{display:flex;align-items:center;gap:16px}
+.nba-icon{font-size:36px;line-height:1}
+.nba-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
+.nba-title span{color:#f0b429}
+.nba-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
+.nba-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.nba-stat{text-align:center}
+.nba-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.nba-stat-val.g{color:#00d084}
+.nba-stat-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
 
 /* ── SECTION ── */
 .section{padding:44px 20px}
@@ -93,7 +93,6 @@ button{cursor:pointer;border:none;font-family:inherit}
 .bs-spinner{width:18px;height:18px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:spin .65s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Score summary inside modal */
 .bs-score-row{display:flex;gap:8px;margin-bottom:20px}
 .bs-team-col{flex:1;background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:14px;text-align:center}
 .bs-team-name{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
@@ -102,7 +101,6 @@ button{cursor:pointer;border:none;font-family:inherit}
 .bs-team-score.trail{color:#444}
 .bs-period{text-align:center;font-size:12px;color:#555;margin-bottom:20px;letter-spacing:.06em}
 
-/* Period-by-period table */
 .bs-table{width:100%;border-collapse:collapse;margin-bottom:20px}
 .bs-table th{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;padding:8px 10px;text-align:center;border-bottom:1px solid #1e1e1e}
 .bs-table th:first-child{text-align:left}
@@ -110,14 +108,10 @@ button{cursor:pointer;border:none;font-family:inherit}
 .bs-table td:first-child{text-align:left;color:#888}
 .bs-table tr:last-child td{border-bottom:none;color:#fff;font-weight:800}
 
-/* Team stats */
-.bs-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .bs-stat-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #141414}
 .bs-stat-row:last-child{border-bottom:none}
 .bs-stat-lbl{font-size:11px;color:#555;flex:1;text-align:center}
-.bs-stat-val{font-size:13px;font-weight:700;color:#ccc;min-width:44px;text-align:center}
-.bs-stat-bar-wrap{flex:2;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden}
-.bs-stat-bar{height:100%;border-radius:2px;background:#f0b429}
+.bs-stat-val{font-size:13px;font-weight:700;color:#ccc;min-width:52px;text-align:center}
 .bs-section-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0b429;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
 .bs-section-lbl::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
 
@@ -127,28 +121,28 @@ footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-al
 .footer-brand em{font-style:normal;color:#f0b429}
 footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
-@media(max-width:560px){.nhl-hero-stats{gap:16px}.nhl-stat-val{font-size:22px}.bs-score-row{flex-direction:column}}
+@media(max-width:560px){.nba-hero-stats{gap:16px}.nba-stat-val{font-size:22px}.bs-score-row{flex-direction:column}}
 </style>
 </head>
 <body>
 
 <!-- ── NAV ─────────────────────────────────────────── -->
-<htb-nav active="nhl"></htb-nav>
+<htb-nav active="nba"></htb-nav>
 
 <!-- ── PAGE HEADER ─────────────────────────────────── -->
-<div class="nhl-hero">
-  <div class="nhl-hero-inner">
-    <div class="nhl-hero-left">
-      <div class="nhl-icon">🏒</div>
+<div class="nba-hero">
+  <div class="nba-hero-inner">
+    <div class="nba-hero-left">
+      <div class="nba-icon">🏀</div>
       <div>
-        <div class="nhl-title">NHL <span>Hockey</span></div>
-        <div class="nhl-sub">Live scores · DraftKings lines · AI picks</div>
+        <div class="nba-title">NBA <span>Basketball</span></div>
+        <div class="nba-sub">Live scores · DraftKings lines · AI picks</div>
       </div>
     </div>
-    <div class="nhl-hero-stats">
-      <div class="nhl-stat"><div class="nhl-stat-val g">68.4%</div><div class="nhl-stat-lbl">NHL Win Rate</div></div>
-      <div class="nhl-stat"><div class="nhl-stat-val">+14.2u</div><div class="nhl-stat-lbl">Units Profit</div></div>
-      <div class="nhl-stat"><div class="nhl-stat-val g">+4.1%</div><div class="nhl-stat-lbl">Avg Edge</div></div>
+    <div class="nba-hero-stats">
+      <div class="nba-stat"><div class="nba-stat-val g">61.4%</div><div class="nba-stat-lbl">NBA Win Rate</div></div>
+      <div class="nba-stat"><div class="nba-stat-val">+9.8u</div><div class="nba-stat-lbl">Units Profit</div></div>
+      <div class="nba-stat"><div class="nba-stat-val g">+3.2%</div><div class="nba-stat-lbl">Avg Edge</div></div>
     </div>
   </div>
 </div>
@@ -159,11 +153,11 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
     <div class="section-head">
       <div>
         <div class="section-eyebrow">ESPN · DraftKings</div>
-        <h2 class="section-title">Tonight's NHL Games</h2>
+        <h2 class="section-title">Tonight's NBA Games</h2>
       </div>
       <a href="#" class="see-all">Full Schedule →</a>
     </div>
-    <htb-live-games sports="nhl" refresh="20"></htb-live-games>
+    <htb-live-games sports="nba" refresh="20"></htb-live-games>
   </div>
 </section>
 
@@ -173,10 +167,10 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
     <div class="section-head">
       <div>
         <div class="section-eyebrow">Hammer Model</div>
-        <h2 class="section-title">Top NHL Picks Tonight</h2>
+        <h2 class="section-title">Top NBA Picks Tonight</h2>
       </div>
     </div>
-    <div class="picks-grid" id="nhl-picks-grid"></div>
+    <div class="picks-grid" id="nba-picks-grid"></div>
   </div>
 </section>
 
@@ -202,88 +196,87 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   NHL PICKS DATA
-   Update daily — mirror shape for any sport page
+   NBA PICKS DATA
    ============================================================ */
-const NHL_PICKS = [
+const NBA_PICKS = [
   {
-    matchup:  'Avalanche vs Golden Knights',
-    pick:     'Golden Knights ML',
-    odds:     '-130',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     7.9,
-    units:    '2u',
-    stats:    [{ lbl:'Save %', away:'91.2', home:'93.4' }, { lbl:'CF%', away:'48.3', home:'52.1' }],
-    reasons:  [
-      'VGK top-5 in 5v5 shot share over the last 14 games (52.1 CF%)',
-      'Avalanche goaltending inconsistent — 3.10 GAA in April',
-      'Golden Knights 7-3 at home this month, averaging 3.4 goals',
-      'Line opened -120, sharp action has pushed it to -130 — follow the money',
+    matchup: 'Celtics vs Knicks',
+    pick:    'Celtics -4.5',
+    odds:    '-110',
+    type:    'strong',
+    badge:   'Strong Play',
+    conf:    8.3,
+    units:   '2u',
+    stats:   [{ lbl:'Off RTG', away:'119.4', home:'112.8' }, { lbl:'Net RTG', away:'+8.9', home:'+1.2' }],
+    reasons: [
+      'Celtics lead the league in offensive rating — Knicks defense ranks 18th',
+      'Boston 14-4 ATS as road favorites of fewer than 6 points this season',
+      'Tatum averaging 31.4 PPG over his last 10 — elite scoring form',
+      'Model projects Boston by 6.2 — taking a full point and a hook of value',
     ]
   },
   {
-    matchup:  'Flames vs Kraken',
-    pick:     'Over 5.5',
-    odds:     '-112',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.3,
-    units:    '1u',
-    stats:    [{ lbl:'Goals/Gm', away:'3.1', home:'3.3' }, { lbl:'PP%', away:'21.4', home:'23.8' }],
-    reasons:  [
-      'Both teams ranked top-10 in goals-per-game over last 10 contests',
-      'Combined power-play percentage above 22% — high-event hockey expected',
-      'Model total: 6.2 — getting value at 5.5',
-      'Neither starting goalie has played since Thursday — rust factor in play',
+    matchup: 'Nuggets vs Suns',
+    pick:    'Nuggets -5.5',
+    odds:    '-110',
+    type:    'strong',
+    badge:   'Strong Play',
+    conf:    8.0,
+    units:   '2u',
+    stats:   [{ lbl:'eFG%', away:'.561', home:'.498' }, { lbl:'TO Rate', away:'12.1', home:'16.8' }],
+    reasons: [
+      'Denver\'s effective FG% is 6.3 points better than Phoenix\'s defense allows',
+      'Suns turnover rate of 16.8 is 4th-worst in the league — Nuggets will capitalize',
+      'Jokic triple-double machine: 28-12-9 line over last 5 games',
+      'Phoenix 4-11 ATS as home underdog this season — trend strongly favors Denver',
     ]
   },
   {
-    matchup:  'Maple Leafs vs Hurricanes',
-    pick:     'Maple Leafs +1.5',
-    odds:     '-190',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.6,
-    units:    '1.5u',
-    stats:    [{ lbl:'xGF%', away:'49.8', home:'54.2' }, { lbl:'PK%', away:'81.1', home:'84.6' }],
-    reasons:  [
-      'Leafs cover the puck line at a 61% rate as road underdogs this season',
-      'Auston Matthews generating elite shot quality — 4.1 shots on net per game',
-      'Hurricanes playing their 3rd game in 4 nights — fatigue spot',
-      'Puck line at -190 is strong price for a team that keeps games close',
+    matchup: 'Warriors vs Lakers',
+    pick:    'Over 224.0',
+    odds:    '-112',
+    type:    'value',
+    badge:   'Value Play',
+    conf:    7.5,
+    units:   '1u',
+    stats:   [{ lbl:'Pace', away:'100.8', home:'98.7' }, { lbl:'Pts Allowed', away:'113.1', home:'115.4' }],
+    reasons: [
+      'Both teams rank bottom-10 defensively — 228 combined scored in last meeting',
+      'Warriors pace up without injured centers — fast break opportunities abound',
+      'LeBron averaging 29.1 PPG in his last 6 home games against Golden State',
+      'Model projects 229 total — getting real value at 224.0',
     ]
   },
   {
-    matchup:  'Lightning vs Senators',
-    pick:     'Lightning ML',
-    odds:     '-145',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     8.1,
-    units:    '2u',
-    stats:    [{ lbl:'Save %', away:'94.1', home:'89.7' }, { lbl:'GF/Gm', away:'3.6', home:'2.8' }],
-    reasons:  [
-      'Vasilevskiy posting a .941 SV% over his last 7 starts — elite form',
-      'Ottawa ranked bottom-4 in goals-for over the past 2 weeks',
-      'Tampa 9-2 ATS as home favourites when Vasilevskiy starts',
-      'Model gives Lightning a 61% win probability — value at -145',
+    matchup: '76ers vs Heat',
+    pick:    'Heat -4',
+    odds:    '-110',
+    type:    'value',
+    badge:   'Value Play',
+    conf:    7.2,
+    units:   '1u',
+    stats:   [{ lbl:'Home Net RTG', away:'-1.1', home:'+4.8' }, { lbl:'L10 Record', away:'4-6', home:'7-3' }],
+    reasons: [
+      'Miami 7-3 over their last 10 — Philly 4-6, trending in opposite directions',
+      'Heat home net rating of +4.8 is top-6 in the league this season',
+      'Embiid listed as questionable — model drops Philly win probability to 38%',
+      'Sharp action on Miami at open — line moved from -3 to -4 on two-way steam',
     ]
   },
   {
-    matchup:  'Jets vs Wild',
-    pick:     'Wild +1.5',
-    odds:     '+155',
-    type:     'dog',
-    badge:    'Live Dog',
-    conf:     6.7,
-    units:    '1u',
-    stats:    [{ lbl:'ROW', away:'36', home:'34' }, { lbl:'L10', away:'5-5', home:'6-4' }],
-    reasons:  [
-      '+155 on the puck line is exceptional value — Wild keep games tight',
-      'Winnipeg 3-7 ATS as home favourites of 1.5+ goals this season',
-      'Wild play a disciplined, low-turnover system that limits blow-out losses',
-      'Best underdog number on tonight\'s board',
+    matchup: 'Celtics vs Knicks',
+    pick:    'Knicks +4.5',
+    odds:    '+105',
+    type:    'dog',
+    badge:   'Live Dog',
+    conf:    6.8,
+    units:   '1u',
+    stats:   [{ lbl:'ATS as Dog', away:'—', home:'18-12' }, { lbl:'Cover%', away:'—', home:'60%' }],
+    reasons: [
+      'Knicks cover at a 60% rate as home underdogs — elite at protecting the spread',
+      '+105 ML is positive EV given model\'s 42% win probability',
+      'MSG crowd factor is real — Knicks 24-7 at home this season outright',
+      'Best plus-money number on tonight\'s board against a quality opponent',
     ]
   },
 ];
@@ -291,12 +284,12 @@ const NHL_PICKS = [
 /* ============================================================
    ESPN BOX SCORE SERVICE
    ============================================================ */
-const ESPN_NHL_SUMMARY = id =>
-  `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`;
+const ESPN_NBA_SUMMARY = id =>
+  `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${id}`;
 
 async function fetchBoxScore(gameId) {
   try {
-    const r = await fetch(ESPN_NHL_SUMMARY(gameId), { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(ESPN_NBA_SUMMARY(gameId), { signal: AbortSignal.timeout(6000) });
     return r.ok ? await r.json() : null;
   } catch { return null; }
 }
@@ -308,7 +301,7 @@ const overlay = document.getElementById('bs-overlay');
 const bsBody  = document.getElementById('bs-body');
 const bsTitle = document.getElementById('bs-title');
 
-function openModal() { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function openModal()  { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
 function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
 
 document.getElementById('bs-close').addEventListener('click', closeModal);
@@ -324,26 +317,33 @@ function renderBoxScore(data, teams) {
     return;
   }
 
-  const bs       = data.boxscore;
-  const home     = bs?.teams?.[1];
-  const away     = bs?.teams?.[0];
+  const bs        = data.boxscore;
+  const home      = bs?.teams?.[1];
+  const away      = bs?.teams?.[0];
   const homeScore = bs?.teams?.[1]?.team?.score || '—';
   const awayScore = bs?.teams?.[0]?.team?.score || '—';
-  const status   = data.header?.competitions?.[0]?.status?.type?.detail || 'Game Data';
-  const hName    = home?.team?.shortDisplayName || teams[1] || 'Home';
-  const aName    = away?.team?.shortDisplayName || teams[0] || 'Away';
+  const status    = data.header?.competitions?.[0]?.status?.type?.detail || 'Game Data';
+  const hName     = home?.team?.shortDisplayName || teams[1] || 'Home';
+  const aName     = away?.team?.shortDisplayName || teams[0] || 'Away';
 
-  // Period scores
-  const hLine = home?.linescores || [];
-  const aLine = away?.linescores || [];
-  const periods = Math.max(hLine.length, aLine.length) || 3;
-  const pHeaders = Array.from({ length: periods }, (_, i) => `<th>${i < 3 ? `P${i+1}` : 'OT'}</th>`).join('');
-  const pHomeVals = Array.from({ length: periods }, (_, i) => `<td>${hLine[i]?.displayValue ?? '—'}</td>`).join('');
-  const pAwayVals = Array.from({ length: periods }, (_, i) => `<td>${aLine[i]?.displayValue ?? '—'}</td>`).join('');
+  // Quarter scores
+  const hLine  = home?.linescores || [];
+  const aLine  = away?.linescores || [];
+  const qtrs   = Math.max(hLine.length, aLine.length) || 4;
+  const qHdrs  = Array.from({ length: qtrs }, (_, i) => `<th>${i < 4 ? `Q${i+1}` : `OT${i-3}`}</th>`).join('');
+  const qHome  = Array.from({ length: qtrs }, (_, i) => `<td>${hLine[i]?.displayValue ?? '—'}</td>`).join('');
+  const qAway  = Array.from({ length: qtrs }, (_, i) => `<td>${aLine[i]?.displayValue ?? '—'}</td>`).join('');
 
-  // Team stats
-  const statKeys = ['saves','savePct','shots','powerPlayGoals','hits','blocked'];
-  const statLabels = { saves:'Saves', savePct:'Save %', shots:'Shots', powerPlayGoals:'PP Goals', hits:'Hits', blocked:'Blocked' };
+  // NBA team stats
+  const statKeys   = ['fieldGoalsMade-fieldGoalsAttempted','threePointFieldGoalsMade-threePointFieldGoalsAttempted','freeThrowsMade-freeThrowsAttempted','totalRebounds','assists','turnovers'];
+  const statLabels = {
+    'fieldGoalsMade-fieldGoalsAttempted':            'FG',
+    'threePointFieldGoalsMade-threePointFieldGoalsAttempted': '3PT',
+    'freeThrowsMade-freeThrowsAttempted':            'FT',
+    'totalRebounds':  'Rebounds',
+    'assists':        'Assists',
+    'turnovers':      'Turnovers',
+  };
   const hStats = {};
   const aStats = {};
   (home?.statistics || []).forEach(s => hStats[s.name] = s.displayValue);
@@ -374,12 +374,12 @@ function renderBoxScore(data, teams) {
     </div>
     <div class="bs-period">${status}</div>
 
-    <div class="bs-section-lbl">Period by Period</div>
+    <div class="bs-section-lbl">Quarter by Quarter</div>
     <table class="bs-table">
-      <thead><tr><th>Team</th>${pHeaders}<th>T</th></tr></thead>
+      <thead><tr><th>Team</th>${qHdrs}<th>T</th></tr></thead>
       <tbody>
-        <tr><td>${aName}</td>${pAwayVals}<td>${awayScore}</td></tr>
-        <tr><td>${hName}</td>${pHomeVals}<td>${homeScore}</td></tr>
+        <tr><td>${aName}</td>${qAway}<td>${awayScore}</td></tr>
+        <tr><td>${hName}</td>${qHome}<td>${homeScore}</td></tr>
       </tbody>
     </table>
 
@@ -393,7 +393,7 @@ function renderBoxScore(data, teams) {
   `;
 }
 
-async function showBoxScore(gameId, sport, teams) {
+async function showBoxScore(gameId, teams) {
   bsTitle.textContent = teams.join(' vs ');
   bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Fetching ESPN data…</div>`;
   openModal();
@@ -403,15 +403,15 @@ async function showBoxScore(gameId, sport, teams) {
 
 /* ── Listen for box score events from htb-live-games ── */
 document.addEventListener('htb:boxscore', e => {
-  showBoxScore(e.detail.gameId, e.detail.sport, e.detail.teams);
+  showBoxScore(e.detail.gameId, e.detail.teams);
 });
 
 /* ============================================================
    RENDER PICKS
    ============================================================ */
 function renderPicks() {
-  document.getElementById('nhl-picks-grid').innerHTML = NHL_PICKS.map(p => {
-    const confPct = `${p.conf * 10}%`;
+  document.getElementById('nba-picks-grid').innerHTML = NBA_PICKS.map(p => {
+    const confPct  = `${p.conf * 10}%`;
     const statsHTML = p.stats.map(s => `
       <div class="pc-stat"><div class="pc-stat-lbl">Away ${s.lbl}</div><div class="pc-stat-val">${s.away}</div></div>
       <div class="pc-stat"><div class="pc-stat-lbl">Home ${s.lbl}</div><div class="pc-stat-val">${s.home}</div></div>
@@ -419,7 +419,7 @@ function renderPicks() {
     return `
       <div class="pick-card ${p.type}">
         <div class="pc-top">
-          <span class="pc-sport">NHL</span>
+          <span class="pc-sport">NBA</span>
           <span class="pc-badge ${p.type}">${p.badge}</span>
         </div>
         <div class="pc-matchup">${p.matchup}</div>

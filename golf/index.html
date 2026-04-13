@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Golf — HammerTimeBet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="/components/nav.js" defer></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#080808;color:#fff;font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;font-family:inherit}
+
+/* ── PAGE HEADER ── */
+.golf-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(0,120,60,.08) 0%,transparent 70%)}
+.golf-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.golf-hero-left{display:flex;align-items:center;gap:16px}
+.golf-icon{font-size:36px;line-height:1}
+.golf-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
+.golf-title span{color:#f0b429}
+.golf-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
+.golf-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.golf-stat{text-align:center}
+.golf-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.golf-stat-val.g{color:#00d084}
+.golf-stat-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
+
+/* ── TOURNAMENT BANNER ── */
+.tournament-banner{background:#101010;border:1px solid #1e1e1e;border-left:3px solid #f0b429;border-radius:10px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px}
+.tb-name{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase}
+.tb-meta{display:flex;gap:20px;flex-wrap:wrap}
+.tb-item{font-size:11px;color:#666}
+.tb-item strong{color:#aaa;font-weight:700}
+.tb-status{font-size:11px;font-weight:700;padding:4px 12px;border-radius:4px;background:rgba(0,208,132,.1);color:#00d084;border:1px solid rgba(0,208,132,.2)}
+
+/* ── SECTION ── */
+.section{padding:44px 20px}
+.section+.section{border-top:1px solid #1a1a1a}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.section-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#f0b429;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.section-eyebrow::before{content:'';display:block;width:16px;height:2px;background:#f0b429}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(24px,3.5vw,34px);font-weight:900;text-transform:uppercase;line-height:1}
+.see-all{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;border:1px solid #1e1e1e;padding:7px 14px;border-radius:6px;transition:border-color .15s,color .15s;white-space:nowrap}
+.see-all:hover{border-color:#2e2e2e;color:#ccc}
+
+/* ── LEADERBOARD ── */
+.leaderboard-wrap{background:#101010;border:1px solid #1e1e1e;border-radius:12px;overflow:hidden}
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;padding:10px 16px;text-align:left;border-bottom:1px solid #1a1a1a;white-space:nowrap}
+.lb-table th.num{text-align:center}
+.lb-table td{padding:13px 16px;border-bottom:1px solid #141414;vertical-align:middle}
+.lb-table tr:last-child td{border-bottom:none}
+.lb-table tbody tr{transition:background .15s}
+.lb-table tbody tr:hover{background:#141414}
+
+.lb-pos{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;color:#555;min-width:32px;text-align:center}
+.lb-pos.top3{color:#f0b429}
+.lb-player{display:flex;flex-direction:column;gap:2px}
+.lb-name{font-size:14px;font-weight:700;color:#fff}
+.lb-country{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#555}
+.lb-score{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-align:center}
+.lb-score.under{color:#00d084}
+.lb-score.over{color:#ff4455}
+.lb-score.even{color:#888}
+.lb-today{font-size:13px;font-weight:700;text-align:center}
+.lb-today.under{color:#00d084}
+.lb-today.over{color:#ff4455}
+.lb-today.even{color:#666}
+.lb-thru{font-size:12px;color:#555;text-align:center}
+.lb-strokes{font-size:13px;font-weight:600;color:#666;text-align:center}
+.lb-move{font-size:10px;font-weight:700;text-align:center}
+.lb-move.up{color:#00d084}
+.lb-move.down{color:#ff4455}
+.lb-move.same{color:#444}
+
+.lb-timestamp{font-size:11px;color:#444;padding:10px 16px;border-top:1px solid #1a1a1a}
+
+/* ── CUT LINE ROW ── */
+.lb-cut-row td{background:#0d0d0d;padding:6px 16px}
+.lb-cut-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;display:flex;align-items:center;gap:8px}
+.lb-cut-label::before,.lb-cut-label::after{content:'';flex:1;height:1px;background:#1e1e1e}
+
+/* ── ODDS GRID ── */
+.odds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.odds-card{background:#101010;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden}
+.odds-card-head{padding:10px 14px;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;justify-content:space-between}
+.odds-player{font-size:13px;font-weight:700}
+.odds-flag{font-size:14px}
+.odds-rows{display:flex;flex-direction:column;gap:0}
+.odds-row{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #111}
+.odds-row:last-child{border-bottom:none}
+.odds-type{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#555}
+.odds-val{font-size:13px;font-weight:700;color:#f0b429}
+.odds-val.value{color:#00d084}
+.odds-val.long{color:#818cf8}
+
+/* ── GOLFER PICKS GRID ── */
+.picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+
+/* ── PICK CARD ── */
+.pick-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:18px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.pick-card:hover{transform:translateY(-3px);border-color:var(--hov,#2e2e2e);box-shadow:0 8px 24px var(--glow,rgba(240,180,41,.07))}
+.pick-card.value{border-top-color:#00d084;--hov:#1e1e1e;--glow:rgba(0,208,132,.07)}
+.pick-card.long{border-top-color:#818cf8;--hov:#1e1e1e;--glow:rgba(129,140,248,.07)}
+.pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pc-badge{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:4px}
+.pc-badge.strong{background:rgba(240,180,41,.1);color:#f0b429;border:1px solid rgba(240,180,41,.2)}
+.pc-badge.value{background:rgba(0,208,132,.08);color:#00d084;border:1px solid rgba(0,208,132,.2)}
+.pc-badge.long{background:rgba(129,140,248,.08);color:#818cf8;border:1px solid rgba(129,140,248,.2)}
+.pc-sport{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;background:#181818;border:1px solid #222;padding:3px 9px;border-radius:100px}
+.pc-tournament{font-size:10px;color:#555;font-weight:600;margin-bottom:3px}
+.pc-pick{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:2px}
+.pc-bet-type{font-size:11px;color:#666;margin-bottom:4px}
+.pc-odds{font-size:20px;font-weight:700;color:#f0b429;margin-bottom:12px}
+.pick-card.value .pc-odds{color:#00d084}
+.pick-card.long .pc-odds{color:#818cf8}
+.pc-conf{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.pc-conf-lbl{font-size:10px;color:#444;font-weight:600;white-space:nowrap}
+.conf-track{flex:1;height:3px;background:#1e1e1e;border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px}
+.pick-card .conf-fill{background:#f0b429}
+.pick-card.value .conf-fill{background:#00d084}
+.pick-card.long .conf-fill{background:#818cf8}
+.pc-conf-val{font-size:11px;font-weight:700;color:#555;white-space:nowrap}
+.pc-sep{height:1px;background:#1a1a1a;margin-bottom:12px}
+.pc-reasons{display:flex;flex-direction:column;gap:5px}
+.pc-reason{font-size:12px;color:#666;line-height:1.45;display:flex;gap:7px}
+.pc-reason::before{content:'▸';color:#444;font-size:9px;margin-top:3px;flex-shrink:0}
+.pc-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:14px}
+.pc-stat{background:#141414;border:1px solid #1e1e1e;border-radius:6px;padding:7px 10px;text-align:center}
+.pc-stat-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:3px}
+.pc-stat-val{font-size:13px;font-weight:700;color:#ccc}
+.pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#444;margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
+.pick-card:hover .pc-hint{opacity:1}
+
+/* ── FOOTER ── */
+footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
+.footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.footer-brand em{font-style:normal;color:#f0b429}
+footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
+
+@media(max-width:680px){
+  .golf-hero-stats{gap:16px}.golf-stat-val{font-size:22px}
+  .lb-table th:nth-child(5),.lb-table td:nth-child(5){display:none}
+  .lb-table th:nth-child(6),.lb-table td:nth-child(6){display:none}
+  .tournament-banner{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────── -->
+<htb-nav active="golf"></htb-nav>
+
+<!-- ── PAGE HEADER ─────────────────────────────────── -->
+<div class="golf-hero">
+  <div class="golf-hero-inner">
+    <div class="golf-hero-left">
+      <div class="golf-icon">⛳</div>
+      <div>
+        <div class="golf-title">PGA <span>Golf</span></div>
+        <div class="golf-sub">Live leaderboard · DraftKings odds · AI picks</div>
+      </div>
+    </div>
+    <div class="golf-hero-stats">
+      <div class="golf-stat"><div class="golf-stat-val g">59.1%</div><div class="golf-stat-lbl">Golf Win Rate</div></div>
+      <div class="golf-stat"><div class="golf-stat-val">+18.6u</div><div class="golf-stat-lbl">Units Profit</div></div>
+      <div class="golf-stat"><div class="golf-stat-val g">+5.2%</div><div class="golf-stat-lbl">Avg Edge</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LEADERBOARD ──────────────────────────────────── -->
+<section class="section" id="leaderboard">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">ESPN · Live</div>
+        <h2 class="section-title">Tournament Leaderboard</h2>
+      </div>
+      <a href="#" class="see-all">Full Leaderboard →</a>
+    </div>
+    <div id="leaderboard-wrap">
+      <div style="background:#101010;border:1px solid #1e1e1e;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px;padding:44px;color:#555;font-size:13px">
+        <div style="width:16px;height:16px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0"></div>
+        Loading leaderboard…
+      </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>
+</section>
+
+<!-- ── DRAFTKINGS ODDS ───────────────────────────────── -->
+<section class="section" id="odds">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">DraftKings</div>
+        <h2 class="section-title">Tournament Odds</h2>
+      </div>
+    </div>
+    <div class="odds-grid" id="odds-grid"></div>
+  </div>
+</section>
+
+<!-- ── FEATURED PICKS ────────────────────────────────── -->
+<section class="section" id="picks">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">Hammer Model</div>
+        <h2 class="section-title">Featured Golfer Picks</h2>
+      </div>
+    </div>
+    <div class="picks-grid" id="golf-picks-grid"></div>
+  </div>
+</section>
+
+<!-- ── FOOTER ───────────────────────────────────────── -->
+<footer>
+  <div class="footer-brand">Hammer<em>Time</em>Bet</div>
+  <p>For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.</p>
+</footer>
+
+
+<script>
+/* ============================================================
+   MOCK TOURNAMENT DATA
+   Mirrors ESPN PGA scoreboard shape — swap fetchLeaderboard()
+   body when live ESPN data is confirmed available.
+   ============================================================ */
+const MOCK_TOURNAMENT = {
+  name:    'Masters Tournament',
+  course:  'Augusta National GC',
+  location:'Augusta, GA',
+  purse:   '$18,000,000',
+  round:   'Round 3 — In Progress',
+  par:     72,
+};
+
+const MOCK_LEADERBOARD = [
+  { pos:'1',  name:'Scottie Scheffler',  country:'USA', flag:'🇺🇸', score:-14, today:-5, thru:'F',  strokes:202, move:'same' },
+  { pos:'2',  name:'Rory McIlroy',       country:'NIR', flag:'🇬🇧', score:-11, today:-4, thru:'F',  strokes:205, move:'up'   },
+  { pos:'3',  name:'Collin Morikawa',    country:'USA', flag:'🇺🇸', score:-9,  today:-3, thru:'F',  strokes:207, move:'up'   },
+  { pos:'T4', name:'Jon Rahm',           country:'ESP', flag:'🇪🇸', score:-8,  today:-2, thru:'F',  strokes:208, move:'down' },
+  { pos:'T4', name:'Xander Schauffele',  country:'USA', flag:'🇺🇸', score:-8,  today:-4, thru:'F',  strokes:208, move:'up'   },
+  { pos:'6',  name:'Viktor Hovland',     country:'NOR', flag:'🇳🇴', score:-7,  today:-1, thru:'F',  strokes:209, move:'same' },
+  { pos:'T7', name:'Brooks Koepka',      country:'USA', flag:'🇺🇸', score:-6,  today:0,  thru:'F',  strokes:210, move:'down' },
+  { pos:'T7', name:'Ludvig Åberg',       country:'SWE', flag:'🇸🇪', score:-6,  today:-3, thru:'F',  strokes:210, move:'up'   },
+  { pos:'9',  name:'Patrick Cantlay',    country:'USA', flag:'🇺🇸', score:-5,  today:+1, thru:'F',  strokes:211, move:'down' },
+  { pos:'10', name:'Tommy Fleetwood',    country:'ENG', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', score:-4,  today:-2, thru:'F',  strokes:212, move:'up'   },
+  { pos:'CUT', name:null }, // cut line marker
+  { pos:'T11',name:'Justin Thomas',      country:'USA', flag:'🇺🇸', score:-1,  today:+2, thru:'F',  strokes:215, move:'down' },
+  { pos:'T11',name:'Shane Lowry',        country:'IRL', flag:'🇮🇪', score:-1,  today:-1, thru:'F',  strokes:215, move:'same' },
+];
+
+/* ============================================================
+   ESPN LEADERBOARD FETCH
+   SWAP this function body when ESPN PGA endpoint is confirmed.
+   ESPN Golf: https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard
+   ============================================================ */
+async function fetchLeaderboard() {
+  try {
+    const r = await fetch(
+      'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard',
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    const event = data.events?.[0];
+    if (!event) throw new Error();
+
+    const comp        = event.competitions?.[0];
+    const competitors = comp?.competitors || [];
+    if (!competitors.length) throw new Error();
+
+    return {
+      tournament: {
+        name:    event.name || MOCK_TOURNAMENT.name,
+        course:  comp.venue?.fullName || MOCK_TOURNAMENT.course,
+        location:comp.venue?.address?.city || MOCK_TOURNAMENT.location,
+        round:   comp.status?.type?.detail || MOCK_TOURNAMENT.round,
+        purse:   MOCK_TOURNAMENT.purse,
+        par:     MOCK_TOURNAMENT.par,
+      },
+      players: competitors.slice(0, 14).map(c => ({
+        pos:     c.status || c.linescores?.[0]?.position?.displayName || '—',
+        name:    c.athlete?.displayName || '—',
+        country: c.athlete?.flag?.alt || '',
+        flag:    '',
+        score:   parseInt(c.score) || 0,
+        today:   parseInt(c.linescores?.find(l => l.type === 'today')?.value) || 0,
+        thru:    c.status?.thru || '—',
+        strokes: parseInt(c.statistics?.[0]?.value) || 0,
+        move:    'same',
+      })),
+    };
+  } catch {
+    return { tournament: MOCK_TOURNAMENT, players: MOCK_LEADERBOARD };
+  }
+}
+
+/* ============================================================
+   DK ODDS MOCK
+   Replace fetchDKOdds() when odds proxy is ready.
+   ============================================================ */
+const DK_GOLF_ODDS = [
+  { name:'Scottie Scheffler', flag:'🇺🇸', winner:'+175',  top5:'-180', top10:'-350', mc:'-800' },
+  { name:'Rory McIlroy',      flag:'🇬🇧', winner:'+320',  top5:'-110', top10:'-280', mc:'-700' },
+  { name:'Collin Morikawa',   flag:'🇺🇸', winner:'+600',  top5:'+120', top10:'-175', mc:'-550' },
+  { name:'Jon Rahm',          flag:'🇪🇸', winner:'+750',  top5:'+160', top10:'-140', mc:'-450' },
+  { name:'Xander Schauffele', flag:'🇺🇸', winner:'+800',  top5:'+175', top10:'-130', mc:'-420' },
+  { name:'Viktor Hovland',    flag:'🇳🇴', winner:'+1200', top5:'+260', top10:'+110', mc:'-350' },
+  { name:'Brooks Koepka',     flag:'🇺🇸', winner:'+1600', top5:'+340', top10:'+155', mc:'-280' },
+  { name:'Ludvig Åberg',      flag:'🇸🇪', winner:'+1800', top5:'+380', top10:'+175', mc:'-260' },
+];
+
+/* ============================================================
+   GOLF PICKS DATA
+   ============================================================ */
+const GOLF_PICKS = [
+  {
+    name:    'Scottie Scheffler',
+    tournament:'Masters Tournament',
+    bet:     'Outright Winner',
+    pick:    'Scheffler To Win',
+    odds:    '+175',
+    type:    'strong',
+    badge:   'Strong Play',
+    conf:    8.6,
+    units:   '1u',
+    stats:   [{ lbl:'SG: Total', val:'+4.81' }, { lbl:'GIR %', val:'76.4%' }],
+    reasons: [
+      '5-shot lead entering final round — historically wins 84% of the time from here',
+      'World #1 averaging +4.81 strokes gained total over the field this week',
+      'Ball striking ranks 1st in the field — hitting 76% of greens in regulation',
+      '+175 is exceptional value for a player with a commanding lead on Sunday',
+    ]
+  },
+  {
+    name:    'Rory McIlroy',
+    tournament:'Masters Tournament',
+    bet:     'Top 5 Finish',
+    pick:    'McIlroy Top 5',
+    odds:    '-110',
+    type:    'value',
+    badge:   'Value Play',
+    conf:    7.8,
+    units:   '1u',
+    stats:   [{ lbl:'SG: Putting', val:'+1.92' }, { lbl:'Driving Acc', val:'68.2%' }],
+    reasons: [
+      'McIlroy\'s putter has come alive — +1.92 SG putting, best in the field',
+      'Only 3 shots off the lead entering Sunday — birdie barrage could close the gap',
+      'Rory 8-for-10 making top-5 when inside 5 shots of lead in a major',
+      'Career grand slam narrative adds motivation — no one wants this more',
+    ]
+  },
+  {
+    name:    'Xander Schauffele',
+    tournament:'Masters Tournament',
+    bet:     'Top 10 Finish',
+    pick:    'Schauffele Top 10',
+    odds:    '-130',
+    type:    'value',
+    badge:   'Value Play',
+    conf:    7.5,
+    units:   '1u',
+    stats:   [{ lbl:'SG: App.', val:'+2.14' }, { lbl:'Birdie Rate', val:'28.3%' }],
+    reasons: [
+      'Schauffele approach play has been elite — +2.14 strokes gained approach',
+      'Sitting T4 with a birdie rate of 28.3% — well-placed for a Sunday charge',
+      'Top-10 at -130 is solid value for the reigning Open champion on form',
+      'Augusta suits his draw ball flight — models him finishing 6th–8th',
+    ]
+  },
+  {
+    name:    'Ludvig Åberg',
+    tournament:'Masters Tournament',
+    bet:     'Outright Winner',
+    pick:    'Åberg Longshot',
+    odds:    '+1800',
+    type:    'long',
+    badge:   'Longshot',
+    conf:    6.2,
+    units:   '0.5u',
+    stats:   [{ lbl:'SG: Off Tee', val:'+2.38' }, { lbl:'Eagles', val:'2' }],
+    reasons: [
+      'The Swedish rookie has the best driving stats in the field this week',
+      'Already made 2 eagles — high ceiling player who can go low in a hurry',
+      '+1800 is maximum value at 6 back — any Scheffler stumble and this opens up',
+      'Best longshot play on the board — even a half-unit returns 9 units if he wins',
+    ]
+  },
+  {
+    name:    'Viktor Hovland',
+    tournament:'Masters Tournament',
+    bet:     'Top 10 Finish',
+    pick:    'Hovland Top 10',
+    odds:    '+110',
+    type:    'value',
+    badge:   'Value Play',
+    conf:    7.1,
+    units:   '1u',
+    stats:   [{ lbl:'SG: Total', val:'+2.77' }, { lbl:'Round 3', val:'-7' }],
+    reasons: [
+      'Hovland shot a 65 in round 3 — most momentum of any player outside top 3',
+      '+110 for top-10 is positive expected value — model has him at 68% probability',
+      'Norwegian known for strong Sunday performances in stroke-play events',
+      'Best under-the-radar pick at plus-money on the board heading into the final round',
+    ]
+  },
+];
+
+/* ============================================================
+   RENDER LEADERBOARD
+   ============================================================ */
+function scoreClass(score) {
+  if (score < 0) return 'under';
+  if (score > 0) return 'over';
+  return 'even';
+}
+function scoreLabel(score) {
+  if (score < 0) return score.toString();
+  if (score > 0) return `+${score}`;
+  return 'E';
+}
+function moveIcon(move) {
+  if (move === 'up')   return '<span class="lb-move up">▲</span>';
+  if (move === 'down') return '<span class="lb-move down">▼</span>';
+  return '<span class="lb-move same">—</span>';
+}
+
+function renderLeaderboard(data) {
+  const t = data.tournament;
+  document.getElementById('leaderboard-wrap').innerHTML = `
+    <div class="tournament-banner">
+      <div>
+        <div class="tb-name">${t.name}</div>
+        <div class="tb-meta">
+          <span class="tb-item"><strong>Course:</strong> ${t.course}</span>
+          <span class="tb-item"><strong>Location:</strong> ${t.location}</span>
+          <span class="tb-item"><strong>Purse:</strong> ${t.purse}</span>
+        </div>
+      </div>
+      <div class="tb-status">${t.round}</div>
+    </div>
+    <div class="leaderboard-wrap">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th class="num">Pos</th>
+            <th>Player</th>
+            <th class="num">Score</th>
+            <th class="num">Today</th>
+            <th class="num">Thru</th>
+            <th class="num">Strokes</th>
+            <th class="num">Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.players.map(p => {
+            if (p.pos === 'CUT') return `
+              <tr class="lb-cut-row">
+                <td colspan="7"><div class="lb-cut-label">Projected Cut Line</div></td>
+              </tr>`;
+            return `
+              <tr>
+                <td><div class="lb-pos ${['1','2','3'].includes(p.pos) ? 'top3' : ''}">${p.pos}</div></td>
+                <td>
+                  <div class="lb-player">
+                    <span class="lb-name">${p.flag} ${p.name}</span>
+                    <span class="lb-country">${p.country}</span>
+                  </div>
+                </td>
+                <td><div class="lb-score ${scoreClass(p.score)}">${scoreLabel(p.score)}</div></td>
+                <td><div class="lb-today ${scoreClass(p.today)}">${scoreLabel(p.today)}</div></td>
+                <td><div class="lb-thru">${p.thru}</div></td>
+                <td><div class="lb-strokes">${p.strokes}</div></td>
+                <td>${moveIcon(p.move)}</td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div class="lb-timestamp">Live data via ESPN · Auto-refreshes every 60s</div>
+    </div>`;
+}
+
+/* ============================================================
+   RENDER ODDS
+   ============================================================ */
+function renderOdds() {
+  document.getElementById('odds-grid').innerHTML = DK_GOLF_ODDS.map(p => `
+    <div class="odds-card">
+      <div class="odds-card-head">
+        <span class="odds-player">${p.flag} ${p.name}</span>
+      </div>
+      <div class="odds-rows">
+        <div class="odds-row">
+          <span class="odds-type">Winner</span>
+          <span class="odds-val">${p.winner}</span>
+        </div>
+        <div class="odds-row">
+          <span class="odds-type">Top 5</span>
+          <span class="odds-val ${parseFloat(p.top5) > 0 ? 'value' : ''}">${p.top5}</span>
+        </div>
+        <div class="odds-row">
+          <span class="odds-type">Top 10</span>
+          <span class="odds-val">${p.top10}</span>
+        </div>
+        <div class="odds-row">
+          <span class="odds-type">Make Cut</span>
+          <span class="odds-val">${p.mc}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* ============================================================
+   RENDER PICKS
+   ============================================================ */
+function renderPicks() {
+  document.getElementById('golf-picks-grid').innerHTML = GOLF_PICKS.map(p => {
+    const confPct   = `${p.conf * 10}%`;
+    const statsHTML = p.stats.map(s => `
+      <div class="pc-stat"><div class="pc-stat-lbl">${s.lbl}</div><div class="pc-stat-val">${s.val}</div></div>
+    `).join('');
+    return `
+      <div class="pick-card ${p.type}">
+        <div class="pc-top">
+          <span class="pc-sport">PGA</span>
+          <span class="pc-badge ${p.type}">${p.badge}</span>
+        </div>
+        <div class="pc-tournament">${p.tournament}</div>
+        <div class="pc-pick">${p.name}</div>
+        <div class="pc-bet-type">${p.bet}</div>
+        <div class="pc-odds">${p.odds}</div>
+        <div class="pc-conf">
+          <span class="pc-conf-lbl">Confidence</span>
+          <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
+          <span class="pc-conf-val">${p.conf}/10</span>
+        </div>
+        <div class="pc-sep"></div>
+        <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
+        <div class="pc-stat-row">${statsHTML}</div>
+        <div class="pc-hint">View Full Analysis →</div>
+      </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init() {
+  const data = await fetchLeaderboard();
+  renderLeaderboard(data);
+  renderOdds();
+  renderPicks();
+  // Auto-refresh leaderboard every 60s
+  setInterval(async () => {
+    const fresh = await fetchLeaderboard();
+    renderLeaderboard(fresh);
+  }, 60000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

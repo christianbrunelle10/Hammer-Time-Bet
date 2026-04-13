@@ -3,8 +3,8 @@
  * Usage: <script src="/components/nav.js"></script>
  *        <htb-nav></htb-nav>
  *
- * Active link is set automatically based on window.location.pathname.
- * To override: <htb-nav active="mlb"></htb-nav>
+ * Active link is detected automatically from window.location.pathname.
+ * Override: <htb-nav active="mlb"></htb-nav>
  */
 
 class HTBNav extends HTMLElement {
@@ -18,17 +18,30 @@ class HTBNav extends HTMLElement {
   }
 
   _detectActive(path) {
-    if (path === '/' || path.endsWith('index.html')) return 'home';
-    const sports = ['mlb', 'nba', 'nfl', 'nhl', 'golf'];
+    if (path === '/' || path.endsWith('index.html') && !path.includes('/mlb') && !path.includes('/nba') && !path.includes('/nfl') && !path.includes('/nhl') && !path.includes('/ncaaf') && !path.includes('/golf')) return 'home';
+    const sports = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf'];
     return sports.find(s => path.includes(s)) || 'home';
   }
 
   _link(key, label, current) {
-    const active = key === current ? ' nav-active' : '';
-    return `<a href="${key === 'home' ? '/' : `/${key}`}" class="nav-link${active}">${label}</a>`;
+    const isActive = key === current;
+    const href     = key === 'home' ? '/' : `/${key}`;
+    return `<a href="${href}" class="nav-link${isActive ? ' nav-active' : ''}">${label}</a>`;
   }
 
   _template(current) {
+    const links = [
+      ['home',  'Home'],
+      ['mlb',   'MLB'],
+      ['nba',   'NBA'],
+      ['nfl',   'NFL'],
+      ['ncaaf', 'NCAAF'],
+      ['nhl',   'NHL'],
+      ['golf',  'Golf'],
+    ];
+    const desktopLinks = links.map(([k, l]) => this._link(k, l, current)).join('');
+    const mobileLinks  = links.map(([k, l]) => this._link(k, l, current)).join('');
+
     return `
       <style>
         htb-nav { display: block; }
@@ -40,15 +53,15 @@ class HTBNav extends HTMLElement {
           background: rgba(8,8,8,.97);
           backdrop-filter: blur(14px);
           -webkit-backdrop-filter: blur(14px);
-          border-bottom: 1px solid #222;
+          border-bottom: 1px solid #1e1e1e;
           height: 56px;
           display: flex;
           align-items: center;
           padding: 0 20px;
-          gap: 0;
           font-family: 'Inter', system-ui, sans-serif;
         }
 
+        /* ── Brand ── */
         .htb-brand {
           font-family: 'Barlow Condensed', 'Inter', sans-serif;
           font-size: 20px;
@@ -63,6 +76,7 @@ class HTBNav extends HTMLElement {
         }
         .htb-brand em { font-style: normal; color: #f0b429; }
 
+        /* ── Desktop links ── */
         .htb-links {
           display: flex;
           align-items: center;
@@ -80,21 +94,25 @@ class HTBNav extends HTMLElement {
           font-weight: 700;
           letter-spacing: .09em;
           text-transform: uppercase;
-          color: #888;
+          color: #666;
           text-decoration: none;
           white-space: nowrap;
           transition: color .15s, background .15s;
           flex-shrink: 0;
+          position: relative;
         }
-        .nav-link:hover  { color: #fff; background: #181818; }
-        .nav-link.nav-active { color: #fff; background: #1e1e1e; }
+        .nav-link:hover { color: #fff; background: #181818; }
+        .nav-link.nav-active {
+          color: #fff;
+          background: #1e1e1e;
+        }
 
-        /* Live indicator dot on active link */
-        .nav-active::after {
+        /* Gold dot on active link */
+        .nav-link.nav-active::after {
           content: '';
           display: inline-block;
-          width: 5px;
-          height: 5px;
+          width: 4px;
+          height: 4px;
           background: #f0b429;
           border-radius: 50%;
           margin-left: 6px;
@@ -103,6 +121,7 @@ class HTBNav extends HTMLElement {
           top: -1px;
         }
 
+        /* ── Right side ── */
         .htb-nav-right {
           display: flex;
           align-items: center;
@@ -126,7 +145,7 @@ class HTBNav extends HTMLElement {
         }
         .htb-picks-btn:hover { opacity: .85; }
 
-        /* Hamburger — mobile only */
+        /* ── Hamburger ── */
         .htb-hamburger {
           display: none;
           flex-direction: column;
@@ -141,69 +160,87 @@ class HTBNav extends HTMLElement {
           display: block;
           width: 22px;
           height: 2px;
-          background: #888;
+          background: #666;
           border-radius: 2px;
           transition: background .15s;
         }
         .htb-hamburger:hover span { background: #fff; }
 
-        /* Mobile drawer */
+        /* ── Mobile drawer ── */
         .htb-mobile-menu {
           display: none;
           flex-direction: column;
           background: #0f0f0f;
-          border-bottom: 1px solid #222;
-          padding: 12px 16px 16px;
-          gap: 4px;
+          border-bottom: 1px solid #1e1e1e;
+          padding: 10px 14px 14px;
+          gap: 2px;
           font-family: 'Inter', system-ui, sans-serif;
         }
         .htb-mobile-menu.open { display: flex; }
+
         .htb-mobile-menu .nav-link {
           font-size: 14px;
           padding: 10px 14px;
           border-radius: 8px;
-          color: #888;
+          color: #666;
+          letter-spacing: .06em;
         }
         .htb-mobile-menu .nav-link:hover,
-        .htb-mobile-menu .nav-link.nav-active { background: #1a1a1a; color: #fff; }
+        .htb-mobile-menu .nav-link.nav-active {
+          background: #1a1a1a;
+          color: #fff;
+        }
+        .htb-mobile-menu .nav-link.nav-active::after {
+          display: none;
+        }
 
-        @media (max-width: 680px) {
-          .htb-links      { display: none; }
-          .htb-picks-btn  { display: none; }
-          .htb-hamburger  { display: flex; }
-          .htb-brand      { margin-right: auto; }
+        .htb-mobile-picks {
+          margin-top: 8px;
+          padding: 11px 14px;
+          border-radius: 8px;
+          background: #f0b429;
+          color: #000;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: .07em;
+          text-transform: uppercase;
+          text-decoration: none;
+          text-align: center;
+          display: block;
+          transition: opacity .15s;
+        }
+        .htb-mobile-picks:hover { opacity: .88; }
+
+        @media (max-width: 720px) {
+          .htb-links     { display: none; }
+          .htb-picks-btn { display: none; }
+          .htb-hamburger { display: flex; }
+          .htb-brand     { margin-right: auto; }
         }
       </style>
 
-      <!-- ── Desktop bar ────────────────────────── -->
+      <!-- ── Desktop bar ── -->
       <div class="htb-nav-bar">
         <a href="/" class="htb-brand">Hammer<em>Time</em>Bet</a>
 
         <nav class="htb-links" aria-label="Main navigation">
-          ${this._link('home', 'Home',  current)}
-          ${this._link('mlb',  'MLB',   current)}
-          ${this._link('nba',  'NBA',   current)}
-          ${this._link('nfl',  'NFL',   current)}
-          ${this._link('nhl',  'NHL',   current)}
-          ${this._link('golf', 'Golf',  current)}
+          ${desktopLinks}
         </nav>
 
         <div class="htb-nav-right">
           <a href="/#picks" class="htb-picks-btn">Today's Picks</a>
-          <button class="htb-hamburger" id="htb-menu-btn" aria-label="Open menu" aria-expanded="false">
+          <button class="htb-hamburger" id="htb-menu-btn"
+                  aria-label="Open menu" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
         </div>
       </div>
 
-      <!-- ── Mobile drawer ──────────────────────── -->
-      <div class="htb-mobile-menu" id="htb-mobile-menu" role="navigation" aria-label="Mobile navigation">
-        ${this._link('home', 'Home',  current)}
-        ${this._link('mlb',  'MLB',   current)}
-        ${this._link('nba',  'NBA',   current)}
-        ${this._link('nfl',  'NFL',   current)}
-        ${this._link('nhl',  'NHL',   current)}
-        ${this._link('golf', 'Golf',  current)}
+      <!-- ── Mobile drawer ── -->
+      <div class="htb-mobile-menu" id="htb-mobile-menu"
+           role="navigation" aria-label="Mobile navigation">
+        ${mobileLinks}
+        <a href="/#picks" class="htb-mobile-picks">Today's Picks</a>
       </div>
     `;
   }
@@ -215,17 +252,15 @@ class HTBNav extends HTMLElement {
 
     btn.addEventListener('click', () => {
       const isOpen = menu.classList.toggle('open');
-      btn.setAttribute('aria-expanded', isOpen);
+      btn.setAttribute('aria-expanded', String(isOpen));
     });
 
-    // Close on outside click
-    document.addEventListener('click', (e) => {
+    document.addEventListener('click', e => {
       if (!this.contains(e.target)) menu.classList.remove('open');
     }, { passive: true });
 
-    // Close on route link click
-    menu.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', () => menu.classList.remove('open'));
+    menu.querySelectorAll('.nav-link, .htb-mobile-picks').forEach(el => {
+      el.addEventListener('click', () => menu.classList.remove('open'));
     });
   }
 }
