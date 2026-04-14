@@ -556,18 +556,47 @@ class HTBLiveGames extends HTMLElement {
     this._refresh = parseInt(this.getAttribute('refresh') || '30');
     this._golfData = null;
 
-    this.innerHTML = `<div class="htb-loading"><div class="htb-spinner"></div>Loading live scores…</div>`;
+    // Render sample data immediately — no network wait, page looks functional at once
+    this._renderSample();
+
+    // Then fetch live data and update in background
     this._load();
     this._timer = setInterval(() => this._load(), this._refresh * 1000);
   }
 
   disconnectedCallback() { clearInterval(this._timer); }
 
+  /* Show mock cards instantly (no spinner, no wait) */
+  _renderSample() {
+    const teamSports = this._sports.filter(s => s !== 'golf');
+    const hasGolf    = this._sports.includes('golf');
+
+    const ms = (window.HTBData?.mock?.scores) || HTB_MOCK_SCORES;
+    const mo = (window.HTBData?.mock?.odds)   || HTB_DK_MOCK;
+    const mg = (window.HTBData?.mock?.golf)   || HTB_MOCK_GOLF;
+
+    const teamCards = teamSports.flatMap(sport => {
+      const games = ms[sport] || [];
+      const odds  = mo[sport] || [];
+      return games.map(g => _gameCard(g, _matchOdds(g, odds)));
+    });
+    const golfCards = hasGolf ? [_golfCard(mg)] : [];
+    const all = [...teamCards, ...golfCards];
+
+    if (!all.length) return;
+
+    this._golfData = mg;
+    this.innerHTML = `
+      <div class="htb-lg-grid">${all.join('')}</div>
+      <div class="htb-timestamp">Sample data · checking for live updates…</div>`;
+    this._wireButtons();
+  }
+
   async _load() {
     const teamSports = this._sports.filter(s => s !== 'golf');
     const hasGolf    = this._sports.includes('golf');
 
-    // Fetch all in parallel
+    // Fetch all in parallel — each sport falls back to mock on error or off-season
     const [teamResults, golfData] = await Promise.all([
       Promise.all(teamSports.map(async sport => {
         const [games, odds] = await Promise.all([_fetchScores(sport), _fetchOdds(sport)]);
@@ -590,7 +619,7 @@ class HTBLiveGames extends HTMLElement {
     const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     this.innerHTML = `
       <div class="htb-lg-grid">${all.join('')}</div>
-      <div class="htb-timestamp">Updated ${ts} · Auto-refreshes every ${this._refresh}s</div>`;
+      <div class="htb-timestamp">Updated ${ts} · ESPN scores · Sample odds · Auto-refreshes every ${this._refresh}s</div>`;
 
     this._wireButtons();
   }
