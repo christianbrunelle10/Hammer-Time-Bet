@@ -15,7 +15,7 @@
  *
  * Data priority:
  *   1. window.HTBData (data.js) when available
- *   2. Internal ESPN fetch + DK mock fallback
+ *   2. Internal ESPN fetch + odds mock fallback
  */
 
 /* ============================================================
@@ -317,7 +317,7 @@ const HTB_MOCK_GOLF = {
   ],
 };
 
-const HTB_DK_MOCK = {
+const HTB_ODDS_MOCK = {
   mlb: [
     { awayAbbr:'TEX', homeAbbr:'LAD', ml:{ away:'+145', home:'-165' }, line:{ away:'+1.5 (-125)', home:'-1.5 (+105)' }, total:{ val:'8.5'  }, lineMove:{ open:'-155', current:'-165', dir:'away' } },
     { awayAbbr:'COL', homeAbbr:'SD',  ml:{ away:'+165', home:'-195' }, line:{ away:'+1.5 (-140)', home:'-1.5 (+120)' }, total:{ val:'10.5' }, lineMove:{ open:'-175', current:'-195', dir:'away' } },
@@ -368,7 +368,7 @@ async function _fetchScores(sport) {
 
 async function _fetchOdds(sport) {
   if (window.HTBData) return HTBData.fetchOdds(sport);
-  return HTB_DK_MOCK[sport] || [];
+  return HTB_ODDS_MOCK[sport] || [];
 }
 
 async function _fetchGolf() {
@@ -492,7 +492,7 @@ function _gameCard(game, odds) {
             data-sport="${game.sport.toLowerCase()}"
             data-away="${game.away.name}"
             data-home="${game.home.name}">Box Score</button>
-          <button class="htb-btn htb-btn-bet">Bet on DK →</button>
+          <button class="htb-btn htb-btn-bet">View Odds</button>
         </div>
       </div>
     </div>`;
@@ -536,12 +536,12 @@ function _golfCard(data) {
         <div class="htb-golf-course">${tournament.course || ''}</div>
         <div class="htb-golf-lb">${leaderboardRows}</div>
         ${topOdds.length ? `
-          <div class="htb-odd-lbl" style="margin-bottom:6px">DK Winner Odds</div>
+          <div class="htb-odd-lbl" style="margin-bottom:6px">Winner Odds</div>
           <div class="htb-odds-grid-2">${oddsHTML}</div>
         ` : ''}
         <div class="htb-actions">
           <button class="htb-btn htb-btn-box htb-btn-golf-lb">Full Leaderboard</button>
-          <button class="htb-btn htb-btn-bet">Bet on DK →</button>
+          <button class="htb-btn htb-btn-bet">View Odds</button>
         </div>
       </div>
     </div>`;
@@ -572,7 +572,7 @@ class HTBLiveGames extends HTMLElement {
     const hasGolf    = this._sports.includes('golf');
 
     const ms = (window.HTBData?.mock?.scores) || HTB_MOCK_SCORES;
-    const mo = (window.HTBData?.mock?.odds)   || HTB_DK_MOCK;
+    const mo = (window.HTBData?.mock?.odds)   || HTB_ODDS_MOCK;
     const mg = (window.HTBData?.mock?.golf)   || HTB_MOCK_GOLF;
 
     const teamCards = teamSports.flatMap(sport => {

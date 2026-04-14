@@ -248,7 +248,7 @@
 
   /* ============================================================
      MOCK DATA
-     Mirrors live ESPN + DK shapes exactly.
+     Mirrors live ESPN + odds shapes exactly.
      Displayed when the real API returns 0 events (off-season)
      or when a network error occurs.
      ============================================================ */
