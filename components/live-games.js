@@ -586,7 +586,7 @@ class HTBLiveGames extends HTMLElement {
       return games.map(g => _gameCard(g, _matchOdds(g, odds)));
     });
     const golfCards = hasGolf ? [_golfCard(mg)] : [];
-    const all = [...teamCards, ...golfCards];
+    let all = [...teamCards, ...golfCards];
 
     if (!all.length) return;
     if (this._max > 0) all = all.slice(0, this._max);
