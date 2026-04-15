@@ -1,10 +1,10 @@
 /**
  * HammerTimeBet — Reusable Navigation Component
- * Usage: <script src="/components/nav.js"></script>
+ * Usage: <script src="../components/nav.js"></script>
  *        <htb-nav></htb-nav>
  *
- * Active link is detected automatically from window.location.pathname.
- * Override: <htb-nav active="mlb"></htb-nav>
+ * Paths are computed relative to current page depth so the nav
+ * works on GitHub Pages project sites (no custom domain needed).
  */
 
 class HTBNav extends HTMLElement {
@@ -18,15 +18,23 @@ class HTBNav extends HTMLElement {
   }
 
   _detectActive(path) {
-    if (path === '/' || path.endsWith('index.html') && !path.includes('/mlb') && !path.includes('/nba') && !path.includes('/nfl') && !path.includes('/nhl') && !path.includes('/ncaaf') && !path.includes('/golf')) return 'home';
+    if (path === '/' || (path.endsWith('index.html') && !path.includes('/mlb') && !path.includes('/nba') && !path.includes('/nfl') && !path.includes('/nhl') && !path.includes('/ncaaf') && !path.includes('/golf'))) return 'home';
     const sports = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf'];
-    return sports.find(s => path.includes(s)) || 'home';
+    return sports.find(s => path.includes(`/${s}/`) || path.includes(`/${s}?`) || path.endsWith(`/${s}`)) || 'home';
+  }
+
+  /* Compute relative href that works from any depth on GitHub Pages */
+  _href(key) {
+    const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+    const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf', 'game'];
+    const inSub   = subDirs.includes(segs[segs.length - 1]);
+    if (key === 'home') return inSub ? '../' : './';
+    return inSub ? `../${key}/` : `${key}/`;
   }
 
   _link(key, label, current) {
     const isActive = key === current;
-    const href     = key === 'home' ? '/' : `/${key}`;
-    return `<a href="${href}" class="nav-link${isActive ? ' nav-active' : ''}">${label}</a>`;
+    return `<a href="${this._href(key)}" class="nav-link${isActive ? ' nav-active' : ''}">${label}</a>`;
   }
 
   _template(current) {
@@ -41,6 +49,12 @@ class HTBNav extends HTMLElement {
     ];
     const desktopLinks = links.map(([k, l]) => this._link(k, l, current)).join('');
     const mobileLinks  = links.map(([k, l]) => this._link(k, l, current)).join('');
+
+    /* Today's Picks always goes to the home page picks section */
+    const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+    const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf', 'game'];
+    const inSub   = subDirs.includes(segs[segs.length - 1]);
+    const picksHref = inSub ? '../#picks' : './#picks';
 
     return `
       <style>
@@ -221,14 +235,14 @@ class HTBNav extends HTMLElement {
 
       <!-- ── Desktop bar ── -->
       <div class="htb-nav-bar">
-        <a href="/" class="htb-brand">Hammer<em>Time</em>Bet</a>
+        <a href="${this._href('home')}" class="htb-brand">Hammer<em>Time</em>Bet</a>
 
         <nav class="htb-links" aria-label="Main navigation">
           ${desktopLinks}
         </nav>
 
         <div class="htb-nav-right">
-          <a href="/#picks" class="htb-picks-btn">Today's Picks</a>
+          <a href="${picksHref}" class="htb-picks-btn">Today's Picks</a>
           <button class="htb-hamburger" id="htb-menu-btn"
                   aria-label="Open menu" aria-expanded="false">
             <span></span><span></span><span></span>
@@ -240,7 +254,7 @@ class HTBNav extends HTMLElement {
       <div class="htb-mobile-menu" id="htb-mobile-menu"
            role="navigation" aria-label="Mobile navigation">
         ${mobileLinks}
-        <a href="/#picks" class="htb-mobile-picks">Today's Picks</a>
+        <a href="${picksHref}" class="htb-mobile-picks">Today's Picks</a>
       </div>
     `;
   }

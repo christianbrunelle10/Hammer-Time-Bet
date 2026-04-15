@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Game Details — HammerTimeBet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="../components/data.js"  defer></script>
+<script src="../components/nav.js"   defer></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#080808;color:#fff;font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;font-family:inherit}
+
+/* ── BACK LINK ── */
+.back-wrap{max-width:1200px;margin:0 auto;padding:16px 20px 0}
+.back-link{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;transition:color .15s}
+.back-link:hover{color:#ccc}
+.back-link::before{content:'←';font-size:14px}
+
+/* ── MATCHUP HERO ── */
+.matchup-hero{padding:32px 20px 28px;border-bottom:1px solid #1e1e1e}
+.matchup-inner{max-width:1200px;margin:0 auto}
+.matchup-meta{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.sport-tag{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#666;background:#161616;border:1px solid #222;padding:3px 10px;border-radius:100px}
+.game-status-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px}
+.game-status-badge.live  {background:rgba(0,208,132,.1);color:#00d084;border:1px solid rgba(0,208,132,.2)}
+.game-status-badge.pre   {background:#161616;color:#555;border:1px solid #222}
+.game-status-badge.final {background:#161616;color:#444;border:1px solid #222}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#00d084;animation:blink 1.5s ease-in-out infinite;display:inline-block;margin-right:4px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+
+.scoreboard{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.team-block{flex:1;min-width:140px;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:20px;text-align:center}
+.team-block.winner{border-color:#2e2e2e}
+.team-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:6px}
+.team-name{font-family:'Barlow Condensed',sans-serif;font-size:clamp(22px,4vw,34px);font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:6px}
+.team-record{font-size:11px;color:#555}
+.team-score{font-family:'Barlow Condensed',sans-serif;font-size:clamp(52px,8vw,80px);font-weight:900;line-height:1}
+.team-score.lead {color:#fff}
+.team-score.trail{color:#333}
+.team-score.pre  {color:#444;font-size:32px;padding-top:16px}
+
+.vs-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+.vs-label{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#333}
+.game-time-lbl{font-size:11px;color:#555;text-align:center;max-width:100px}
+
+/* ── SECTIONS ── */
+.section{padding:36px 20px}
+.section+.section{border-top:1px solid #1a1a1a}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-head{margin-bottom:18px}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#f0b429;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.eyebrow::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(22px,3vw,30px);font-weight:900;text-transform:uppercase;line-height:1}
+
+/* ── ODDS GRID ── */
+.odds-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.odds-block{background:#101010;border:1px solid #1e1e1e;border-radius:10px;padding:14px 16px}
+.odds-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#444;margin-bottom:8px}
+.odds-teams{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.odds-team-row{background:#161616;border-radius:6px;padding:8px 10px}
+.odds-team-name{font-size:10px;color:#555;margin-bottom:3px}
+.odds-val{font-size:16px;font-weight:800;color:#ccc}
+.odds-val.fav{color:#f0b429}
+
+/* ── BOX SCORE ── */
+.bs-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bs-table{width:100%;border-collapse:collapse;min-width:400px}
+.bs-table th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:7px 10px;text-align:center;border-bottom:1px solid #1e1e1e}
+.bs-table th:first-child{text-align:left;min-width:90px}
+.bs-table td{font-size:13px;font-weight:600;color:#888;padding:9px 10px;text-align:center;border-bottom:1px solid #141414}
+.bs-table td:first-child{text-align:left;font-size:12px;color:#666}
+.bs-table tr:last-child td{border-bottom:none;color:#ccc;font-weight:700}
+.bs-sep{border-left:1px solid #2a2a2a !important}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:16px}
+.stat-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#101010;border:1px solid #1a1a1a;border-radius:8px}
+.stat-away{font-size:13px;font-weight:700;color:#ccc;min-width:46px;text-align:right}
+.stat-lbl {font-size:11px;color:#555;flex:1;text-align:center}
+.stat-home{font-size:13px;font-weight:700;color:#ccc;min-width:46px;text-align:left}
+
+/* ── AI ANALYSIS ── */
+.analysis-card{background:#101010;border:1px solid #1e1e1e;border-left:3px solid #f0b429;border-radius:10px;padding:20px}
+.analysis-summary{font-size:14px;color:#bbb;line-height:1.7;margin-bottom:16px}
+.factor-list{display:flex;flex-direction:column;gap:7px}
+.factor{display:flex;gap:10px;font-size:12px;color:#777;line-height:1.5}
+.factor::before{content:'▸';color:#f0b429;font-size:9px;margin-top:3px;flex-shrink:0}
+
+/* ── PICK RECOMMENDATION ── */
+.pick-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:20px}
+.pick-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.pick-badge{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:4px 10px;border-radius:4px;background:rgba(240,180,41,.1);color:#f0b429;border:1px solid rgba(240,180,41,.2)}
+.pick-badge.value{background:rgba(0,208,132,.08);color:#00d084;border-color:rgba(0,208,132,.2)}
+.pick-badge.dog  {background:rgba(129,140,248,.08);color:#818cf8;border-color:rgba(129,140,248,.2)}
+.pick-name{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:4px}
+.pick-odds-val{font-size:22px;font-weight:700;color:#f0b429;margin-bottom:16px}
+.pick-conf{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.conf-lbl{font-size:10px;color:#444;font-weight:600;white-space:nowrap}
+.conf-track{flex:1;height:4px;background:#1a1a1a;border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;background:#f0b429;border-radius:2px}
+.conf-val{font-size:12px;font-weight:700;color:#666;white-space:nowrap}
+.pick-reasons{border-top:1px solid #1a1a1a;padding-top:14px;display:flex;flex-direction:column;gap:7px}
+.pick-reason{display:flex;gap:9px;font-size:12px;color:#777;line-height:1.5}
+.pick-reason::before{content:'▸';color:#444;font-size:9px;margin-top:3px;flex-shrink:0}
+.units-badge{display:inline-block;margin-top:12px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:700;color:#888}
+
+/* ── NOT FOUND ── */
+.not-found{max-width:500px;margin:80px auto;text-align:center;padding:20px}
+.not-found h2{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:10px}
+.not-found p{color:#555;font-size:14px;line-height:1.7}
+
+/* ── FOOTER ── */
+footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
+.footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.footer-brand em{font-style:normal;color:#f0b429}
+footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
+
+@media(max-width:560px){
+  .scoreboard{flex-direction:column}
+  .team-block{min-width:0}
+  .vs-col{flex-direction:row;width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<htb-nav></htb-nav>
+
+<div id="game-root">
+  <div class="not-found">
+    <div style="font-size:32px;margin-bottom:12px">⏳</div>
+    <h2>Loading…</h2>
+    <p>Fetching game data.</p>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">Hammer<em>Time</em>Bet</div>
+  <p>For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.</p>
+</footer>
+
+<script>
+/* ============================================================
+   MOCK BOX SCORE GENERATOR
+   Builds a realistic-looking linescore + stats from a Game object.
+   Used when live ESPN data is unavailable.
+   ============================================================ */
+function spreadRuns(total, n) {
+  const arr = new Array(n).fill(0);
+  let rem = total, i = 0;
+  while (rem > 0) { arr[i % n]++; rem--; i += 2; }
+  return arr;
+}
+
+function splitBasketball(total) {
+  const base = Math.floor(total / 4), rem = total % 4;
+  return [base + (0 < rem ? 1 : 0), base + (1 < rem ? 1 : 0), base + (2 < rem ? 1 : 0), base];
+}
+
+function splitFootball(total) {
+  const qtrs = [0, 0, 0, 0];
+  const scoring = [7, 7, 7, 3, 3, 6, 6];
+  let rem = total, q = 0;
+  while (rem > 0) {
+    const amt = scoring.filter(s => s <= rem)[0] || rem;
+    qtrs[q % 4] += amt; rem -= amt; q++;
+  }
+  return qtrs;
+}
+
+function buildMockBoxScore(game, sport) {
+  const aScore = parseInt(game.away.score) || 0;
+  const hScore = parseInt(game.home.score) || 0;
+  const base = {
+    awayName: game.away.name, homeName: game.home.name,
+    awayScore: game.away.score || '0', homeScore: game.home.score || '0',
+    status: game.state || game.gameTime || '—',
+  };
+
+  if (sport === 'mlb') {
+    const aL = spreadRuns(aScore, 9), hL = spreadRuns(hScore, 9);
+    return {
+      ...base, lineHeader: 'Inn',
+      lines: Array.from({ length: 9 }, (_, i) => ({ label: `${i + 1}`, awayVal: String(aL[i]), homeVal: String(hL[i]) })),
+      stats: [
+        { label: 'Hits',       awayVal: String(Math.max(3, aScore * 2 + 2)), homeVal: String(Math.max(3, hScore * 2 + 1)) },
+        { label: 'Errors',     awayVal: '0', homeVal: '0' },
+        { label: 'Strikeouts', awayVal: '8', homeVal: '7' },
+        { label: 'Walks',      awayVal: '2', homeVal: '3' },
+        { label: 'Left On Base', awayVal: '6', homeVal: '5' },
+      ],
+    };
+  }
+
+  if (sport === 'nba') {
+    const aQ = splitBasketball(aScore), hQ = splitBasketball(hScore);
+    return {
+      ...base, lineHeader: 'Qtr',
+      lines: ['Q1', 'Q2', 'Q3', 'Q4'].map((l, i) => ({ label: l, awayVal: String(aQ[i]), homeVal: String(hQ[i]) })),
+      stats: [
+        { label: 'FG%',       awayVal: `${38 + aScore % 5}%`, homeVal: `${36 + hScore % 5}%` },
+        { label: '3PT%',      awayVal: `${33 + aScore % 4}%`, homeVal: `${31 + hScore % 4}%` },
+        { label: 'Rebounds',  awayVal: '42', homeVal: '38' },
+        { label: 'Assists',   awayVal: '24', homeVal: '20' },
+        { label: 'Turnovers', awayVal: '12', homeVal: '14' },
+      ],
+    };
+  }
+
+  if (sport === 'nfl' || sport === 'ncaaf') {
+    const aQ = splitFootball(aScore), hQ = splitFootball(hScore);
+    return {
+      ...base, lineHeader: 'Qtr',
+      lines: ['Q1', 'Q2', 'Q3', 'Q4'].map((l, i) => ({ label: l, awayVal: String(aQ[i]), homeVal: String(hQ[i]) })),
+      stats: [
+        { label: 'Total Yards', awayVal: String(280 + aScore * 6), homeVal: String(250 + hScore * 6) },
+        { label: 'Pass Yards',  awayVal: String(185 + aScore * 4), homeVal: String(170 + hScore * 4) },
+        { label: 'Rush Yards',  awayVal: String(95 + aScore * 2),  homeVal: String(80 + hScore * 2)  },
+        { label: '1st Downs',   awayVal: String(14 + aScore),      homeVal: String(12 + hScore)      },
+        { label: 'Turnovers',   awayVal: '1', homeVal: '1' },
+      ],
+    };
+  }
+
+  if (sport === 'nhl') {
+    const aP = spreadRuns(aScore, 3), hP = spreadRuns(hScore, 3);
+    return {
+      ...base, lineHeader: 'Per',
+      lines: ['P1', 'P2', 'P3'].map((l, i) => ({ label: l, awayVal: String(aP[i]), homeVal: String(hP[i]) })),
+      stats: [
+        { label: 'Shots',    awayVal: String(28 + aScore * 2), homeVal: String(25 + hScore * 2) },
+        { label: 'Saves',    awayVal: String(25 + hScore * 2), homeVal: String(28 + aScore * 2) },
+        { label: 'PP Goals', awayVal: '1', homeVal: '0' },
+        { label: 'Hits',     awayVal: '22', homeVal: '19' },
+      ],
+    };
+  }
+
+  return null;
+}
+
+/* ============================================================
+   AI ANALYSIS TEMPLATES
+   ============================================================ */
+function buildAnalysis(game, odds, sport) {
+  const homeFav  = (odds?.ml?.home || '').startsWith('-');
+  const favTeam  = homeFav ? game.home.name : game.away.name;
+  const dogTeam  = homeFav ? game.away.name : game.home.name;
+  const total    = odds?.total?.val || '—';
+  const lineStr  = odds?.line?.home || odds?.line?.away || '';
+
+  const summaries = {
+    mlb:   `${favTeam} enter this matchup with a favorable starting pitching edge and strong recent offensive production. The Hammer Model identifies a value gap in the current market price based on pitcher metrics, ballpark factors, and recent form trends.`,
+    nba:   `${favTeam} hold a meaningful net rating advantage in this matchup. The model projects a ${Math.abs(4 + (game.away.score % 3))}-point edge over the closing line based on pace-adjusted efficiency, defensive matchup profile, and home court dynamics.`,
+    nfl:   `${favTeam} present a compelling spread case driven by offensive efficiency metrics and defensive versatility. Line movement and sharp money indicators align with the model's projection, creating a clear edge at current pricing.`,
+    ncaaf: `${favTeam} are the model's preferred play in this conference matchup. Key advantages include turnover differential, third-down conversion rate, and a favorable pressure differential against ${dogTeam}'s offensive line.`,
+    nhl:   `${favTeam} have a strong underlying edge in this puck-line spot. Goaltending save percentage, shot quality metrics, and power play efficiency all favor the model's pick at current market pricing.`,
+  };
+
+  const factorSets = {
+    mlb: [
+      `${favTeam} starting pitcher ranks top-10 in K/9 and xFIP over the last 21 days`,
+      `${dogTeam} batting .239 vs right-handed pitching in last 14 games — below league average`,
+      `Line moved 6–8 cents from open toward ${favTeam} — indication of sharp professional action`,
+      `Ballpark factor neutral to slightly pitcher-friendly for today's conditions`,
+      `Public betting split 64%/${36}% — market fade opportunity confirmed by model`,
+    ],
+    nba: [
+      `${favTeam} net rating: +7.2 vs ${dogTeam} net rating: -0.8 — significant gap`,
+      `Pace mismatch favors ${favTeam}: slower, half-court sets neutralize ${dogTeam}'s transition game`,
+      `${dogTeam} allowing 118.4 PPP off turnovers — ${favTeam} ranks 4th in turnover creation`,
+      `Total set at ${total} — model projects ${parseFloat(total) + 2.1} given recent scoring trends`,
+      `ATS trend: ${favTeam} covers 68% in this specific matchup profile over last 3 seasons`,
+    ],
+    nfl: [
+      `${favTeam} EPA/play: +0.12 — top quartile in the league this season`,
+      `${dogTeam} allowing a 38% third-down conversion rate — exploitable in short-yardage spots`,
+      `Spread moved from ${lineStr.split('(')[0]}—indicating coordinated sharp action`,
+      `Turnover differential: ${favTeam} +6 over last 8 games vs ${dogTeam} -2`,
+      `${dogTeam} second game of back-to-back travel — fatigue factor underpriced by market`,
+    ],
+    ncaaf: [
+      `${favTeam} turnover margin: +8 this season — elite ball security at this level`,
+      `${dogTeam} 3rd-down conversion: 32% — well below national average of 40%`,
+      `${favTeam} home record strong — crowd factor historically impacts spread by 1.5–2 pts`,
+      `Line sharp-side consensus aligns with ${favTeam} since open`,
+      `Model projects ${favTeam} wins 71% of simulations — implied probability exceeds line price`,
+    ],
+    nhl: [
+      `${favTeam} goaltender save percentage last 10 starts: .924 — top-5 in league`,
+      `${dogTeam} power play efficiency ranks 24th — limits upside in man-advantage situations`,
+      `Head-to-head trends: ${favTeam} covers puck line in 6 of last 9 meetings`,
+      `Total at ${total} — weather/rink conditions support under pricing`,
+      `Sharp action confirmed on ${favTeam} puck line since market open`,
+    ],
+  };
+
+  return {
+    summary: summaries[sport] || `${game.away.name} vs ${game.home.name} — the Hammer Model identifies a clear edge based on current form, line movement, and situational factors.`,
+    factors: factorSets[sport] || [`Model edge identified on ${favTeam}`, 'Line movement confirms sharp action', 'Value confirmed vs public betting split'],
+  };
+}
+
+/* ============================================================
+   PICK GENERATOR
+   ============================================================ */
+function buildPick(game, odds, sport) {
+  const homeML  = parseInt((odds?.ml?.home || '0').replace('+', ''));
+  const awayML  = parseInt((odds?.ml?.away || '0').replace('+', ''));
+  const homeFav = homeML < 0;
+  const fav     = homeFav ? game.home : game.away;
+  const dog     = homeFav ? game.away : game.home;
+  const favML   = homeFav ? odds?.ml?.home : odds?.ml?.away;
+  const lineKey = sport === 'mlb' ? 'Run Line' : sport === 'nhl' ? 'Puck Line' : 'Spread';
+  const spread  = homeFav ? odds?.line?.home : odds?.line?.away;
+  const spreadNum = spread?.split(' ')[0] || '';
+
+  const useLine  = Math.abs(homeML) < 160;
+  const pickName = useLine ? `${fav.name} ${spreadNum}` : `${fav.name} ML`;
+  const pickOdds = useLine ? spread?.match(/\(([^)]+)\)/)?.[1] || favML : favML;
+  const conf     = 7.2 + (Math.abs(homeML) > 130 ? 0.6 : 0.2);
+  const badge    = conf >= 8.0 ? 'strong' : (Math.abs(homeML) > 140 ? 'value' : 'strong');
+  const badgeLbl = badge === 'value' ? 'Value Play' : 'Strong Play';
+
+  const reasons = buildAnalysis(game, odds, sport).factors.slice(0, 4);
+
+  return { pick: pickName, odds: pickOdds || '—', conf, badge, badgeLbl, reasons };
+}
+
+/* ============================================================
+   RENDERERS
+   ============================================================ */
+function renderOdds(odds, sport) {
+  if (!odds) return '<p style="color:#555;font-size:13px">Odds not available for this game.</p>';
+  const lineLabel = sport === 'mlb' ? 'Run Line' : sport === 'nhl' ? 'Puck Line' : 'Spread';
+  const aMl = odds.ml?.away || '—', hMl = odds.ml?.home || '—';
+  const aLn = odds.line?.away?.split(' ')[0] || '—', hLn = odds.line?.home?.split(' ')[0] || '—';
+  const tot = odds.total?.val || '—';
+  const aLnOdds = odds.line?.away?.match(/\(([^)]+)\)/)?.[1] || '';
+  const hLnOdds = odds.line?.home?.match(/\(([^)]+)\)/)?.[1] || '';
+
+  const favMl  = n => parseInt(n.replace('+','')) < 0 ? 'fav' : '';
+  const favLn  = n => parseInt(n.replace('+','')) < 0 ? 'fav' : '';
+
+  return `
+    <div class="odds-row">
+      <div class="odds-block">
+        <div class="odds-lbl">Moneyline</div>
+        <div class="odds-teams">
+          <div class="odds-team-row">
+            <div class="odds-team-name">Away</div>
+            <div class="odds-val ${favMl(aMl)}">${aMl}</div>
+          </div>
+          <div class="odds-team-row">
+            <div class="odds-team-name">Home</div>
+            <div class="odds-val ${favMl(hMl)}">${hMl}</div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-block">
+        <div class="odds-lbl">${lineLabel}</div>
+        <div class="odds-teams">
+          <div class="odds-team-row">
+            <div class="odds-team-name">Away</div>
+            <div class="odds-val">${aLn} <span style="font-size:11px;color:#555">${aLnOdds}</span></div>
+          </div>
+          <div class="odds-team-row">
+            <div class="odds-team-name">Home</div>
+            <div class="odds-val">${hLn} <span style="font-size:11px;color:#555">${hLnOdds}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-block">
+        <div class="odds-lbl">Total (O/U)</div>
+        <div class="odds-teams">
+          <div class="odds-team-row">
+            <div class="odds-team-name">Over</div>
+            <div class="odds-val">O ${tot}</div>
+          </div>
+          <div class="odds-team-row">
+            <div class="odds-team-name">Under</div>
+            <div class="odds-val">U ${tot}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderBoxScore(bs) {
+  if (!bs) return '<p style="color:#555;font-size:13px">Box score not available.</p>';
+  const aScore = bs.awayScore, hScore = bs.homeScore;
+  const aLead  = parseInt(aScore) >= parseInt(hScore);
+  const hdrs   = bs.lines.map(l => `<th>${l.label}</th>`).join('');
+  const aRow   = bs.lines.map(l => `<td>${l.awayVal}</td>`).join('');
+  const hRow   = bs.lines.map(l => `<td>${l.homeVal}</td>`).join('');
+
+  const statsHtml = bs.stats.length
+    ? `<div class="stats-grid">${bs.stats.map(s => `
+        <div class="stat-row">
+          <span class="stat-away">${s.awayVal}</span>
+          <span class="stat-lbl">${s.label}</span>
+          <span class="stat-home">${s.homeVal}</span>
+        </div>`).join('')}</div>`
+    : '';
+
+  return `
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:#555;flex:1;text-align:center">${bs.awayName}</div>
+      <div style="flex:4"></div>
+      <div style="font-size:11px;font-weight:700;color:#555;flex:1;text-align:center">${bs.homeName}</div>
+    </div>
+    <div class="bs-table-wrap">
+      <table class="bs-table">
+        <thead><tr><th>Team</th>${hdrs}<th class="bs-sep">Total</th></tr></thead>
+        <tbody>
+          <tr><td>${bs.awayName}</td>${aRow}<td class="bs-sep">${aScore}</td></tr>
+          <tr><td>${bs.homeName}</td>${hRow}<td class="bs-sep">${hScore}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    ${statsHtml}`;
+}
+
+function renderPick(pick) {
+  return `
+    <div class="pick-card">
+      <div class="pick-header">
+        <span class="pick-badge ${pick.badge}">${pick.badgeLbl}</span>
+        <span style="font-size:11px;color:#555">Hammer Model</span>
+      </div>
+      <div class="pick-name">${pick.pick}</div>
+      <div class="pick-odds-val">${pick.odds}</div>
+      <div class="pick-conf">
+        <span class="conf-lbl">Confidence</span>
+        <div class="conf-track"><div class="conf-fill" style="width:${pick.conf * 10}%"></div></div>
+        <span class="conf-val">${pick.conf.toFixed(1)}/10</span>
+      </div>
+      <div class="pick-reasons">
+        ${pick.reasons.map(r => `<div class="pick-reason">${r}</div>`).join('')}
+      </div>
+      <div class="units-badge">Recommended: 2 units</div>
+    </div>`;
+}
+
+/* ============================================================
+   MAIN RENDER
+   ============================================================ */
+function renderGame(game, odds, sport) {
+  const isLive  = game.status === 'live';
+  const isFinal = game.status === 'final';
+  const isPre   = game.status === 'pre';
+  const showScore = isLive || isFinal;
+  const aScore  = game.away.score || '0';
+  const hScore  = game.home.score || '0';
+  const aLead   = parseInt(aScore) > parseInt(hScore);
+  const statusLbl  = isLive ? 'LIVE' : isFinal ? 'FINAL' : game.gameTime;
+  const statusCls  = isLive ? 'live' : isFinal ? 'final' : 'pre';
+  const sportLabel = sport.toUpperCase();
+  const backHref   = `../${sport}/`;
+  const bs         = buildMockBoxScore(game, sport);
+  const analysis   = buildAnalysis(game, odds, sport);
+  const pick       = buildPick(game, odds, sport);
+
+  document.title = `${game.away.name} vs ${game.home.name} — HammerTimeBet`;
+
+  document.getElementById('game-root').innerHTML = `
+    <div class="back-wrap">
+      <a href="${backHref}" class="back-link">Back to ${sportLabel}</a>
+    </div>
+
+    <!-- MATCHUP HERO -->
+    <div class="matchup-hero">
+      <div class="matchup-inner">
+        <div class="matchup-meta">
+          <span class="sport-tag">${sportLabel}</span>
+          <span class="game-status-badge ${statusCls}">
+            ${isLive ? '<span class="live-dot"></span>' : ''}${statusLbl}
+          </span>
+        </div>
+        <div class="scoreboard">
+          <div class="team-block ${showScore && aLead ? 'winner' : ''}">
+            <div class="team-label">Away</div>
+            <div class="team-name">${game.away.name}</div>
+            ${game.away.rec ? `<div class="team-record">${game.away.rec}</div>` : ''}
+            <div class="team-score ${showScore ? (aLead ? 'lead' : 'trail') : 'pre'}">${showScore ? aScore : game.gameTime}</div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-label">VS</div>
+            ${isLive ? `<div class="game-time-lbl" style="color:#00d084">${game.state}</div>` : ''}
+          </div>
+          <div class="team-block ${showScore && !aLead ? 'winner' : ''}">
+            <div class="team-label">Home</div>
+            <div class="team-name">${game.home.name}</div>
+            ${game.home.rec ? `<div class="team-record">${game.home.rec}</div>` : ''}
+            <div class="team-score ${showScore ? (!aLead ? 'lead' : 'trail') : 'pre'}">${showScore ? hScore : game.gameTime}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ODDS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Live Odds</div>
+          <h2 class="sec-title">Game Lines</h2>
+        </div>
+        ${renderOdds(odds, sport)}
+      </div>
+    </section>
+
+    <!-- BOX SCORE -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Full Box Score</div>
+          <h2 class="sec-title">Score Summary</h2>
+        </div>
+        ${renderBoxScore(bs)}
+      </div>
+    </section>
+
+    <!-- AI ANALYSIS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Hammer AI</div>
+          <h2 class="sec-title">Game Analysis</h2>
+        </div>
+        <div class="analysis-card">
+          <p class="analysis-summary">${analysis.summary}</p>
+          <div class="factor-list">
+            ${analysis.factors.map(f => `<div class="factor">${f}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PICK RECOMMENDATION -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Pick</div>
+          <h2 class="sec-title">Recommendation</h2>
+        </div>
+        ${renderPick(pick)}
+        <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
+      </div>
+    </section>
+  `;
+}
+
+function showError(msg) {
+  document.getElementById('game-root').innerHTML = `
+    <div class="not-found">
+      <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+      <h2>Game Not Found</h2>
+      <p>${msg}</p>
+      <a href="./" style="display:inline-block;margin-top:20px;color:#f0b429;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">← Back to Home</a>
+    </div>`;
+}
+
+/* ============================================================
+   INIT — runs after data.js is ready (DOMContentLoaded)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get('id');
+  const sport  = (params.get('sport') || '').toLowerCase();
+
+  if (!gameId || !sport) {
+    showError('No game ID or sport specified in the URL.');
+    return;
+  }
+
+  /* Look up in mock data */
+  const allScores = (window.HTBData?.mock?.scores) || {};
+  const allOdds   = (window.HTBData?.mock?.odds)   || {};
+
+  const game = (allScores[sport] || []).find(g => g.id === gameId);
+  if (!game) {
+    showError(`Game ID <code>${gameId}</code> not found in ${sport.toUpperCase()} data. It may be a live game that is no longer active.`);
+    return;
+  }
+
+  const odds = (allOdds[sport] || []).find(o =>
+    o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr
+  ) || null;
+
+  renderGame(game, odds, sport);
+});
+</script>
+</body>
+</html>

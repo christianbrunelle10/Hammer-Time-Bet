@@ -152,7 +152,7 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
   <div class="section-inner">
     <div class="section-head">
       <div>
-        <div class="section-eyebrow">ESPN · Live Odds</div>
+        <div class="section-eyebrow">Live Scores · Live Odds</div>
         <h2 class="section-title">Tonight's NBA Games</h2>
       </div>
       <a href="#" class="see-all">Full Schedule →</a>
@@ -312,7 +312,7 @@ function renderBoxScore(data, teams) {
   if (!data) {
     bsBody.innerHTML = `<div class="bs-loading" style="flex-direction:column;gap:8px">
       <div>📡 Live box score unavailable</div>
-      <div style="font-size:11px;color:#444">ESPN data could not be loaded for this game.</div>
+      <div style="font-size:11px;color:#444">Live data unavailable for this game.</div>
     </div>`;
     return;
   }
@@ -395,7 +395,7 @@ function renderBoxScore(data, teams) {
 
 async function showBoxScore(gameId, teams) {
   bsTitle.textContent = teams.join(' vs ');
-  bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Fetching ESPN data…</div>`;
+  bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Loading game data…</div>`;
   openModal();
   const data = await fetchBoxScore(gameId);
   renderBoxScore(data, teams);

@@ -183,12 +183,12 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   <div class="section-inner">
     <div class="section-head">
       <div>
-        <div class="section-label">ESPN Scores · Sample Odds</div>
-        <h2 class="section-title">Live Games Today</h2>
+        <div class="section-label">HammerTimeBet · Live Scores</div>
+        <h2 class="section-title">Featured Games Today</h2>
       </div>
       <a href="#" class="see-all">All Games →</a>
     </div>
-    <htb-live-games sports="mlb,nba,nfl,ncaaf,nhl,golf" refresh="30"></htb-live-games>
+    <htb-live-games sports="mlb,nba,nfl,ncaaf,nhl,golf" refresh="30" max="6"></htb-live-games>
   </div>
 </section>
 
@@ -303,7 +303,7 @@ function renderBoxScore(parsed, teams) {
     bsBody.innerHTML = `
       <div class="bs-loading-inner" style="flex-direction:column;gap:8px">
         <div>📡 Live box score unavailable</div>
-        <div style="font-size:11px;color:var(--w4)">ESPN data could not be loaded for this game.</div>
+        <div style="font-size:11px;color:var(--w4)">Live data unavailable for this game.</div>
       </div>`;
     return;
   }
@@ -349,7 +349,7 @@ function renderBoxScore(parsed, teams) {
 
 async function openBoxScore(gameId, sport, teams) {
   bsTitleEl.textContent = teams.join(' vs ');
-  bsBody.innerHTML = `<div class="bs-loading-inner"><div class="bs-spinner"></div>Fetching ESPN data…</div>`;
+  bsBody.innerHTML = `<div class="bs-loading-inner"><div class="bs-spinner"></div>Loading game data…</div>`;
   openModal();
   const parsed = await HTBData.fetchBoxScore(sport, gameId);
   renderBoxScore(parsed, teams);

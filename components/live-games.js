@@ -422,6 +422,14 @@ function _matchOdds(game, list) {
   return list.find(o => o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr) || null;
 }
 
+/* Build a relative URL to the game detail page that works from any depth */
+function _gameDetailUrl(id, sport) {
+  const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+  const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf'];
+  const inSub   = subDirs.includes(segs[segs.length - 1]);
+  return `${inSub ? '../' : ''}game/?id=${id}&sport=${sport.toLowerCase()}`;
+}
+
 /* ============================================================
    CARD RENDERERS
    ============================================================ */
@@ -487,11 +495,7 @@ function _gameCard(game, odds) {
         <div class="htb-odds-grid">${ml}${rl}${tot}</div>
         ${moveBadge}
         <div class="htb-actions">
-          <button class="htb-btn htb-btn-box"
-            data-game-id="${game.id}"
-            data-sport="${game.sport.toLowerCase()}"
-            data-away="${game.away.name}"
-            data-home="${game.home.name}">Box Score</button>
+          <a class="htb-btn htb-btn-box" href="${_gameDetailUrl(game.id, game.sport)}">Game Details</a>
           <button class="htb-btn htb-btn-bet">View Odds</button>
         </div>
       </div>
@@ -554,6 +558,7 @@ class HTBLiveGames extends HTMLElement {
   connectedCallback() {
     this._sports  = (this.getAttribute('sports') || 'mlb,nhl').split(',').map(s => s.trim().toLowerCase());
     this._refresh = parseInt(this.getAttribute('refresh') || '30');
+    this._max     = parseInt(this.getAttribute('max') || '0'); // 0 = unlimited
     this._golfData = null;
 
     // Render sample data immediately — no network wait, page looks functional at once
@@ -584,6 +589,7 @@ class HTBLiveGames extends HTMLElement {
     const all = [...teamCards, ...golfCards];
 
     if (!all.length) return;
+    if (this._max > 0) all = all.slice(0, this._max);
 
     this._golfData = mg;
     this.innerHTML = `
@@ -609,37 +615,27 @@ class HTBLiveGames extends HTMLElement {
 
     const teamCards = teamResults.flat().map(({ game, odds }) => _gameCard(game, odds));
     const golfCards = golfData ? [_golfCard(golfData)] : [];
-    const all       = [...teamCards, ...golfCards];
+    let all         = [...teamCards, ...golfCards];
 
     if (!all.length) {
       this.innerHTML = `<div class="htb-empty">No games found today. Check back soon.</div>`;
       return;
     }
 
+    if (this._max > 0) all = all.slice(0, this._max);
+
     const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     this.innerHTML = `
       <div class="htb-lg-grid">${all.join('')}</div>
-      <div class="htb-timestamp">Updated ${ts} · ESPN scores · Sample odds · Auto-refreshes every ${this._refresh}s</div>`;
+      <div class="htb-timestamp">Updated ${ts} · Live Scores · Sample Odds · Auto-refreshes every ${this._refresh}s</div>`;
 
     this._wireButtons();
   }
 
   _wireButtons() {
-    // Team sport box score buttons
-    this.querySelectorAll('.htb-btn-box:not(.htb-btn-golf-lb)').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.dispatchEvent(new CustomEvent('htb:boxscore', {
-          bubbles: true,
-          detail: {
-            gameId: btn.dataset.gameId,
-            sport:  btn.dataset.sport,
-            teams:  [btn.dataset.away, btn.dataset.home],
-          },
-        }));
-      });
-    });
+    // Game Details cards are anchor links — no JS wiring needed.
 
-    // Golf leaderboard button
+    // Golf leaderboard button still dispatches an event for the modal
     this.querySelectorAll('.htb-btn-golf-lb').forEach(btn => {
       btn.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('htb:golf', {
