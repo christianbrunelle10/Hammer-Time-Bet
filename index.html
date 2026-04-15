@@ -98,6 +98,13 @@ button{cursor:pointer;border:none;font-family:inherit}
 .pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--w4);margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
 .pick-card:hover .pc-hint{opacity:1}
 
+/* ── RECORDS BAR ── */
+.records-bar{display:none;gap:24px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--b1);margin-bottom:8px}
+.rec-stat{text-align:center}
+.rec-val{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;line-height:1}
+.rec-val.g{color:var(--green)}
+.rec-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-top:3px}
+
 /* ── BOX SCORE MODAL ── */
 .bs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
 .bs-overlay.open{opacity:1;pointer-events:all}
@@ -199,9 +206,11 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
       <div>
         <div class="section-label">Hammer Model</div>
         <h2 class="section-title">Top Picks Today</h2>
+        <div id="picks-date" style="font-size:11px;color:var(--w4);margin-top:5px;letter-spacing:.04em"></div>
       </div>
       <a href="#" class="see-all">All Picks →</a>
     </div>
+    <div class="records-bar" id="records-bar"></div>
     <div class="picks-grid" id="top-picks-grid"></div>
   </div>
 </section>
@@ -244,21 +253,28 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
 
 <script>
 /* ============================================================
-   PICKS DATA  — update daily
+   DATE HELPERS
    ============================================================ */
-const TOP_PICKS = [
-  { sport:'MLB', matchup:'Rangers vs Dodgers', pick:'Dodgers ML',   odds:'-165', edge:'strong', edgeLabel:'Strong Play', conf:8.2, reasons:['Ace on mound — 11.4 K/9 in April','Rangers bottom-5 OPS last 14 days (.641)','Dodgers 8-2 at home this season','Model line: -190 — value at -165'] },
-  { sport:'NBA', matchup:'Celtics vs Knicks',  pick:'Celtics -4.5', odds:'-110', edge:'strong', edgeLabel:'Strong Play', conf:8.3, reasons:['Celtics +8.9 Net RTG vs Knicks +1.2','Tatum averaging 31.4 PPG over last 10','Boston 14-4 ATS as road favorites under 6'] },
-  { sport:'NFL', matchup:'Chiefs vs Bills',    pick:'Chiefs -2.5',  odds:'-110', edge:'strong', edgeLabel:'Strong Play', conf:8.4, reasons:['Mahomes 18-5 ATS as road fav under 3 pts','Chiefs DVOA 12.7 pts above Buffalo','Line moved from -3 → -2.5, take value now'] },
-  { sport:'NHL', matchup:'Flames vs Kraken',   pick:'Over 5.5',     odds:'-112', edge:'strong', edgeLabel:'Strong Play', conf:7.3, reasons:['Both offenses trending up last 7 games','Both starters allowed 3+ goals in 4 of last 6','Model total: 6.3'] },
-  { sport:'PGA', matchup:'Masters Tournament', pick:'Scheffler Win', odds:'+175', edge:'value',  edgeLabel:'Value Play',  conf:8.6, reasons:['5-shot lead entering final round','World #1 averaging +4.81 SG total','Ball striking ranks 1st in the field this week'] },
-];
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDateLabel(iso) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+}
 
-const DOG_PICKS = [
-  { sport:'MLB', matchup:'Astros vs Mariners',          pick:'Mariners ML',  odds:'+100', edge:'dog', edgeLabel:'Live Dog',      conf:6.8, reasons:['Mariners home dog — 57% cover rate this season','Astros starter shaky on the road in April','Best number on the board tonight'] },
-  { sport:'NHL', matchup:'Avalanche vs Golden Knights', pick:'Avalanche ML', odds:'+110', edge:'dog', edgeLabel:'Underdog Play', conf:6.5, reasons:["Avs at home — 12-5 this season",'VGK second game of back-to-back','+110 is a clear overlay vs model projection'] },
-  { sport:'NBA', matchup:'Celtics vs Knicks',           pick:'Knicks +4.5',  odds:'+105', edge:'dog', edgeLabel:'Live Dog',      conf:6.8, reasons:['Knicks cover 60% as home underdogs','MSG crowd factor is real — 24-7 at home outright','+105 is positive EV given model 42% win prob'] },
-];
+/* ============================================================
+   JSON LOADERS
+   Picks:   edit data/picks.json and commit to update daily.
+   Records: edit data/records.json and commit to update.
+   ============================================================ */
+async function loadJSON(path) {
+  try {
+    const r = await fetch(path, { cache: 'no-store' });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
 
 /* ============================================================
    PICK CARD RENDERER
@@ -281,6 +297,33 @@ function pickCardHTML(pick, isDog) {
       </div>
       <div class="pc-reasons">${pick.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
       <div class="pc-hint">View Full Analysis →</div>
+    </div>`;
+}
+
+/* ============================================================
+   RECORDS BAR
+   ============================================================ */
+function renderRecordsBar(records) {
+  const bar = document.getElementById('records-bar');
+  if (!bar || !records?.overall) return;
+  const o = records.overall;
+  bar.innerHTML = `
+    <div class="rec-stat"><div class="rec-val g">${o.winRate}</div><div class="rec-lbl">Win Rate</div></div>
+    <div class="rec-stat"><div class="rec-val">${o.record}</div><div class="rec-lbl">Record</div></div>
+    <div class="rec-stat"><div class="rec-val g">${o.units}</div><div class="rec-lbl">Units</div></div>
+    <div class="rec-stat"><div class="rec-val">${o.clv}</div><div class="rec-lbl">Avg CLV</div></div>`;
+  bar.style.display = 'flex';
+}
+
+/* ============================================================
+   PICKS FALLBACK
+   ============================================================ */
+function renderFallback(gridId) {
+  const el = document.getElementById(gridId);
+  if (el) el.innerHTML = `
+    <div style="grid-column:1/-1;background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:40px 20px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:var(--w3)">Today's picks are being generated.</div>
+      <div style="font-size:11px;color:var(--w4);margin-top:6px">Check back soon.</div>
     </div>`;
 }
 
@@ -385,10 +428,39 @@ document.addEventListener('htb:golf', e => {
 
 /* ============================================================
    INIT
+   Fetches data/picks.json and data/records.json on every load.
+   Picks are shown only when picks.date matches today's date.
+   To update daily: commit a new data/picks.json with today's date.
    ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('top-picks-grid').innerHTML = TOP_PICKS.map(p => pickCardHTML(p, false)).join('');
-  document.getElementById('dog-picks-grid').innerHTML = DOG_PICKS.map(p => pickCardHTML(p, true)).join('');
+document.addEventListener('DOMContentLoaded', async () => {
+  const today = todayISO();
+
+  const [picks, records] = await Promise.all([
+    loadJSON('data/picks.json'),
+    loadJSON('data/records.json'),
+  ]);
+
+  // Date label under section heading
+  const picksDate = document.getElementById('picks-date');
+  if (picksDate) {
+    picksDate.textContent = picks?.date ? formatDateLabel(picks.date) : formatDateLabel(today);
+  }
+
+  // Season records bar above picks grid
+  renderRecordsBar(records);
+
+  // Validate: picks must exist, match today, and have entries
+  if (!picks || picks.date !== today || !Array.isArray(picks.top) || !picks.top.length) {
+    renderFallback('top-picks-grid');
+    renderFallback('dog-picks-grid');
+    return;
+  }
+
+  document.getElementById('top-picks-grid').innerHTML =
+    picks.top.map(p => pickCardHTML(p, false)).join('');
+
+  document.getElementById('dog-picks-grid').innerHTML =
+    (picks.dogs || []).map(p => pickCardHTML(p, true)).join('');
 });
 </script>
 </body>
