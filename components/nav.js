@@ -29,7 +29,7 @@ class HTBNav extends HTMLElement {
     const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf', 'game'];
     const inSub   = subDirs.includes(segs[segs.length - 1]);
     if (key === 'home') return inSub ? '../' : './';
-    return inSub ? `../${key}/` : `${key}/`;
+    return inSub ? `../${key}/` : `./${key}/`;
   }
 
   _link(key, label, current) {
