@@ -67,6 +67,13 @@
   /* ============================================================
      FETCH HELPERS
      ============================================================ */
+  function _todayParam() {
+    const n = new Date();
+    const m = String(n.getMonth() + 1).padStart(2, '0');
+    const d = String(n.getDate()).padStart(2, '0');
+    return `${n.getFullYear()}${m}${d}`;
+  }
+
   async function _get(url) {
     const r = await fetch(url, { signal: AbortSignal.timeout(CONFIG.FETCH_TIMEOUT) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -409,13 +416,12 @@
     ---------------------------------------------------------- */
     async fetchScoreboard(sport) {
       const url = ESPN.scoreboard[sport];
-      if (!url) return MOCK.scores[sport] || [];
+      if (!url) return [];
       try {
-        const { events = [] } = await _get(url);
-        if (!events.length) throw new Error('no events');
+        const { events = [] } = await _get(`${url}?dates=${_todayParam()}`);
         return events.map(e => _parseEvent(e, sport));
       } catch {
-        return MOCK.scores[sport] || [];
+        return [];
       }
     },
 

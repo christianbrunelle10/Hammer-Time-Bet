@@ -284,6 +284,51 @@ const HTB_ESPN_SUMMARY = {
 const HTB_ODDS_PROXY = 'https://your-project.vercel.app/api/odds';
 
 /* ============================================================
+   SEASON WINDOWS
+   [month, day] (1-indexed). Spans the year boundary when
+   start-month > end-month (e.g. NFL Aug–Feb).
+   null = year-round (Golf).
+   ============================================================ */
+const HTB_SEASON_WINDOWS = {
+  mlb:   { start: [3, 20],  end: [11, 5]  }, // ~Mar 20 – Nov 5
+  nba:   { start: [10, 14], end: [6, 30]  }, // ~Oct 14 – Jun 30  (spans year)
+  nfl:   { start: [8,  1],  end: [2, 15]  }, // ~Aug 1  – Feb 15  (spans year)
+  ncaaf: { start: [8, 24],  end: [1, 25]  }, // ~Aug 24 – Jan 25  (spans year)
+  ncaam: { start: [11, 1],  end: [4,  8]  }, // ~Nov 1  – Apr 8   (spans year)
+  nhl:   { start: [10, 1],  end: [6, 30]  }, // ~Oct 1  – Jun 30  (spans year)
+  golf:  null,                                 // year-round
+};
+
+/* Heading text injected into the nearest .section-title element */
+const HTB_SPORT_TITLES = {
+  mlb:   { active: "Today's MLB Games",  offseason: 'MLB \u2014 Offseason'  },
+  nba:   { active: "Today's NBA Games",  offseason: 'NBA \u2014 Offseason'  },
+  nfl:   { active: "Today's NFL Games",  offseason: 'NFL \u2014 Offseason'  },
+  ncaaf: { active: "Today's CFB Games",  offseason: 'CFB \u2014 Offseason'  },
+  ncaam: { active: "Today's CBB Games",  offseason: 'CBB \u2014 Offseason'  },
+  nhl:   { active: "Today's NHL Games",  offseason: 'NHL \u2014 Offseason'  },
+  golf:  { active: 'PGA Tour',           offseason: 'PGA Tour'              },
+};
+
+function _isInSeason(sport) {
+  const win = HTB_SEASON_WINDOWS[sport];
+  if (!win) return true; // golf = always in season
+  const now   = new Date();
+  const cur   = (now.getMonth() + 1) * 100 + now.getDate();
+  const start = win.start[0] * 100 + win.start[1];
+  const end   = win.end[0]   * 100 + win.end[1];
+  // Wrap-around seasons (start > end numerically, e.g. NFL 801 > 215)
+  return start > end ? (cur >= start || cur <= end) : (cur >= start && cur <= end);
+}
+
+function _todayParam() {
+  const n = new Date();
+  const m = String(n.getMonth() + 1).padStart(2, '0');
+  const d = String(n.getDate()).padStart(2, '0');
+  return `${n.getFullYear()}${m}${d}`;
+}
+
+/* ============================================================
    MOCK DATA
    ============================================================ */
 const HTB_MOCK_SCORES = {
@@ -386,14 +431,15 @@ const HTB_ODDS_MOCK = {
    ============================================================ */
 async function _fetchScores(sport) {
   if (window.HTBData) return HTBData.fetchScoreboard(sport);
+  const url = HTB_ESPN[sport];
+  if (!url) return [];
   try {
-    const r = await fetch(HTB_ESPN[sport], { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error();
+    const r = await fetch(`${url}?dates=${_todayParam()}`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return [];
     const { events = [] } = await r.json();
-    if (!events.length) throw new Error();
     return events.map(e => _parseEvent(e, sport));
   } catch {
-    return HTB_MOCK_SCORES[sport] || [];
+    return [];
   }
 }
 
@@ -690,62 +736,53 @@ class HTBLiveGames extends HTMLElement {
     this._max     = parseInt(this.getAttribute('max') || '0'); // 0 = unlimited
     this._golfData = null;
 
-    // Render sample data immediately — no network wait, page looks functional at once
-    this._renderSample();
+    // Show loading state immediately; _load() will replace with live data or a status message
+    this.innerHTML = `<div class="htb-loading"><div class="htb-spinner"></div>Loading live scores\u2026</div>`;
 
-    // Then fetch live data and update in background
     this._load();
     this._timer = setInterval(() => this._load(), this._refresh * 1000);
   }
 
   disconnectedCallback() { clearInterval(this._timer); }
 
-  /* Show mock cards instantly (no spinner, no wait) */
-  _renderSample() {
-    const teamSports = this._sports.filter(s => s !== 'golf');
-    const hasGolf    = this._sports.includes('golf');
-
-    const ms = (window.HTBData?.mock?.scores) || HTB_MOCK_SCORES;
-    const mo = (window.HTBData?.mock?.odds)   || HTB_ODDS_MOCK;
-    const mg = (window.HTBData?.mock?.golf)   || HTB_MOCK_GOLF;
-
-    const teamCards = teamSports.flatMap(sport => {
-      const games = ms[sport] || [];
-      const odds  = mo[sport] || [];
-      return games.map(g => _gameCard(g, _matchOdds(g, odds)));
-    });
-    const golfCards = hasGolf ? [_golfCard(mg)] : [];
-    let all = [...teamCards, ...golfCards];
-
-    if (!all.length) return;
-    if (this._max > 0) all = all.slice(0, this._max);
-
-    this._golfData = mg;
-    this.innerHTML = `
-      <div class="htb-lg-grid">${all.join('')}</div>
-      <div class="htb-timestamp">Sample data · checking for live updates…</div>`;
-    this._wireButtons();
+  /* Update the nearest .section-title heading above this component */
+  _setSectionTitle(text) {
+    if (!text) return;
+    const section = this.closest('section, .section');
+    const title   = section && section.querySelector('.section-title');
+    if (title) title.textContent = text;
   }
 
   async _load() {
     const teamSports = this._sports.filter(s => s !== 'golf');
     const hasGolf    = this._sports.includes('golf');
 
-    // Fetch all sports in parallel
+    // Determine if this is a single-sport view (one sport, no golf)
+    const isSingle = this._sports.length === 1 && !hasGolf;
+    const solo     = isSingle ? this._sports[0] : null;
+
+    // ── Single-sport: check offseason first — no fetch needed ──
+    if (solo && !_isInSeason(solo)) {
+      this._setSectionTitle(HTB_SPORT_TITLES[solo]?.offseason);
+      this.innerHTML = `
+        <div class="htb-empty">
+          This sport is currently in the offseason. Check back when the season starts.
+        </div>`;
+      return;
+    }
+
+    // ── Multi-sport or in-season single: only fetch in-season sports ──
+    const activeSports = teamSports.filter(s => _isInSeason(s));
+
     const [teamResults, golfData] = await Promise.all([
-      Promise.all(teamSports.map(async sport => {
-        // Step 1: Get scores and try proxy in parallel
+      Promise.all(activeSports.map(async sport => {
         const [games, proxyOdds] = await Promise.all([_fetchScores(sport), _fetchProxyOdds(sport)]);
-
-        // Step 2: If proxy gave nothing, fetch ESPN summary odds (per-game)
         const espnOddsMap = proxyOdds.length === 0 ? await _fetchESPNOdds(sport, games) : {};
-
         _oddsSource = proxyOdds.length > 0 ? 'proxy' : Object.keys(espnOddsMap).length > 0 ? 'espn' : 'none';
-
-        return games.map(game => {
-          const odds = _matchOdds(game, proxyOdds) || espnOddsMap[game.id] || null;
-          return { game, odds };
-        });
+        return games.map(game => ({
+          game,
+          odds: _matchOdds(game, proxyOdds) || espnOddsMap[game.id] || null,
+        }));
       })),
       hasGolf ? _fetchGolf() : Promise.resolve(null),
     ]);
@@ -756,11 +793,15 @@ class HTBLiveGames extends HTMLElement {
     const golfCards = golfData ? [_golfCard(golfData)] : [];
     let all         = [...teamCards, ...golfCards];
 
+    // ── No games returned ──
     if (!all.length) {
-      this.innerHTML = `<div class="htb-empty">No games found today. Check back soon.</div>`;
+      if (solo) this._setSectionTitle(HTB_SPORT_TITLES[solo]?.active);
+      this.innerHTML = `<div class="htb-empty">No games available today. Check back soon.</div>`;
       return;
     }
 
+    // ── Games found ──
+    if (solo) this._setSectionTitle(HTB_SPORT_TITLES[solo]?.active);
     if (this._max > 0) all = all.slice(0, this._max);
 
     const ts     = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -772,6 +813,7 @@ class HTBLiveGames extends HTMLElement {
       : _oddsSource === 'espn'
       ? ` · Odds via ESPN`
       : ` · Odds unavailable`;
+
     this.innerHTML = `
       <div class="htb-lg-grid">${all.join('')}</div>
       <div class="htb-timestamp">Scores ${ts}${oddsLabel} · Auto-refreshes every ${this._refresh}s</div>`;
