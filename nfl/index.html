@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="../components/data.js"       defer></script>
 <script src="../components/live-games.js" defer></script>
+<script src="../components/picks.js"      defer></script>
 <script src="../components/nav.js"        defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -196,106 +197,8 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   NFL PICKS DATA
+   NFL PICKS — rendered live from real ESPN games via HTBPicks
    ============================================================ */
-const NFL_PICKS = [
-  {
-    matchup: 'Chiefs vs Bills',
-    pick:    'Chiefs -2.5',
-    odds:    '-110',
-    type:    'strong',
-    badge:   'Strong Play',
-    conf:    8.4,
-    units:   '2u',
-    stats:   [{ lbl:'EPA/Play', away:'.198', home:'.112' }, { lbl:'DVOA Off', away:'+21.4%', home:'+8.7%' }],
-    reasons: [
-      'Mahomes is 18-5 ATS in road games where KC is favored by a field goal or fewer',
-      'Chiefs offensive DVOA is 12.7 points above Buffalo\'s — significant scheme advantage',
-      'Bills defense ranks 14th in pass DVOA — not the elite unit of prior seasons',
-      'Line opened -3, money has moved it to -2.5 — taking value before it moves back',
-    ]
-  },
-  {
-    matchup: '49ers vs Seahawks',
-    pick:    '49ers -4',
-    odds:    '-110',
-    type:    'strong',
-    badge:   'Strong Play',
-    conf:    8.1,
-    units:   '2u',
-    stats:   [{ lbl:'Yds/Play', away:'6.4', home:'5.1' }, { lbl:'Def DVOA', away:'-14.2%', home:'+4.1%' }],
-    reasons: [
-      'San Francisco averaging 6.4 yards per play — best in the NFC this season',
-      'Seattle\'s defensive DVOA is +4.1%, meaning they give up more than average',
-      'McCaffrey averaging 5.8 YPC in NFC West matchups — home turf advantage for SF',
-      'Seahawks 3-9 ATS as home underdog against playoff-caliber opponents',
-    ]
-  },
-  {
-    matchup: 'Ravens vs Steelers',
-    pick:    'Under 43.0',
-    odds:    '-110',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.7,
-    units:   '1.5u',
-    stats:   [{ lbl:'Pts Allowed', away:'18.4', home:'19.8' }, { lbl:'Sacks/Gm', away:'3.1', home:'2.9' }],
-    reasons: [
-      'Both defenses rank top-8 in points allowed per game this season',
-      'AFC North rivalry games historically low-scoring — last 6 meetings averaged 36.8',
-      'Pittsburgh 3.1 sacks per game at home — Lamar Jackson pressured into mistakes',
-      'Model total: 40.2 — strong value on the under at 43.0',
-    ]
-  },
-  {
-    matchup: 'Eagles vs Cowboys',
-    pick:    'Eagles -3',
-    odds:    '-110',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.4,
-    units:   '1u',
-    stats:   [{ lbl:'3rd Dwn%', away:'47.3', home:'38.1' }, { lbl:'TO Margin', away:'+9', home:'-2' }],
-    reasons: [
-      'Philadelphia converts 47.3% of third downs — best efficiency in the NFC East',
-      'Eagles +9 turnover margin vs. Cowboys -2 is a massive situational edge',
-      'Hurts averaging 8.4 yards per attempt on play-action — Cowboys bracket coverage leaks deep',
-      'Dallas 4-8 ATS as home favorites this season — public trap game',
-    ]
-  },
-  {
-    matchup: 'Ravens vs Steelers',
-    pick:    'Steelers +6',
-    odds:    '+102',
-    type:    'dog',
-    badge:   'Live Dog',
-    conf:    6.9,
-    units:   '1u',
-    stats:   [{ lbl:'ATS as Dog', away:'—', home:'8-4' }, { lbl:'Home Cover', away:'—', home:'67%' }],
-    reasons: [
-      'Steelers 8-4 ATS as home underdogs since 2022 — elite at covering the number',
-      'Pittsburgh home crowd factor is real — 67% cover rate at Acrisure Stadium',
-      '+102 on the spread is exceptional for a rivalry game with playoff implications',
-      'Ravens on short rest — played Thursday; Steelers had full week to prepare',
-    ]
-  },
-  {
-    matchup: 'Dolphins vs Jets',
-    pick:    'Under 40.5',
-    odds:    '-110',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.0,
-    units:   '1u',
-    stats:   [{ lbl:'Pts/Gm', away:'22.1', home:'17.4' }, { lbl:'Pass Yds/Gm', away:'241', home:'198' }],
-    reasons: [
-      'Jets rank 29th in scoring offense at 17.4 PPG — ceiling capped without healthy receiving corps',
-      'Both teams inside the bottom half of the league in pace and explosive plays',
-      'Model projects 38.6 combined — under 40.5 has clear positive expected value',
-      'Wind forecast 18 mph at MetLife — historically suppresses scoring by 3-5 points',
-    ]
-  },
-];
 
 /* ============================================================
    ESPN BOX SCORE SERVICE
@@ -423,38 +326,13 @@ document.addEventListener('htb:boxscore', e => {
 });
 
 /* ============================================================
-   RENDER PICKS
+   RENDER PICKS — live from real ESPN games
    ============================================================ */
-function renderPicks() {
-  document.getElementById('nfl-picks-grid').innerHTML = NFL_PICKS.map(p => {
-    const confPct   = `${p.conf * 10}%`;
-    const statsHTML = p.stats.map(s => `
-      <div class="pc-stat"><div class="pc-stat-lbl">Away ${s.lbl}</div><div class="pc-stat-val">${s.away}</div></div>
-      <div class="pc-stat"><div class="pc-stat-lbl">Home ${s.lbl}</div><div class="pc-stat-val">${s.home}</div></div>
-    `).join('');
-    return `
-      <div class="pick-card ${p.type}">
-        <div class="pc-top">
-          <span class="pc-sport">NFL</span>
-          <span class="pc-badge ${p.type}">${p.badge}</span>
-        </div>
-        <div class="pc-matchup">${p.matchup}</div>
-        <div class="pc-pick">${p.pick}</div>
-        <div class="pc-odds">${p.odds}</div>
-        <div class="pc-conf">
-          <span class="pc-conf-lbl">Confidence</span>
-          <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
-          <span class="pc-conf-val">${p.conf}/10</span>
-        </div>
-        <div class="pc-sep"></div>
-        <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-        <div class="pc-stat-row">${statsHTML}</div>
-        <div class="pc-hint">View Full Analysis →</div>
-      </div>`;
-  }).join('');
-}
-
-document.addEventListener('DOMContentLoaded', renderPicks);
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.render('nfl', 'nfl-picks-grid');
+  }
+});
 </script>
 </body>
 </html>

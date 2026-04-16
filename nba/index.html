@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="../components/data.js"       defer></script>
 <script src="../components/live-games.js" defer></script>
+<script src="../components/picks.js"      defer></script>
 <script src="../components/nav.js"        defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -196,90 +197,8 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   NBA PICKS DATA
+   NBA PICKS — rendered live from real ESPN games via HTBPicks
    ============================================================ */
-const NBA_PICKS = [
-  {
-    matchup: 'Celtics vs Knicks',
-    pick:    'Celtics -4.5',
-    odds:    '-110',
-    type:    'strong',
-    badge:   'Strong Play',
-    conf:    8.3,
-    units:   '2u',
-    stats:   [{ lbl:'Off RTG', away:'119.4', home:'112.8' }, { lbl:'Net RTG', away:'+8.9', home:'+1.2' }],
-    reasons: [
-      'Celtics lead the league in offensive rating — Knicks defense ranks 18th',
-      'Boston 14-4 ATS as road favorites of fewer than 6 points this season',
-      'Tatum averaging 31.4 PPG over his last 10 — elite scoring form',
-      'Model projects Boston by 6.2 — taking a full point and a hook of value',
-    ]
-  },
-  {
-    matchup: 'Nuggets vs Suns',
-    pick:    'Nuggets -5.5',
-    odds:    '-110',
-    type:    'strong',
-    badge:   'Strong Play',
-    conf:    8.0,
-    units:   '2u',
-    stats:   [{ lbl:'eFG%', away:'.561', home:'.498' }, { lbl:'TO Rate', away:'12.1', home:'16.8' }],
-    reasons: [
-      'Denver\'s effective FG% is 6.3 points better than Phoenix\'s defense allows',
-      'Suns turnover rate of 16.8 is 4th-worst in the league — Nuggets will capitalize',
-      'Jokic triple-double machine: 28-12-9 line over last 5 games',
-      'Phoenix 4-11 ATS as home underdog this season — trend strongly favors Denver',
-    ]
-  },
-  {
-    matchup: 'Warriors vs Lakers',
-    pick:    'Over 224.0',
-    odds:    '-112',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.5,
-    units:   '1u',
-    stats:   [{ lbl:'Pace', away:'100.8', home:'98.7' }, { lbl:'Pts Allowed', away:'113.1', home:'115.4' }],
-    reasons: [
-      'Both teams rank bottom-10 defensively — 228 combined scored in last meeting',
-      'Warriors pace up without injured centers — fast break opportunities abound',
-      'LeBron averaging 29.1 PPG in his last 6 home games against Golden State',
-      'Model projects 229 total — getting real value at 224.0',
-    ]
-  },
-  {
-    matchup: '76ers vs Heat',
-    pick:    'Heat -4',
-    odds:    '-110',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.2,
-    units:   '1u',
-    stats:   [{ lbl:'Home Net RTG', away:'-1.1', home:'+4.8' }, { lbl:'L10 Record', away:'4-6', home:'7-3' }],
-    reasons: [
-      'Miami 7-3 over their last 10 — Philly 4-6, trending in opposite directions',
-      'Heat home net rating of +4.8 is top-6 in the league this season',
-      'Embiid listed as questionable — model drops Philly win probability to 38%',
-      'Sharp action on Miami at open — line moved from -3 to -4 on two-way steam',
-    ]
-  },
-  {
-    matchup: 'Celtics vs Knicks',
-    pick:    'Knicks +4.5',
-    odds:    '+105',
-    type:    'dog',
-    badge:   'Live Dog',
-    conf:    6.8,
-    units:   '1u',
-    stats:   [{ lbl:'ATS as Dog', away:'—', home:'18-12' }, { lbl:'Cover%', away:'—', home:'60%' }],
-    reasons: [
-      'Knicks cover at a 60% rate as home underdogs — elite at protecting the spread',
-      '+105 ML is positive EV given model\'s 42% win probability',
-      'MSG crowd factor is real — Knicks 24-7 at home this season outright',
-      'Best plus-money number on tonight\'s board against a quality opponent',
-    ]
-  },
-];
 
 /* ============================================================
    ESPN BOX SCORE SERVICE
@@ -407,38 +326,13 @@ document.addEventListener('htb:boxscore', e => {
 });
 
 /* ============================================================
-   RENDER PICKS
+   RENDER PICKS — live from real ESPN games
    ============================================================ */
-function renderPicks() {
-  document.getElementById('nba-picks-grid').innerHTML = NBA_PICKS.map(p => {
-    const confPct  = `${p.conf * 10}%`;
-    const statsHTML = p.stats.map(s => `
-      <div class="pc-stat"><div class="pc-stat-lbl">Away ${s.lbl}</div><div class="pc-stat-val">${s.away}</div></div>
-      <div class="pc-stat"><div class="pc-stat-lbl">Home ${s.lbl}</div><div class="pc-stat-val">${s.home}</div></div>
-    `).join('');
-    return `
-      <div class="pick-card ${p.type}">
-        <div class="pc-top">
-          <span class="pc-sport">NBA</span>
-          <span class="pc-badge ${p.type}">${p.badge}</span>
-        </div>
-        <div class="pc-matchup">${p.matchup}</div>
-        <div class="pc-pick">${p.pick}</div>
-        <div class="pc-odds">${p.odds}</div>
-        <div class="pc-conf">
-          <span class="pc-conf-lbl">Confidence</span>
-          <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
-          <span class="pc-conf-val">${p.conf}/10</span>
-        </div>
-        <div class="pc-sep"></div>
-        <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-        <div class="pc-stat-row">${statsHTML}</div>
-        <div class="pc-hint">View Full Analysis →</div>
-      </div>`;
-  }).join('');
-}
-
-document.addEventListener('DOMContentLoaded', renderPicks);
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.render('nba', 'nba-picks-grid');
+  }
+});
 </script>
 </body>
 </html>

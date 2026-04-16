@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="../components/data.js"       defer></script>
 <script src="../components/live-games.js" defer></script>
+<script src="../components/picks.js"      defer></script>
 <script src="../components/nav.js"        defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -210,150 +211,8 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   NCAAF PICKS DATA
+   NCAAF PICKS — rendered live from real ESPN games via HTBPicks
    ============================================================ */
-const NCAAF_PICKS = [
-  {
-    matchup:  'Ohio State vs Georgia',
-    ranked:   '#4 Ohio State · #2 Georgia',
-    pick:     'Georgia -7.5',
-    odds:     '-110',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     8.2,
-    units:    '2u',
-    stats:    [{ lbl:'Pts/Gm', away:'34.1', home:'38.7' }, { lbl:'Yds/Gm', away:'401', home:'463' }],
-    reasons:  [
-      'Georgia ranks top-3 nationally in total defense — holding opponents to 18.4 PPG',
-      'OSU offensive line missing two starters — Bulldog pass rush will feast',
-      'Kirby Smart 18-4 ATS as home favorite of 7+ points over his career',
-      'Model projects Georgia win by 10.3 — getting a full TD and a hook',
-    ]
-  },
-  {
-    matchup:  'Notre Dame vs USC',
-    ranked:   '#8 Notre Dame · USC',
-    pick:     'Notre Dame -6',
-    odds:     '-108',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.6,
-    units:    '1.5u',
-    stats:    [{ lbl:'3rd Dwn%', away:'41.2', home:'36.7' }, { lbl:'TO Margin', away:'+7', home:'-3' }],
-    reasons:
-    [
-      'Notre Dame +7 turnover margin is best in their conference over last 6 weeks',
-      'USC defense ranks 108th nationally in yards per play allowed',
-      'Irish run game averaging 5.4 YPC — USC cannot stop the grind',
-      'Line opened -4.5, has climbed to -6 on sharp two-way action — follow the steam',
-    ]
-  },
-  {
-    matchup:  'Texas vs Oklahoma',
-    ranked:   '#11 Texas · #14 Oklahoma',
-    pick:     'Over 52.5',
-    odds:     '-115',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.4,
-    units:    '1u',
-    stats:    [{ lbl:'Pts/Gm', away:'36.9', home:'35.2' }, { lbl:'Yds Allowed', away:'342', home:'318' }],
-    reasons:  [
-      'Both offenses rank top-20 nationally in explosive play rate',
-      'Rivalry game often produces shootout conditions at neutral site',
-      'Combined scoring average 72.1 points in last 3 meetings',
-      'Model total 55.8 — getting excellent value at 52.5',
-    ]
-  },
-  {
-    matchup:  'Alabama vs Tennessee',
-    ranked:   '#3 Alabama · #9 Tennessee',
-    pick:     'Alabama -10',
-    odds:     '-110',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     8.0,
-    units:    '2u',
-    stats:    [{ lbl:'S&P+ Off', away:'22.4', home:'18.1' }, { lbl:'Line Yds', away:'2.31', home:'2.09' }],
-    reasons:  [
-      'Alabama\'s offensive S&P+ is 4.3 points better than Tennessee\'s defense',
-      'Tide 22-8 ATS as double-digit home favorites under current coaching staff',
-      'Tennessee QB averaging 1.6 turnovers per game against top-10 defenses',
-      'Weather forecast: clear, 68°F — ideal conditions for Alabama\'s aerial attack',
-    ]
-  },
-  {
-    matchup:  'Michigan vs Penn State',
-    ranked:   '#6 Michigan · #13 Penn State',
-    pick:     'Michigan -4.5',
-    odds:     '-112',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     7.8,
-    units:    '1.5u',
-    stats:    [{ lbl:'Havoc Rate', away:'13.1', home:'15.4' }, { lbl:'Run EPA', away:'.21', home:'.18' }],
-    reasons:  [
-      'Michigan\'s defensive havoc rate is 2.3 points above Big Ten average',
-      'Penn State RB room depleted — starting back questionable with ankle injury',
-      'Wolverines 8-2 ATS at home over last two full seasons',
-      'Sharp money sitting on Michigan — line has moved a half-point in the past 48 hours',
-    ]
-  },
-];
-
-const NCAAF_DOGS = [
-  {
-    matchup:  'Tennessee vs Alabama',
-    ranked:   '#9 Tennessee · #3 Alabama',
-    pick:     'Tennessee +10',
-    odds:     '+100',
-    type:     'dog',
-    badge:    'Live Dog',
-    conf:     6.9,
-    units:    '1u',
-    stats:    [{ lbl:'ATS vs Top10', away:'6-2', home:'4-4' }, { lbl:'Cover%', away:'61%', home:'49%' }],
-    reasons:  [
-      '+10 points on a top-10 team in a rivalry game is tremendous value',
-      'Tennessee 6-2 ATS as double-digit dogs versus ranked opponents',
-      'Vols offense capable of keeping it close — ranked 14th in scoring',
-      'Public hammering Alabama — fade the crowd, take the points',
-    ]
-  },
-  {
-    matchup:  'USC vs Notre Dame',
-    ranked:   'USC · #8 Notre Dame',
-    pick:     'USC +6',
-    odds:     '+110',
-    type:     'dog',
-    badge:    'Live Dog',
-    conf:     6.5,
-    units:    '1u',
-    stats:    [{ lbl:'Home Cover', away:'4-6', home:'7-3' }, { lbl:'ATS Spread', away:'-1.2', home:'+3.1' }],
-    reasons:  [
-      'USC has covered in 4 of last 5 rivalry appearances as an underdog',
-      'Notre Dame struggles to cover in primetime — only 3-7 ATS in night games',
-      '+6 is more than a full touchdown — plenty of cushion for a competitive loss',
-      'Best plus-money number on this week\'s board for a quality opponent',
-    ]
-  },
-  {
-    matchup:  'Penn State vs Michigan',
-    ranked:   '#13 Penn State · #6 Michigan',
-    pick:     'Penn State +4.5',
-    odds:     '+120',
-    type:     'dog',
-    badge:    'Live Dog',
-    conf:     6.3,
-    units:    '0.5u',
-    stats:    [{ lbl:'ATS as Dog', away:'5-3', home:'3-5' }, { lbl:'SRS Diff', away:'-2.1', home:'-0.8' }],
-    reasons:  [
-      'SRS gap between these teams is less than 2 points — line is inflated',
-      'Penn State 5-3 ATS as road dogs this season — road warriors',
-      '+120 ML has positive expected value given model\'s 44% win probability',
-      'Best value play if backing the Nittany Lions to steal one on the road',
-    ]
-  },
-];
 
 /* ============================================================
    ESPN BOX SCORE SERVICE
@@ -481,41 +340,12 @@ document.addEventListener('htb:boxscore', e => {
 });
 
 /* ============================================================
-   RENDER PICKS
+   RENDER PICKS — live from real ESPN games
    ============================================================ */
-function renderPickCards(picks, containerId) {
-  document.getElementById(containerId).innerHTML = picks.map(p => {
-    const confPct  = `${p.conf * 10}%`;
-    const statsHTML = p.stats.map(s => `
-      <div class="pc-stat"><div class="pc-stat-lbl">Away ${s.lbl}</div><div class="pc-stat-val">${s.away}</div></div>
-      <div class="pc-stat"><div class="pc-stat-lbl">Home ${s.lbl}</div><div class="pc-stat-val">${s.home}</div></div>
-    `).join('');
-    return `
-      <div class="pick-card ${p.type}">
-        <div class="pc-top">
-          <span class="pc-sport">NCAAF</span>
-          <span class="pc-badge ${p.type}">${p.badge}</span>
-        </div>
-        ${p.ranked ? `<div class="pc-ranked">${p.ranked}</div>` : ''}
-        <div class="pc-matchup">${p.matchup}</div>
-        <div class="pc-pick">${p.pick}</div>
-        <div class="pc-odds">${p.odds}</div>
-        <div class="pc-conf">
-          <span class="pc-conf-lbl">Confidence</span>
-          <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
-          <span class="pc-conf-val">${p.conf}/10</span>
-        </div>
-        <div class="pc-sep"></div>
-        <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-        <div class="pc-stat-row">${statsHTML}</div>
-        <div class="pc-hint">View Full Analysis →</div>
-      </div>`;
-  }).join('');
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-  renderPickCards(NCAAF_PICKS, 'ncaaf-picks-grid');
-  renderPickCards(NCAAF_DOGS,  'ncaaf-dogs-grid');
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.render('ncaaf', 'ncaaf-picks-grid', 'ncaaf-dogs-grid');
+  }
 });
 </script>
 </body>

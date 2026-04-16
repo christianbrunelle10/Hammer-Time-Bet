@@ -19,6 +19,7 @@
 -->
 <script src="components/data.js"       defer></script>
 <script src="components/live-games.js" defer></script>
+<script src="components/picks.js"      defer></script>
 <script src="components/nav.js"        defer></script>
 
 <style>
@@ -427,39 +428,27 @@ document.addEventListener('htb:golf', e => {
 
 /* ============================================================
    INIT
-   Fetches data/picks.json and data/records.json on every load.
-   Picks are shown only when picks.date matches today's date.
-   To update daily: commit a new data/picks.json with today's date.
+   Records bar loaded from data/records.json.
+   Picks rendered live from real ESPN games via HTBPicks.
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   const today = todayISO();
 
-  const [picks, records] = await Promise.all([
-    loadJSON('data/picks.json'),
-    loadJSON('data/records.json'),
-  ]);
-
   // Date label under section heading
   const picksDate = document.getElementById('picks-date');
-  if (picksDate) {
-    picksDate.textContent = picks?.date ? formatDateLabel(picks.date) : formatDateLabel(today);
-  }
+  if (picksDate) picksDate.textContent = formatDateLabel(today);
 
-  // Season records bar above picks grid
+  // Season records bar — still loaded from data/records.json
+  const records = await loadJSON('data/records.json');
   renderRecordsBar(records);
 
-  // Validate: picks must exist, match today, and have entries
-  if (!picks || picks.date !== today || !Array.isArray(picks.top) || !picks.top.length) {
+  // Picks rendered live from real ESPN games across all sports
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.renderHomepage(['mlb', 'nba', 'nfl', 'nhl', 'ncaaf'], 'top-picks-grid', 'dog-picks-grid');
+  } else {
     renderFallback('top-picks-grid');
     renderFallback('dog-picks-grid');
-    return;
   }
-
-  document.getElementById('top-picks-grid').innerHTML =
-    picks.top.map(p => pickCardHTML(p, false)).join('');
-
-  document.getElementById('dog-picks-grid').innerHTML =
-    (picks.dogs || []).map(p => pickCardHTML(p, true)).join('');
 });
 </script>
 </body>

@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="../components/data.js"       defer></script>
 <script src="../components/live-games.js" defer></script>
+<script src="../components/picks.js"      defer></script>
 <script src="../components/nav.js"        defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -203,65 +204,8 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   MLB PICKS — update daily
+   MLB PICKS — rendered live from real ESPN games via HTBPicks
    ============================================================ */
-const MLB_PICKS = [
-  {
-    matchup: 'Rangers vs Dodgers',
-    pick: 'Dodgers ML', odds: '-165', type: 'strong', badge: 'Strong Play', conf: 8.2, units: '2u',
-    sp: { away: { name: 'A. Heaney', line: '5.18 ERA · 8.7 K/9' }, home: { name: 'T. Glasnow', line: '2.47 ERA · 11.4 K/9' } },
-    reasons: [
-      'Glasnow posting 11.4 K/9 in April — elite swing-and-miss at home',
-      'Rangers ranked bottom-5 in team OPS last 14 days (.641)',
-      'Dodgers 8-2 at home this season, averaging 5.4 runs',
-      'Model line: -190 — clear value at -165',
-    ]
-  },
-  {
-    matchup: 'Rockies vs Padres',
-    pick: 'Padres ML', odds: '-195', type: 'value', badge: 'Value Play', conf: 7.6, units: '1.5u',
-    sp: { away: { name: 'A. Gomber', line: '5.62 ERA · 6.9 K/9' }, home: { name: 'D. King', line: '3.21 ERA · 9.3 K/9' } },
-    reasons: [
-      'Padres rotation top-3 in NL ERA — deep and dominant',
-      'Rockies 4-14 in last 18 games, one of the worst stretches in MLB',
-      'Padres lineup averaging 5.1 runs over last 10 games',
-      'Public inflating Coors variance — market overreacting to ballpark',
-    ]
-  },
-  {
-    matchup: 'Astros vs Mariners',
-    pick: 'Astros -1.5', odds: '-120', type: 'strong', badge: 'Strong Play', conf: 7.1, units: '1.5u',
-    sp: { away: { name: 'R. Blanco', line: '2.91 ERA · 10.1 K/9' }, home: { name: 'B. Miller', line: '4.80 ERA · 7.8 K/9' } },
-    reasons: [
-      'Astros lineup averaging 5.1 runs over last 7 games — rolling',
-      'Mariners starter carrying a 4.80 ERA in April — regression target',
-      'Houston bullpen top-3 in high-leverage situations this season',
-      'Line at -120 feels light — model projects HOU as -1.8 RL favorite',
-    ]
-  },
-  {
-    matchup: 'Red Sox vs Cardinals',
-    pick: 'Cardinals ML', odds: '-125', type: 'value', badge: 'Value Play', conf: 6.8, units: '1u',
-    sp: { away: { name: 'C. Sale', line: '3.10 ERA · 9.9 K/9' }, home: { name: 'S. Gray', line: '2.88 ERA · 10.4 K/9' } },
-    reasons: [
-      'Gray sub-3.00 ERA with heavy strikeout stuff at Busch Stadium',
-      'Red Sox 3-8 in last 11 road games — struggling away from Fenway',
-      'Sharp money on Cardinals despite public leaning Boston',
-      'STL home record: 7-3 — one of the best in the NL',
-    ]
-  },
-  {
-    matchup: 'Astros vs Mariners',
-    pick: 'Mariners +1.5', odds: '+145', type: 'dog', badge: 'Live Dog', conf: 6.5, units: '1u',
-    sp: { away: { name: 'R. Blanco', line: '2.91 ERA · 10.1 K/9' }, home: { name: 'B. Miller', line: '4.80 ERA · 7.8 K/9' } },
-    reasons: [
-      '+145 on the run line is excellent value — Mariners keep it close at home',
-      'SEA cover rate as home RL dog: 58% this season',
-      'Miller has allowed 2 or fewer runs in 3 of last 5 starts despite high ERA',
-      'Best alternative number if you want exposure to this game at lower risk',
-    ]
-  },
-];
 
 /* ============================================================
    ESPN MLB BOX SCORE SERVICE
@@ -406,42 +350,13 @@ document.addEventListener('htb:boxscore', e => {
 });
 
 /* ============================================================
-   RENDER PICKS
+   RENDER PICKS — live from real ESPN games
    ============================================================ */
-function renderPicks() {
-  document.getElementById('mlb-picks-grid').innerHTML = MLB_PICKS.map(p => `
-    <div class="pick-card ${p.type}">
-      <div class="pc-top">
-        <span class="pc-sport-tag">MLB</span>
-        <span class="badge ${p.type}">${p.badge}</span>
-      </div>
-      <div class="pc-matchup">${p.matchup}</div>
-      <div class="pc-pick">${p.pick}</div>
-      <div class="pc-odds">${p.odds}</div>
-      <div class="pc-conf">
-        <span class="pc-conf-lbl">Confidence</span>
-        <div class="conf-track"><div class="conf-fill" style="width:${p.conf * 10}%"></div></div>
-        <span class="pc-conf-val">${p.conf}/10</span>
-      </div>
-      <div class="pc-sep"></div>
-      <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-      <div class="pc-pitchers">
-        <div class="pc-pitcher">
-          <div class="pc-pitcher-role">Away SP</div>
-          <div class="pc-pitcher-name">${p.sp.away.name}</div>
-          <div class="pc-pitcher-stats">${p.sp.away.line}</div>
-        </div>
-        <div class="pc-pitcher">
-          <div class="pc-pitcher-role">Home SP</div>
-          <div class="pc-pitcher-name">${p.sp.home.name}</div>
-          <div class="pc-pitcher-stats">${p.sp.home.line}</div>
-        </div>
-      </div>
-      <div class="pc-hint">View Full Analysis →</div>
-    </div>`).join('');
-}
-
-document.addEventListener('DOMContentLoaded', renderPicks);
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.render('mlb', 'mlb-picks-grid');
+  }
+});
 </script>
 </body>
 </html>

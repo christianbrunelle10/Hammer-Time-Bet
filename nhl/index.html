@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 <script src="../components/data.js"       defer></script>
 <script src="../components/live-games.js" defer></script>
+<script src="../components/picks.js"      defer></script>
 <script src="../components/nav.js"        defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -202,91 +203,8 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 <script>
 /* ============================================================
-   NHL PICKS DATA
-   Update daily — mirror shape for any sport page
+   NHL PICKS — rendered live from real ESPN games via HTBPicks
    ============================================================ */
-const NHL_PICKS = [
-  {
-    matchup:  'Avalanche vs Golden Knights',
-    pick:     'Golden Knights ML',
-    odds:     '-130',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     7.9,
-    units:    '2u',
-    stats:    [{ lbl:'Save %', away:'91.2', home:'93.4' }, { lbl:'CF%', away:'48.3', home:'52.1' }],
-    reasons:  [
-      'VGK top-5 in 5v5 shot share over the last 14 games (52.1 CF%)',
-      'Avalanche goaltending inconsistent — 3.10 GAA in April',
-      'Golden Knights 7-3 at home this month, averaging 3.4 goals',
-      'Line opened -120, sharp action has pushed it to -130 — follow the money',
-    ]
-  },
-  {
-    matchup:  'Flames vs Kraken',
-    pick:     'Over 5.5',
-    odds:     '-112',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.3,
-    units:    '1u',
-    stats:    [{ lbl:'Goals/Gm', away:'3.1', home:'3.3' }, { lbl:'PP%', away:'21.4', home:'23.8' }],
-    reasons:  [
-      'Both teams ranked top-10 in goals-per-game over last 10 contests',
-      'Combined power-play percentage above 22% — high-event hockey expected',
-      'Model total: 6.2 — getting value at 5.5',
-      'Neither starting goalie has played since Thursday — rust factor in play',
-    ]
-  },
-  {
-    matchup:  'Maple Leafs vs Hurricanes',
-    pick:     'Maple Leafs +1.5',
-    odds:     '-190',
-    type:     'value',
-    badge:    'Value Play',
-    conf:     7.6,
-    units:    '1.5u',
-    stats:    [{ lbl:'xGF%', away:'49.8', home:'54.2' }, { lbl:'PK%', away:'81.1', home:'84.6' }],
-    reasons:  [
-      'Leafs cover the puck line at a 61% rate as road underdogs this season',
-      'Auston Matthews generating elite shot quality — 4.1 shots on net per game',
-      'Hurricanes playing their 3rd game in 4 nights — fatigue spot',
-      'Puck line at -190 is strong price for a team that keeps games close',
-    ]
-  },
-  {
-    matchup:  'Lightning vs Senators',
-    pick:     'Lightning ML',
-    odds:     '-145',
-    type:     'strong',
-    badge:    'Strong Play',
-    conf:     8.1,
-    units:    '2u',
-    stats:    [{ lbl:'Save %', away:'94.1', home:'89.7' }, { lbl:'GF/Gm', away:'3.6', home:'2.8' }],
-    reasons:  [
-      'Vasilevskiy posting a .941 SV% over his last 7 starts — elite form',
-      'Ottawa ranked bottom-4 in goals-for over the past 2 weeks',
-      'Tampa 9-2 ATS as home favourites when Vasilevskiy starts',
-      'Model gives Lightning a 61% win probability — value at -145',
-    ]
-  },
-  {
-    matchup:  'Jets vs Wild',
-    pick:     'Wild +1.5',
-    odds:     '+155',
-    type:     'dog',
-    badge:    'Live Dog',
-    conf:     6.7,
-    units:    '1u',
-    stats:    [{ lbl:'ROW', away:'36', home:'34' }, { lbl:'L10', away:'5-5', home:'6-4' }],
-    reasons:  [
-      '+155 on the puck line is exceptional value — Wild keep games tight',
-      'Winnipeg 3-7 ATS as home favourites of 1.5+ goals this season',
-      'Wild play a disciplined, low-turnover system that limits blow-out losses',
-      'Best underdog number on tonight\'s board',
-    ]
-  },
-];
 
 /* ============================================================
    ESPN BOX SCORE SERVICE
@@ -407,38 +325,13 @@ document.addEventListener('htb:boxscore', e => {
 });
 
 /* ============================================================
-   RENDER PICKS
+   RENDER PICKS — live from real ESPN games
    ============================================================ */
-function renderPicks() {
-  document.getElementById('nhl-picks-grid').innerHTML = NHL_PICKS.map(p => {
-    const confPct = `${p.conf * 10}%`;
-    const statsHTML = p.stats.map(s => `
-      <div class="pc-stat"><div class="pc-stat-lbl">Away ${s.lbl}</div><div class="pc-stat-val">${s.away}</div></div>
-      <div class="pc-stat"><div class="pc-stat-lbl">Home ${s.lbl}</div><div class="pc-stat-val">${s.home}</div></div>
-    `).join('');
-    return `
-      <div class="pick-card ${p.type}">
-        <div class="pc-top">
-          <span class="pc-sport">NHL</span>
-          <span class="pc-badge ${p.type}">${p.badge}</span>
-        </div>
-        <div class="pc-matchup">${p.matchup}</div>
-        <div class="pc-pick">${p.pick}</div>
-        <div class="pc-odds">${p.odds}</div>
-        <div class="pc-conf">
-          <span class="pc-conf-lbl">Confidence</span>
-          <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
-          <span class="pc-conf-val">${p.conf}/10</span>
-        </div>
-        <div class="pc-sep"></div>
-        <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-        <div class="pc-stat-row">${statsHTML}</div>
-        <div class="pc-hint">View Full Analysis →</div>
-      </div>`;
-  }).join('');
-}
-
-document.addEventListener('DOMContentLoaded', renderPicks);
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.render('nhl', 'nhl-picks-grid');
+  }
+});
 </script>
 </body>
 </html>
