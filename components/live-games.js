@@ -265,6 +265,13 @@ const HTB_ESPN = {
 };
 
 /* ============================================================
+   ODDS PROXY
+   Set this to your Vercel deployment URL after deploying api/odds.js.
+   The key never leaves the server — this URL is safe to commit.
+   ============================================================ */
+const HTB_ODDS_PROXY = 'https://your-project.vercel.app/api/odds';
+
+/* ============================================================
    MOCK DATA
    ============================================================ */
 const HTB_MOCK_SCORES = {
@@ -366,9 +373,23 @@ async function _fetchScores(sport) {
   }
 }
 
+/* Tracks the last successful odds response time for the UI timestamp */
+let _oddsUpdatedAt = null;
+
 async function _fetchOdds(sport) {
-  if (window.HTBData) return HTBData.fetchOdds(sport);
-  return HTB_ODDS_MOCK[sport] || [];
+  if (sport === 'golf') return [];
+  try {
+    const r = await fetch(`${HTB_ODDS_PROXY}?sport=${encodeURIComponent(sport)}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) throw new Error(`proxy ${r.status}`);
+    const { odds, updatedAt } = await r.json();
+    if (updatedAt) _oddsUpdatedAt = updatedAt;
+    return Array.isArray(odds) ? odds : [];
+  } catch {
+    // Proxy unreachable or not yet configured — fall back to mock so cards still render
+    return (window.HTBData?.mock?.odds || HTB_ODDS_MOCK)[sport] || [];
+  }
 }
 
 async function _fetchGolf() {
@@ -419,7 +440,15 @@ function _parseEvent(event, sport) {
 }
 
 function _matchOdds(game, list) {
-  return list.find(o => o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr) || null;
+  return list.find(o => {
+    // Legacy mock format uses abbreviations
+    if (o.awayAbbr) return o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr;
+    // Proxy format uses full team names — match when name ends with ESPN short display name
+    // e.g. "Los Angeles Dodgers".endsWith("Dodgers") === true
+    const al = (o.awayTeam || '').toLowerCase();
+    const hl = (o.homeTeam || '').toLowerCase();
+    return al.endsWith(game.away.name.toLowerCase()) && hl.endsWith(game.home.name.toLowerCase());
+  }) || null;
 }
 
 /* Build a relative URL to the game detail page that works from any depth */
@@ -624,10 +653,13 @@ class HTBLiveGames extends HTMLElement {
 
     if (this._max > 0) all = all.slice(0, this._max);
 
-    const ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const ts     = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const oddsTs = _oddsUpdatedAt
+      ? new Date(_oddsUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : null;
     this.innerHTML = `
       <div class="htb-lg-grid">${all.join('')}</div>
-      <div class="htb-timestamp">Updated ${ts} · Live Scores · Sample Odds · Auto-refreshes every ${this._refresh}s</div>`;
+      <div class="htb-timestamp">Scores ${ts}${oddsTs ? ` · Odds ${oddsTs}` : ''} · Auto-refreshes every ${this._refresh}s</div>`;
 
     this._wireButtons();
   }
