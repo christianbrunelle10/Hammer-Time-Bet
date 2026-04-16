@@ -36,6 +36,7 @@
       nba:   `${CONFIG.ESPN_BASE}/basketball/nba/scoreboard`,
       nfl:   `${CONFIG.ESPN_BASE}/football/nfl/scoreboard`,
       ncaaf: `${CONFIG.ESPN_BASE}/football/college-football/scoreboard`,
+      ncaam: `${CONFIG.ESPN_BASE}/basketball/mens-college-basketball/scoreboard`,
       nhl:   `${CONFIG.ESPN_BASE}/hockey/nhl/scoreboard`,
       golf:  `${CONFIG.ESPN_BASE}/golf/pga/scoreboard`,
     },
@@ -44,6 +45,7 @@
       nba:   id => `${CONFIG.ESPN_BASE}/basketball/nba/summary?event=${id}`,
       nfl:   id => `${CONFIG.ESPN_BASE}/football/nfl/summary?event=${id}`,
       ncaaf: id => `${CONFIG.ESPN_BASE}/football/college-football/summary?event=${id}`,
+      ncaam: id => `${CONFIG.ESPN_BASE}/basketball/mens-college-basketball/summary?event=${id}`,
       nhl:   id => `${CONFIG.ESPN_BASE}/hockey/nhl/summary?event=${id}`,
     },
   };
@@ -57,6 +59,7 @@
     nba:   'basketball_nba',
     nfl:   'americanfootball_nfl',
     ncaaf: 'americanfootball_ncaaf',
+    ncaam: 'basketball_ncaab',
     nhl:   'icehockey_nhl',
     golf:  'golf_pga_championship_winner', // outright winner market
   };
@@ -203,6 +206,34 @@
       return BOX_SCORE_PARSERS.nfl(data);
     },
 
+    ncaam(data) {
+      // College basketball — halves instead of quarters
+      const b = _parseBoxScoreBase(data);
+      const halves = Math.max(b.homeLines.length, b.awayLines.length) || 2;
+      const lines = Array.from({ length: halves }, (_, i) => ({
+        label:   i === 0 ? 'H1' : i === 1 ? 'H2' : `OT${i - 1}`,
+        homeVal: b.homeLines[i]?.displayValue ?? '—',
+        awayVal: b.awayLines[i]?.displayValue ?? '—',
+      }));
+      const hm = _statsMap(b.homeStats);
+      const am = _statsMap(b.awayStats);
+      const keys = [
+        'fieldGoalsMade-fieldGoalsAttempted',
+        'threePointFieldGoalsMade-threePointFieldGoalsAttempted',
+        'freeThrowsMade-freeThrowsAttempted',
+        'totalRebounds', 'assists', 'turnovers',
+      ];
+      const labels = {
+        'fieldGoalsMade-fieldGoalsAttempted':                     'Field Goals',
+        'threePointFieldGoalsMade-threePointFieldGoalsAttempted': '3-Pointers',
+        'freeThrowsMade-freeThrowsAttempted':                     'Free Throws',
+        totalRebounds: 'Rebounds',
+        assists:       'Assists',
+        turnovers:     'Turnovers',
+      };
+      return { ...b, lines, lineHeader:'Half', stats: keys.map(k => ({ label:labels[k], homeVal:hm[k]||'—', awayVal:am[k]||'—' })) };
+    },
+
     nhl(data) {
       const b = _parseBoxScoreBase(data);
       const periods = Math.max(b.homeLines.length, b.awayLines.length) || 3;
@@ -279,6 +310,12 @@
         { id:'401628283', sport:'NCAAF', away:{ name:'Notre Dame', abbr:'ND',   score:'7',  rec:'' }, home:{ name:'USC',      abbr:'USC',  score:'10', rec:'' }, status:'live', state:'Q2 2:15', gameTime:'7:30 PM ET' },
         { id:'401628284', sport:'NCAAF', away:{ name:'Texas',      abbr:'TEX',  score:'0',  rec:'' }, home:{ name:'Oklahoma', abbr:'OU',   score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'8:00 PM ET' },
       ],
+      ncaam: [
+        { id:'401628401', sport:'NCAAM', away:{ name:'Duke',    abbr:'DUKE', score:'58', rec:'28-6' }, home:{ name:'North Carolina', abbr:'UNC',  score:'52', rec:'24-9'  }, status:'live', state:'2H 8:14', gameTime:'9:00 PM ET'  },
+        { id:'401628402', sport:'NCAAM', away:{ name:'Kansas',  abbr:'KU',   score:'0',  rec:'26-7' }, home:{ name:'Kentucky',       abbr:'UK',   score:'0',  rec:'25-8'  }, status:'pre',  state:'',        gameTime:'8:30 PM ET'  },
+        { id:'401628403', sport:'NCAAM', away:{ name:'Gonzaga', abbr:'GONZ', score:'41', rec:'27-5' }, home:{ name:'Arizona',        abbr:'ARIZ', score:'38', rec:'25-7'  }, status:'live', state:'H1 3:52', gameTime:'10:00 PM ET' },
+        { id:'401628404', sport:'NCAAM', away:{ name:'Purdue',  abbr:'PUR',  score:'0',  rec:'24-9' }, home:{ name:'Michigan St',    abbr:'MSU',  score:'0',  rec:'23-10' }, status:'pre',  state:'',        gameTime:'7:00 PM ET'  },
+      ],
       nhl: [
         { id:'401701201', sport:'NHL', away:{ name:'Golden Knights', abbr:'VGK', score:'2', rec:'' }, home:{ name:'Avalanche', abbr:'COL', score:'1', rec:'' }, status:'live', state:'3rd 11:22', gameTime:'9:00 PM ET'  },
         { id:'401701202', sport:'NHL', away:{ name:'Flames',         abbr:'CGY', score:'0', rec:'' }, home:{ name:'Kraken',    abbr:'SEA', score:'0', rec:'' }, status:'pre',  state:'',          gameTime:'10:00 PM ET' },
@@ -310,6 +347,12 @@
         { awayAbbr:'TENN', homeAbbr:'BAMA', ml:{ away:'+320', home:'-420' }, line:{ away:'+10 (-110)',  home:'-10 (-110)'  }, total:{ val:'51.5', over:'-108', under:'-112' }, lineMove:{ open:'-9',   current:'-10',  dir:'away' } },
         { awayAbbr:'ND',   homeAbbr:'USC',  ml:{ away:'+150', home:'-175' }, line:{ away:'+4.5 (-110)', home:'-4.5 (-110)' }, total:{ val:'44.5', over:'-112', under:'-108' }, lineMove:{ open:'+5',   current:'+4.5', dir:'home' } },
         { awayAbbr:'TEX',  homeAbbr:'OU',   ml:{ away:'+130', home:'-155' }, line:{ away:'+3.5 (-110)', home:'-3.5 (-110)' }, total:{ val:'53.0', over:'-110', under:'-110' }, lineMove:{ open:'-3',   current:'-3.5', dir:'away' } },
+      ],
+      ncaam: [
+        { awayAbbr:'DUKE', homeAbbr:'UNC',  ml:{ away:'+130', home:'-155' }, line:{ away:'+3.5 (-110)', home:'-3.5 (-110)' }, total:{ val:'148.5', over:'-110', under:'-110' }, lineMove:{ open:'-3',   current:'-3.5', dir:'away' } },
+        { awayAbbr:'KU',   homeAbbr:'UK',   ml:{ away:'-115', home:'-105' }, line:{ away:'-1.5 (-110)', home:'+1.5 (-110)' }, total:{ val:'151.0', over:'-112', under:'-108' }, lineMove:{ open:'-2',   current:'-1.5', dir:'home' } },
+        { awayAbbr:'GONZ', homeAbbr:'ARIZ', ml:{ away:'+165', home:'-200' }, line:{ away:'+5 (-110)',   home:'-5 (-110)'   }, total:{ val:'146.0', over:'-108', under:'-112' }, lineMove:{ open:'-4.5', current:'-5',   dir:'away' } },
+        { awayAbbr:'PUR',  homeAbbr:'MSU',  ml:{ away:'+140', home:'-165' }, line:{ away:'+4 (-110)',   home:'-4 (-110)'   }, total:{ val:'142.5', over:'-110', under:'-110' }, lineMove:{ open:'-3.5', current:'-4',   dir:'away' } },
       ],
       nhl: [
         { awayAbbr:'VGK', homeAbbr:'COL', ml:{ away:'-130', home:'+110' }, line:{ away:'-1.5 (+165)', home:'+1.5 (-200)' }, total:{ val:'5.5', over:'-115', under:'-105' }, lineMove:{ open:'-120', current:'-130', dir:'away' } },

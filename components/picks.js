@@ -7,7 +7,8 @@
  * Usage:
  *   Sport page:  HTBPicks.render('mlb', 'mlb-picks-grid')
  *   NCAAF page:  HTBPicks.render('ncaaf', 'ncaaf-picks-grid', 'ncaaf-dogs-grid')
- *   Homepage:    HTBPicks.renderHomepage(['mlb','nba','nfl','nhl'], 'top-picks-grid', 'dog-picks-grid')
+ *   NCAAM page:  HTBPicks.render('ncaam', 'ncaam-picks-grid', 'ncaam-dogs-grid')
+ *   Homepage:    HTBPicks.renderHomepage(['mlb','nba','nfl','nhl','ncaam'], 'top-picks-grid', 'dog-picks-grid')
  */
 (function (global) {
   'use strict';
@@ -18,6 +19,7 @@
     nba:   'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
     nfl:   'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
     ncaaf: 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard',
+    ncaam: 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard',
     nhl:   'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard',
   };
   const SM = {
@@ -25,6 +27,7 @@
     nba:   id => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${id}`,
     nfl:   id => `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${id}`,
     ncaaf: id => `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`,
+    ncaam: id => `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${id}`,
     nhl:   id => `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`,
   };
 
@@ -266,6 +269,50 @@
          'Model projects {total} or fewer combined goals tonight'],
       ],
     },
+    NCAAM: {
+      ml_fav: [
+        ['{fav} net rating is top-25 nationally — elite efficiency at both ends',
+         'Offensive matchup strongly favors {fav} — scheme and depth advantage',
+         '{fav} covering 67% at home as favorites this season — strong home court',
+         'Model projects {fav} winning by 8+ in this matchup tonight'],
+        ['{fav} averaging 80+ PPG over last 7 games — hot offensive stretch',
+         '{dog} defense allowing 75+ PPG on the road this month — exploitable',
+         '{fav} 11-4 ATS in last 15 similar home spots — consistent covering',
+         'Pace advantage belongs to {fav} — superior depth in the backcourt'],
+      ],
+      ml_dog: [
+        ['{dog} covering 59% as home underdogs this season — home court value',
+         'Home floor advantage in college basketball is among the highest in sports',
+         'Plus odds offers strong positive EV per model projection tonight',
+         '{dog} defense showing improvement — holding teams under 70 PPG recently'],
+        ['{dog} guard play elite — top-10 in assists in the conference this season',
+         'Fast pace benefits {dog} — transition opportunities multiply at home',
+         '{dog} covering 57% as underdogs under 6 points — consistent ATS form',
+         'Best plus-money value on tonight\'s board'],
+      ],
+      spread: [
+        ['{fav} efficiency edge of +7.1 per-100 — real talent gap in this matchup',
+         'Pace model strongly favors {fav} in this specific game tonight',
+         '{fav} ATS record as favorites: 14-5 this season — consistent covering',
+         'Model line at {line} — getting value at current posted price'],
+        ['{fav} offensive efficiency top-20 nationally — scheme and talent edge',
+         '{dog} missing rotation players — depth shrinks considerably tonight',
+         'Model line at {line} — value at the posted number tonight',
+         '{fav} 8-3 ATS as favorites under 8 points in conference this season'],
+      ],
+      over: [
+        ['Both teams rank top-50 in offensive pace nationally — high-scoring expected',
+         'Combined offensive efficiency +14 — both offenses rolling this week',
+         'Both defenses allow 72+ PPG at home — limited defensive stoppers active',
+         'Model projects {total}+ combined — over has clear positive value'],
+      ],
+      under: [
+        ['Both defenses rank top-40 in points allowed nationally — elite units',
+         'Slow tempo teams — bottom-30 in possessions per game nationally',
+         'Model projects {total} combined — under has clear positive EV tonight',
+         'Conference defensive showcase — both coaches emphasize limiting pace'],
+      ],
+    },
     NCAAF: {
       ml_fav: [
         ['{fav} offensive efficiency ranks top-20 nationally this season',
@@ -321,7 +368,7 @@
     const favML  = favIsHome ? (odds?.homeML || '-135') : (odds?.awayML || '-135');
     const dogML  = favIsHome ? (odds?.awayML || '+115') : (odds?.homeML || '+115');
 
-    const dfltTotal    = sp === 'MLB' ? '8.0' : sp === 'NHL' ? '5.5' : sp === 'NBA' ? '220.5' : '47.5';
+    const dfltTotal    = sp === 'MLB' ? '8.0' : sp === 'NHL' ? '5.5' : sp === 'NBA' ? '220.5' : sp === 'NCAAM' ? '145.5' : '47.5';
     const dfltLine     = sp === 'MLB' || sp === 'NHL' ? '-1.5' : '-3.0';
 
     function fmt(str) {

@@ -170,7 +170,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
 <section class="hero">
   <div class="hero-tag"><span class="hero-dot"></span>AI Engine — Live</div>
   <h1>Data-Driven Picks.<br /><em>Built to Beat</em> the Line.</h1>
-  <p>Live scores, sharp odds, and AI-powered picks across MLB, NBA, NFL, NHL, Golf and more.</p>
+  <p>Live scores, sharp odds, and AI-powered picks across MLB, NBA, NFL, NHL, NCAAF, NCAAM, Golf and more.</p>
   <div class="hero-btns">
     <a href="#live-games" class="btn btn-gold">Live Games</a>
     <a href="#picks"      class="btn btn-ghost">Today's Picks</a>
@@ -196,7 +196,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
       </div>
       <a href="#" class="see-all">All Games →</a>
     </div>
-    <htb-live-games sports="mlb,nba,nfl,ncaaf,nhl,golf" refresh="30" max="4"></htb-live-games>
+    <htb-live-games sports="mlb,nba,nfl,ncaaf,ncaam,nhl,golf" refresh="30" max="4"></htb-live-games>
   </div>
 </section>
 
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Picks rendered live from real ESPN games across all sports
   if (typeof HTBPicks !== 'undefined') {
-    HTBPicks.renderHomepage(['mlb', 'nba', 'nfl', 'nhl', 'ncaaf'], 'top-picks-grid', 'dog-picks-grid');
+    HTBPicks.renderHomepage(['mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaam'], 'top-picks-grid', 'dog-picks-grid');
   } else {
     renderFallback('top-picks-grid');
     renderFallback('dog-picks-grid');

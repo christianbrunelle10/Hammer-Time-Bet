@@ -248,6 +248,7 @@ const HTB_SPORT_CFG = {
   nba:   { label: 'NBA',            lineLabel: 'Spread'   },
   nfl:   { label: 'NFL',            lineLabel: 'Spread'   },
   ncaaf: { label: 'NCAAF',          lineLabel: 'Spread'   },
+  ncaam: { label: 'NCAAM',          lineLabel: 'Spread'   },
   nhl:   { label: 'NHL',            lineLabel: 'Puck Line'},
   golf:  { label: 'PGA Tour',       lineLabel: null       },
 };
@@ -260,6 +261,7 @@ const HTB_ESPN = {
   nba:   'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
   nfl:   'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
   ncaaf: 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard',
+  ncaam: 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard',
   nhl:   'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard',
   golf:  'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard',
 };
@@ -270,6 +272,7 @@ const HTB_ESPN_SUMMARY = {
   nba:   id => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${id}`,
   nfl:   id => `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${id}`,
   ncaaf: id => `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`,
+  ncaam: id => `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${id}`,
   nhl:   id => `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`,
 };
 
@@ -308,6 +311,12 @@ const HTB_MOCK_SCORES = {
     { id:'401628282', sport:'NCAAF', away:{ name:'Tennessee',  abbr:'TENN', score:'0',  rec:'' }, home:{ name:'Alabama',  abbr:'BAMA', score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'7:00 PM ET' },
     { id:'401628283', sport:'NCAAF', away:{ name:'Notre Dame', abbr:'ND',   score:'7',  rec:'' }, home:{ name:'USC',      abbr:'USC',  score:'10', rec:'' }, status:'live', state:'Q2 2:15', gameTime:'7:30 PM ET' },
     { id:'401628284', sport:'NCAAF', away:{ name:'Texas',      abbr:'TEX',  score:'0',  rec:'' }, home:{ name:'Oklahoma', abbr:'OU',   score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'8:00 PM ET' },
+  ],
+  ncaam: [
+    { id:'401628401', sport:'NCAAM', away:{ name:'Duke',       abbr:'DUKE', score:'58', rec:'28-6' }, home:{ name:'North Carolina', abbr:'UNC',  score:'52', rec:'24-9'  }, status:'live', state:'2H 8:14', gameTime:'9:00 PM ET'  },
+    { id:'401628402', sport:'NCAAM', away:{ name:'Kansas',     abbr:'KU',   score:'0',  rec:'26-7' }, home:{ name:'Kentucky',       abbr:'UK',   score:'0',  rec:'25-8'  }, status:'pre',  state:'',        gameTime:'8:30 PM ET'  },
+    { id:'401628403', sport:'NCAAM', away:{ name:'Gonzaga',    abbr:'GONZ', score:'41', rec:'27-5' }, home:{ name:'Arizona',        abbr:'ARIZ', score:'38', rec:'25-7'  }, status:'live', state:'H1 3:52', gameTime:'10:00 PM ET' },
+    { id:'401628404', sport:'NCAAM', away:{ name:'Purdue',     abbr:'PUR',  score:'0',  rec:'24-9' }, home:{ name:'Michigan St',    abbr:'MSU',  score:'0',  rec:'23-10' }, status:'pre',  state:'',        gameTime:'7:00 PM ET'  },
   ],
   nhl: [
     { id:'401701201', sport:'NHL', away:{ name:'Golden Knights', abbr:'VGK', score:'2', rec:'' }, home:{ name:'Avalanche', abbr:'COL', score:'1', rec:'' }, status:'live', state:'3rd 11:22', gameTime:'9:00 PM ET'  },
@@ -358,6 +367,12 @@ const HTB_ODDS_MOCK = {
     { awayAbbr:'TENN', homeAbbr:'BAMA', ml:{ away:'+320', home:'-420' }, line:{ away:'+10 (-110)',  home:'-10 (-110)'  }, total:{ val:'51.5' }, lineMove:{ open:'-9',   current:'-10',  dir:'away' } },
     { awayAbbr:'ND',   homeAbbr:'USC',  ml:{ away:'+150', home:'-175' }, line:{ away:'+4.5 (-110)', home:'-4.5 (-110)' }, total:{ val:'44.5' }, lineMove:{ open:'+5',   current:'+4.5', dir:'home' } },
     { awayAbbr:'TEX',  homeAbbr:'OU',   ml:{ away:'+130', home:'-155' }, line:{ away:'+3.5 (-110)', home:'-3.5 (-110)' }, total:{ val:'53.0' }, lineMove:{ open:'-3',   current:'-3.5', dir:'away' } },
+  ],
+  ncaam: [
+    { awayAbbr:'DUKE', homeAbbr:'UNC',  ml:{ away:'+130', home:'-155' }, line:{ away:'+3.5 (-110)', home:'-3.5 (-110)' }, total:{ val:'148.5' }, lineMove:{ open:'-3',   current:'-3.5', dir:'away' } },
+    { awayAbbr:'KU',   homeAbbr:'UK',   ml:{ away:'-115', home:'-105' }, line:{ away:'-1.5 (-110)', home:'+1.5 (-110)' }, total:{ val:'151.0' }, lineMove:{ open:'-2',   current:'-1.5', dir:'home' } },
+    { awayAbbr:'GONZ', homeAbbr:'ARIZ', ml:{ away:'+165', home:'-200' }, line:{ away:'+5 (-110)',   home:'-5 (-110)'   }, total:{ val:'146.0' }, lineMove:{ open:'-4.5', current:'-5',   dir:'away' } },
+    { awayAbbr:'PUR',  homeAbbr:'MSU',  ml:{ away:'+140', home:'-165' }, line:{ away:'+4 (-110)',   home:'-4 (-110)'   }, total:{ val:'142.5' }, lineMove:{ open:'-3.5', current:'-4',   dir:'away' } },
   ],
   nhl: [
     { awayAbbr:'VGK', homeAbbr:'COL', ml:{ away:'-130', home:'+110' }, line:{ away:'-1.5 (+165)', home:'+1.5 (-200)' }, total:{ val:'5.5' }, lineMove:{ open:'-120', current:'-130', dir:'away' } },
@@ -544,7 +559,7 @@ function _matchOdds(game, list) {
 /* Build a relative URL to the game detail page that works from any depth */
 function _gameDetailUrl(id, sport) {
   const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-  const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf'];
+  const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf'];
   const inSub   = subDirs.includes(segs[segs.length - 1]);
   return `${inSub ? '../' : ''}game/?id=${id}&sport=${sport.toLowerCase()}`;
 }

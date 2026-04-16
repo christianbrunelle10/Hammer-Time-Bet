@@ -18,15 +18,15 @@ class HTBNav extends HTMLElement {
   }
 
   _detectActive(path) {
-    if (path === '/' || (path.endsWith('index.html') && !path.includes('/mlb') && !path.includes('/nba') && !path.includes('/nfl') && !path.includes('/nhl') && !path.includes('/ncaaf') && !path.includes('/golf'))) return 'home';
-    const sports = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf'];
+    if (path === '/' || (path.endsWith('index.html') && !path.includes('/mlb') && !path.includes('/nba') && !path.includes('/nfl') && !path.includes('/nhl') && !path.includes('/ncaaf') && !path.includes('/ncaam') && !path.includes('/golf'))) return 'home';
+    const sports = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf'];
     return sports.find(s => path.includes(`/${s}/`) || path.includes(`/${s}?`) || path.endsWith(`/${s}`)) || 'home';
   }
 
   /* Compute relative href that works from any depth on GitHub Pages */
   _href(key) {
     const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-    const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf', 'game'];
+    const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf', 'game'];
     const inSub   = subDirs.includes(segs[segs.length - 1]);
     if (key === 'home') return inSub ? '../' : './';
     return inSub ? `../${key}/` : `./${key}/`;
@@ -44,6 +44,7 @@ class HTBNav extends HTMLElement {
       ['nba',   'NBA'],
       ['nfl',   'NFL'],
       ['ncaaf', 'NCAAF'],
+      ['ncaam', 'NCAAM'],
       ['nhl',   'NHL'],
       ['golf',  'Golf'],
     ];
@@ -52,7 +53,7 @@ class HTBNav extends HTMLElement {
 
     /* Today's Picks always goes to the home page picks section */
     const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-    const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'nhl', 'golf', 'game'];
+    const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf', 'game'];
     const inSub   = subDirs.includes(segs[segs.length - 1]);
     const picksHref = inSub ? '../#picks' : './#picks';
 

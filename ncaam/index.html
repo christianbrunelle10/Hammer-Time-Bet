@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NCAAM — HammerTimeBet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="../components/data.js"       defer></script>
+<script src="../components/live-games.js" defer></script>
+<script src="../components/picks.js"      defer></script>
+<script src="../components/nav.js"        defer></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#080808;color:#fff;font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;font-family:inherit}
+
+/* ── PAGE HEADER ── */
+.cf-hero{padding:36px 20px 32px;border-bottom:1px solid #1e1e1e;background:radial-gradient(ellipse 70% 100% at 50% -20%,rgba(0,120,220,.08) 0%,transparent 70%)}
+.cf-hero-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.cf-hero-left{display:flex;align-items:center;gap:16px}
+.cf-icon{font-size:36px;line-height:1}
+.cf-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;text-transform:uppercase;line-height:.9}
+.cf-title span{color:#f0b429}
+.cf-sub{font-size:12px;color:#666;margin-top:4px;letter-spacing:.04em}
+.cf-hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.cf-stat{text-align:center}
+.cf-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1}
+.cf-stat-val.g{color:#00d084}
+.cf-stat-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-top:3px}
+
+/* ── SECTION ── */
+.section{padding:44px 20px}
+.section+.section{border-top:1px solid #1a1a1a}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.section-eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#f0b429;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.section-eyebrow::before{content:'';display:block;width:16px;height:2px;background:#f0b429}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(24px,3.5vw,34px);font-weight:900;text-transform:uppercase;line-height:1}
+.see-all{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;border:1px solid #1e1e1e;padding:7px 14px;border-radius:6px;transition:border-color .15s,color .15s;white-space:nowrap}
+.see-all:hover{border-color:#2e2e2e;color:#ccc}
+
+/* ── PICKS GRID ── */
+.picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+
+/* ── PICK CARD ── */
+.pick-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:18px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.pick-card:hover{transform:translateY(-3px);border-color:var(--hov,#2e2e2e);box-shadow:0 8px 24px var(--glow,rgba(240,180,41,.07))}
+.pick-card.value{border-top-color:#00d084;--hov:#1e1e1e;--glow:rgba(0,208,132,.07)}
+.pick-card.dog{border-top-color:#818cf8;--hov:#1e1e1e;--glow:rgba(129,140,248,.07)}
+.pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pc-badge{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:4px}
+.pc-badge.strong{background:rgba(240,180,41,.1);color:#f0b429;border:1px solid rgba(240,180,41,.2)}
+.pc-badge.value{background:rgba(0,208,132,.08);color:#00d084;border:1px solid rgba(0,208,132,.2)}
+.pc-badge.dog{background:rgba(129,140,248,.08);color:#818cf8;border:1px solid rgba(129,140,248,.2)}
+.pc-sport{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;background:#181818;border:1px solid #222;padding:3px 9px;border-radius:100px}
+.pc-matchup{font-size:11px;color:#666;margin-bottom:4px}
+.pc-pick{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:2px}
+.pc-odds{font-size:18px;font-weight:700;color:#f0b429;margin-bottom:12px}
+.pick-card.value .pc-odds{color:#00d084}
+.pick-card.dog .pc-odds{color:#818cf8}
+.pc-conf{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.pc-conf-lbl{font-size:10px;color:#444;font-weight:600;white-space:nowrap}
+.conf-track{flex:1;height:3px;background:#1e1e1e;border-radius:2px;overflow:hidden}
+.conf-fill{height:100%;border-radius:2px}
+.pick-card .conf-fill{background:#f0b429}
+.pick-card.value .conf-fill{background:#00d084}
+.pick-card.dog .conf-fill{background:#818cf8}
+.pc-conf-val{font-size:11px;font-weight:700;color:#555;white-space:nowrap}
+.pc-sep{height:1px;background:#1a1a1a;margin-bottom:12px}
+.pc-reasons{display:flex;flex-direction:column;gap:5px}
+.pc-reason{font-size:12px;color:#666;line-height:1.45;display:flex;gap:7px}
+.pc-reason::before{content:'▸';color:#444;font-size:9px;margin-top:3px;flex-shrink:0}
+.pc-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:14px}
+.pc-stat{background:#141414;border:1px solid #1e1e1e;border-radius:6px;padding:7px 10px;text-align:center}
+.pc-stat-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;margin-bottom:3px}
+.pc-stat-val{font-size:13px;font-weight:700;color:#ccc}
+.pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#444;margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
+.pick-card:hover .pc-hint{opacity:1}
+
+/* ── BOX SCORE MODAL ── */
+.bs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.bs-overlay.open{opacity:1;pointer-events:all}
+.bs-panel{background:#111;border:1px solid #2a2a2a;border-radius:14px;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s}
+.bs-overlay.open .bs-panel{transform:translateY(0)}
+.bs-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #1e1e1e;position:sticky;top:0;background:#111;z-index:1}
+.bs-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase}
+.bs-close{background:#1a1a1a;border:1px solid #2a2a2a;color:#888;width:32px;height:32px;border-radius:6px;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .15s}
+.bs-close:hover{color:#fff}
+.bs-body{padding:20px}
+.bs-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px;color:#555;font-size:13px}
+.bs-spinner{width:18px;height:18px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.bs-score-row{display:flex;gap:8px;margin-bottom:20px}
+.bs-team-col{flex:1;background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:14px;text-align:center}
+.bs-team-name{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.bs-team-score{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;line-height:1}
+.bs-team-score.lead{color:#fff}
+.bs-team-score.trail{color:#444}
+.bs-period{text-align:center;font-size:12px;color:#555;margin-bottom:20px;letter-spacing:.06em}
+
+.bs-table{width:100%;border-collapse:collapse;margin-bottom:20px}
+.bs-table th{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;padding:8px 10px;text-align:center;border-bottom:1px solid #1e1e1e}
+.bs-table th:first-child{text-align:left}
+.bs-table td{font-size:13px;font-weight:600;color:#bbb;padding:10px 10px;text-align:center;border-bottom:1px solid #141414}
+.bs-table td:first-child{text-align:left;color:#888}
+.bs-table tr:last-child td{border-bottom:none;color:#fff;font-weight:800}
+
+.bs-stat-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #141414}
+.bs-stat-row:last-child{border-bottom:none}
+.bs-stat-lbl{font-size:11px;color:#555;flex:1;text-align:center}
+.bs-stat-val{font-size:13px;font-weight:700;color:#ccc;min-width:52px;text-align:center}
+.bs-section-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0b429;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.bs-section-lbl::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
+
+/* ── FOOTER ── */
+footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
+.footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.footer-brand em{font-style:normal;color:#f0b429}
+footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
+
+@media(max-width:560px){.cf-hero-stats{gap:16px}.cf-stat-val{font-size:22px}.bs-score-row{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────── -->
+<htb-nav active="ncaam"></htb-nav>
+
+<!-- ── PAGE HEADER ─────────────────────────────────── -->
+<div class="cf-hero">
+  <div class="cf-hero-inner">
+    <div class="cf-hero-left">
+      <div class="cf-icon">🏀</div>
+      <div>
+        <div class="cf-title">College <span>Basketball</span></div>
+        <div class="cf-sub">Live scores · Live lines · AI picks</div>
+      </div>
+    </div>
+    <div class="cf-hero-stats">
+      <div class="cf-stat"><div class="cf-stat-val g">63.4%</div><div class="cf-stat-lbl">CBB Win Rate</div></div>
+      <div class="cf-stat"><div class="cf-stat-val">+9.8u</div><div class="cf-stat-lbl">Units Profit</div></div>
+      <div class="cf-stat"><div class="cf-stat-val g">+3.2%</div><div class="cf-stat-lbl">Avg Edge</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LIVE GAMES ───────────────────────────────────── -->
+<section class="section" id="live-games">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">Live Scores · Live Odds</div>
+        <h2 class="section-title">Today's CBB Games</h2>
+      </div>
+      <a href="#" class="see-all">Full Schedule →</a>
+    </div>
+    <htb-live-games sports="ncaam" refresh="30"></htb-live-games>
+  </div>
+</section>
+
+<!-- ── TOP PICKS ────────────────────────────────────── -->
+<section class="section" id="picks">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">Hammer Model</div>
+        <h2 class="section-title">Top CBB Picks</h2>
+      </div>
+    </div>
+    <div class="picks-grid" id="ncaam-picks-grid"></div>
+  </div>
+</section>
+
+<!-- ── UNDERDOG PICKS ────────────────────────────────── -->
+<section class="section" id="dogs">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-eyebrow">Best Value</div>
+        <h2 class="section-title">Best CBB Underdogs</h2>
+      </div>
+    </div>
+    <div class="picks-grid" id="ncaam-dogs-grid"></div>
+  </div>
+</section>
+
+<!-- ── BOX SCORE MODAL ──────────────────────────────── -->
+<div class="bs-overlay" id="bs-overlay" role="dialog" aria-modal="true" aria-labelledby="bs-title">
+  <div class="bs-panel">
+    <div class="bs-head">
+      <div class="bs-title" id="bs-title">Box Score</div>
+      <button class="bs-close" id="bs-close" aria-label="Close">✕</button>
+    </div>
+    <div class="bs-body" id="bs-body">
+      <div class="bs-loading"><div class="bs-spinner"></div>Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FOOTER ───────────────────────────────────────── -->
+<footer>
+  <div class="footer-brand">Hammer<em>Time</em>Bet</div>
+  <p>For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.</p>
+</footer>
+
+
+<script>
+/* ============================================================
+   NCAAM PICKS — rendered live from real ESPN games via HTBPicks
+   ============================================================ */
+
+/* ============================================================
+   ESPN BOX SCORE SERVICE
+   ============================================================ */
+const ESPN_NCAAM_SUMMARY = id =>
+  `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=${id}`;
+
+async function fetchBoxScore(gameId) {
+  try {
+    const r = await fetch(ESPN_NCAAM_SUMMARY(gameId), { signal: AbortSignal.timeout(6000) });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
+}
+
+/* ============================================================
+   BOX SCORE MODAL
+   ============================================================ */
+const overlay = document.getElementById('bs-overlay');
+const bsBody  = document.getElementById('bs-body');
+const bsTitle = document.getElementById('bs-title');
+
+function openModal()  { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+document.getElementById('bs-close').addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function renderBoxScore(data, teams) {
+  if (!data) {
+    bsBody.innerHTML = `<div class="bs-loading" style="flex-direction:column;gap:8px">
+      <div>📡 Live box score unavailable</div>
+      <div style="font-size:11px;color:#444">Live data unavailable for this game.</div>
+    </div>`;
+    return;
+  }
+
+  const bs        = data.boxscore;
+  const home      = bs?.teams?.[1];
+  const away      = bs?.teams?.[0];
+  const homeScore = bs?.teams?.[1]?.team?.score || '—';
+  const awayScore = bs?.teams?.[0]?.team?.score || '—';
+  const status    = data.header?.competitions?.[0]?.status?.type?.detail || 'Game Data';
+  const hName     = home?.team?.shortDisplayName || teams[1] || 'Home';
+  const aName     = away?.team?.shortDisplayName || teams[0] || 'Away';
+
+  // Half / OT scores
+  const hLine = home?.linescores || [];
+  const aLine = away?.linescores || [];
+  const halves = Math.max(hLine.length, aLine.length) || 2;
+  const halfHdrs = Array.from({ length: halves }, (_, i) => {
+    if (i === 0) return '<th>H1</th>';
+    if (i === 1) return '<th>H2</th>';
+    return `<th>OT${i - 1}</th>`;
+  }).join('');
+  const halfHome = Array.from({ length: halves }, (_, i) => `<td>${hLine[i]?.displayValue ?? '—'}</td>`).join('');
+  const halfAway = Array.from({ length: halves }, (_, i) => `<td>${aLine[i]?.displayValue ?? '—'}</td>`).join('');
+
+  // Basketball team stats
+  const statKeys   = [
+    'fieldGoalsMade-fieldGoalsAttempted',
+    'threePointFieldGoalsMade-threePointFieldGoalsAttempted',
+    'freeThrowsMade-freeThrowsAttempted',
+    'totalRebounds', 'assists', 'turnovers',
+  ];
+  const statLabels = {
+    'fieldGoalsMade-fieldGoalsAttempted':                      'Field Goals',
+    'threePointFieldGoalsMade-threePointFieldGoalsAttempted':  '3-Pointers',
+    'freeThrowsMade-freeThrowsAttempted':                      'Free Throws',
+    totalRebounds: 'Rebounds',
+    assists:       'Assists',
+    turnovers:     'Turnovers',
+  };
+  const hStats = {};
+  const aStats = {};
+  (home?.statistics || []).forEach(s => hStats[s.name] = s.displayValue);
+  (away?.statistics || []).forEach(s => aStats[s.name] = s.displayValue);
+
+  const statsHTML = statKeys.map(k => {
+    const hv = hStats[k] || '—';
+    const av = aStats[k] || '—';
+    return `<div class="bs-stat-row">
+      <span class="bs-stat-val">${av}</span>
+      <span class="bs-stat-lbl">${statLabels[k]}</span>
+      <span class="bs-stat-val">${hv}</span>
+    </div>`;
+  }).join('');
+
+  const hLead = parseInt(homeScore) >= parseInt(awayScore);
+
+  bsBody.innerHTML = `
+    <div class="bs-score-row">
+      <div class="bs-team-col">
+        <div class="bs-team-name">${aName}</div>
+        <div class="bs-team-score ${!hLead ? 'lead' : 'trail'}">${awayScore}</div>
+      </div>
+      <div class="bs-team-col">
+        <div class="bs-team-name">${hName}</div>
+        <div class="bs-team-score ${hLead ? 'lead' : 'trail'}">${homeScore}</div>
+      </div>
+    </div>
+    <div class="bs-period">${status}</div>
+
+    <div class="bs-section-lbl">Scoring by Half</div>
+    <table class="bs-table">
+      <thead><tr><th>Team</th>${halfHdrs}<th>T</th></tr></thead>
+      <tbody>
+        <tr><td>${aName}</td>${halfAway}<td>${awayScore}</td></tr>
+        <tr><td>${hName}</td>${halfHome}<td>${homeScore}</td></tr>
+      </tbody>
+    </table>
+
+    <div class="bs-section-lbl">Team Stats</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:#555;flex:1;text-align:center">${aName}</div>
+      <div style="flex:2"></div>
+      <div style="font-size:11px;font-weight:700;color:#555;flex:1;text-align:center">${hName}</div>
+    </div>
+    ${statsHTML}
+  `;
+}
+
+async function showBoxScore(gameId, teams) {
+  bsTitle.textContent = teams.join(' vs ');
+  bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Loading game data…</div>`;
+  openModal();
+  const data = await fetchBoxScore(gameId);
+  renderBoxScore(data, teams);
+}
+
+/* ── Listen for box score events from htb-live-games ── */
+document.addEventListener('htb:boxscore', e => {
+  showBoxScore(e.detail.gameId, e.detail.teams);
+});
+
+/* ============================================================
+   RENDER PICKS — live from real ESPN games
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof HTBPicks !== 'undefined') {
+    HTBPicks.render('ncaam', 'ncaam-picks-grid', 'ncaam-dogs-grid');
+  }
+});
+</script>
+</body>
+</html>
