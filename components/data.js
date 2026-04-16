@@ -81,35 +81,11 @@
        state, gameTime
      }
      ============================================================ */
-  function _fmtML(n) {
-    if (n === undefined || n === null || n === 0) return null;
-    return n > 0 ? `+${n}` : String(n);
-  }
-
   function _parseEvent(event, sport) {
     const comp  = event.competitions[0];
     const home  = comp.competitors.find(c => c.homeAway === 'home');
     const away  = comp.competitors.find(c => c.homeAway === 'away');
     const sType = comp.status.type.name;
-
-    // Extract ESPN's embedded odds (free, same request, no API key needed)
-    let espnOdds = null;
-    const eo = comp.odds?.[0];
-    if (eo) {
-      const awayML = _fmtML(eo.awayTeamOdds?.moneyLine);
-      const homeML = _fmtML(eo.homeTeamOdds?.moneyLine);
-      const awayPt = eo.awayTeamOdds?.spreadOdds ?? eo.awayTeamOdds?.pointSpread?.alternateDisplayValue;
-      const homePt = eo.homeTeamOdds?.spreadOdds ?? eo.homeTeamOdds?.pointSpread?.alternateDisplayValue;
-      const ou     = eo.overUnder != null ? String(eo.overUnder) : null;
-      espnOdds = {
-        awayAbbr: away.team.abbreviation,
-        homeAbbr: home.team.abbreviation,
-        ml:    { away: awayML || '—', home: homeML || '—' },
-        line:  { away: awayPt != null ? String(awayPt) : '—', home: homePt != null ? String(homePt) : '—' },
-        total: { val: ou || '—', over: null, under: null },
-      };
-    }
-
     return {
       id:       event.id,
       sport:    sport.toUpperCase(),
@@ -130,7 +106,6 @@
               : 'pre',
       state:    comp.status.type.detail    || '',
       gameTime: comp.status.type.shortDetail || '',
-      espnOdds,
     };
   }
 

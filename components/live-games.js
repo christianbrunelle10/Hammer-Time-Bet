@@ -264,6 +264,15 @@ const HTB_ESPN = {
   golf:  'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard',
 };
 
+/* ESPN summary endpoints — where pickcenter odds actually live */
+const HTB_ESPN_SUMMARY = {
+  mlb:   id => `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${id}`,
+  nba:   id => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${id}`,
+  nfl:   id => `https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=${id}`,
+  ncaaf: id => `https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=${id}`,
+  nhl:   id => `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`,
+};
+
 /* ============================================================
    ODDS PROXY
    Set this to your Vercel deployment URL after deploying api/odds.js.
@@ -375,17 +384,86 @@ async function _fetchScores(sport) {
 
 /* Tracks the last successful odds response time for the UI timestamp */
 let _oddsUpdatedAt = null;
-let _oddsSource    = 'espn'; // 'proxy' | 'espn' | 'mock'
+let _oddsSource    = 'espn'; // 'proxy' | 'espn' | 'none'
 
 const _PROXY_PLACEHOLDER = 'your-project.vercel.app';
 
-async function _fetchOdds(sport) {
+/* Parse ESPN pickcenter[0] into the internal odds shape */
+function _parsePickcenter(pc) {
+  const fmt = n => (n === undefined || n === null) ? null : (n >= 0 ? `+${n}` : String(n));
+
+  const awayML = fmt(pc.awayTeamOdds?.moneyLine);
+  const homeML = fmt(pc.homeTeamOdds?.moneyLine);
+
+  const awayLine     = pc.pointSpread?.away?.close?.line  || null;
+  const awayLineOdds = pc.pointSpread?.away?.close?.odds  || null;
+  const homeLine     = pc.pointSpread?.home?.close?.line  || null;
+  const homeLineOdds = pc.pointSpread?.home?.close?.odds  || null;
+
+  const ou        = pc.overUnder != null ? String(pc.overUnder) : null;
+  const overOdds  = fmt(pc.overOdds);
+  const underOdds = fmt(pc.underOdds);
+
+  // Return null if there's genuinely no data
+  if (!awayML && !awayLine && !ou) return null;
+
+  return {
+    ml: {
+      away: awayML || '—',
+      home: homeML || '—',
+    },
+    line: {
+      away: awayLine ? (awayLineOdds ? `${awayLine} (${awayLineOdds})` : awayLine) : '—',
+      home: homeLine ? (homeLineOdds ? `${homeLine} (${homeLineOdds})` : homeLine) : '—',
+    },
+    total: {
+      val:   ou || '—',
+      over:  overOdds  || '—',
+      under: underOdds || '—',
+    },
+  };
+}
+
+/* Fetch ESPN summary odds for each game in parallel.
+   Returns a map of { [eventId]: oddsObject } */
+async function _fetchESPNOdds(sport, games) {
+  const summaryFn = HTB_ESPN_SUMMARY[sport];
+  if (!summaryFn || !games.length) return {};
+
+  console.log(`[HTB Odds] Fetching ESPN summary odds for ${games.length} ${sport.toUpperCase()} games…`);
+
+  const results = await Promise.allSettled(
+    games.map(async game => {
+      const r = await fetch(summaryFn(game.id), { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const data = await r.json();
+      const pc   = (data.pickcenter || [])[0];
+      const odds = pc ? _parsePickcenter(pc) : null;
+      console.log(`[HTB Odds] ${game.away.abbr}@${game.home.abbr} (${game.id}):`, odds ? `ML ${odds.ml.away}/${odds.ml.home}  Total ${odds.total.val}` : 'no pickcenter');
+      return { id: game.id, odds };
+    })
+  );
+
+  const map = {};
+  let found = 0;
+  results.forEach(r => {
+    if (r.status === 'fulfilled' && r.value.odds) {
+      map[r.value.id] = r.value.odds;
+      found++;
+    } else if (r.status === 'rejected') {
+      console.warn('[HTB Odds] Summary fetch failed:', r.reason?.message);
+    }
+  });
+
+  console.log(`[HTB Odds] ESPN odds populated for ${found}/${games.length} ${sport.toUpperCase()} games`);
+  return map;
+}
+
+async function _fetchProxyOdds(sport) {
   if (sport === 'golf') return [];
 
-  // Detect unset placeholder — log clearly and skip network call
   if (HTB_ODDS_PROXY.includes(_PROXY_PLACEHOLDER)) {
-    console.warn('[HTB Odds] HTB_ODDS_PROXY is still the placeholder URL. Update it in live-games.js to your Vercel deployment URL.');
-    _oddsSource = 'espn';
+    console.log('[HTB Odds] Proxy URL not configured — using ESPN summary odds');
     return [];
   }
 
@@ -396,11 +474,10 @@ async function _fetchOdds(sport) {
     if (!r.ok) throw new Error(`proxy ${r.status}`);
     const { odds, updatedAt } = await r.json();
     if (updatedAt) _oddsUpdatedAt = updatedAt;
-    _oddsSource = 'proxy';
+    console.log(`[HTB Odds] Proxy returned ${Array.isArray(odds) ? odds.length : 0} ${sport} games`);
     return Array.isArray(odds) ? odds : [];
   } catch (err) {
-    console.warn('[HTB Odds] Proxy fetch failed:', err.message, '— falling back to ESPN embedded odds');
-    _oddsSource = 'espn';
+    console.warn('[HTB Odds] Proxy failed:', err.message);
     return [];
   }
 }
@@ -497,17 +574,12 @@ function _gameCard(game, odds) {
     moveBadge = `<div class="htb-line-move">Open <strong>${open}</strong> → <span class="${cls}">${current}</span></div>`;
   }
 
-  const ml = odds
-    ? `<div class="htb-odd"><div class="htb-odd-lbl">ML</div><div class="htb-odd-val">${odds.ml.away} / ${odds.ml.home}</div></div>`
-    : `<div class="htb-odd"><div class="htb-odd-lbl">ML</div><div class="htb-odd-val">—</div></div>`;
-
-  const rl = odds
-    ? `<div class="htb-odd"><div class="htb-odd-lbl">${lineLabel}</div><div class="htb-odd-val">${lineAway} / ${lineHome}</div></div>`
-    : `<div class="htb-odd"><div class="htb-odd-lbl">${lineLabel}</div><div class="htb-odd-val">—</div></div>`;
-
-  const tot = odds
-    ? `<div class="htb-odd"><div class="htb-odd-lbl">Total</div><div class="htb-odd-val">O/U ${odds.total.val}</div></div>`
-    : `<div class="htb-odd"><div class="htb-odd-lbl">Total</div><div class="htb-odd-val">—</div></div>`;
+  const oddsBlock = odds ? `
+    <div class="htb-odds-grid">
+      <div class="htb-odd"><div class="htb-odd-lbl">ML</div><div class="htb-odd-val">${odds.ml.away} / ${odds.ml.home}</div></div>
+      <div class="htb-odd"><div class="htb-odd-lbl">${lineLabel}</div><div class="htb-odd-val">${lineAway} / ${lineHome}</div></div>
+      <div class="htb-odd"><div class="htb-odd-lbl">Total</div><div class="htb-odd-val">O/U ${odds.total.val}</div></div>
+    </div>` : `<div style="font-size:11px;color:#444;margin-bottom:10px;text-align:center">Odds unavailable</div>`;
 
   return `
     <div class="htb-card" data-game-id="${game.id}">
@@ -534,7 +606,7 @@ function _gameCard(game, odds) {
           ${isLive ? '<span class="htb-live-dot"></span>' : ''}
           ${game.state || game.gameTime}
         </div>
-        <div class="htb-odds-grid">${ml}${rl}${tot}</div>
+        ${oddsBlock}
         ${moveBadge}
         <div class="htb-actions">
           <a class="htb-btn htb-btn-box" href="${_gameDetailUrl(game.id, game.sport)}">Game Details</a>
@@ -644,15 +716,20 @@ class HTBLiveGames extends HTMLElement {
     const teamSports = this._sports.filter(s => s !== 'golf');
     const hasGolf    = this._sports.includes('golf');
 
-    // Fetch all in parallel — each sport falls back to ESPN embedded odds on error or placeholder
+    // Fetch all sports in parallel
     const [teamResults, golfData] = await Promise.all([
       Promise.all(teamSports.map(async sport => {
-        const [games, proxyOdds] = await Promise.all([_fetchScores(sport), _fetchOdds(sport)]);
+        // Step 1: Get scores and try proxy in parallel
+        const [games, proxyOdds] = await Promise.all([_fetchScores(sport), _fetchProxyOdds(sport)]);
+
+        // Step 2: If proxy gave nothing, fetch ESPN summary odds (per-game)
+        const espnOddsMap = proxyOdds.length === 0 ? await _fetchESPNOdds(sport, games) : {};
+
+        _oddsSource = proxyOdds.length > 0 ? 'proxy' : Object.keys(espnOddsMap).length > 0 ? 'espn' : 'none';
+
         return games.map(game => {
-          // Priority: 1) Vercel proxy odds  2) ESPN embedded odds  3) null (shows —)
-          const matched = _matchOdds(game, proxyOdds) || game.espnOdds || null;
-          if (!matched) console.debug('[HTB Odds] No odds matched for', game.away.abbr, '@', game.home.abbr);
-          return { game, odds: matched };
+          const odds = _matchOdds(game, proxyOdds) || espnOddsMap[game.id] || null;
+          return { game, odds };
         });
       })),
       hasGolf ? _fetchGolf() : Promise.resolve(null),
@@ -679,7 +756,7 @@ class HTBLiveGames extends HTMLElement {
       ? ` · Live Odds ${oddsTs || ts}`
       : _oddsSource === 'espn'
       ? ` · Odds via ESPN`
-      : '';
+      : ` · Odds unavailable`;
     this.innerHTML = `
       <div class="htb-lg-grid">${all.join('')}</div>
       <div class="htb-timestamp">Scores ${ts}${oddsLabel} · Auto-refreshes every ${this._refresh}s</div>`;
