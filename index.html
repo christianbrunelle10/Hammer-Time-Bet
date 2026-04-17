@@ -221,7 +221,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   <div class="section-inner">
     <div class="section-head">
       <div>
-        <div class="section-label">Live Dogs</div>
+        <div class="section-label" id="dog-section-label">Today's Underdogs</div>
         <h2 class="section-title">Best Underdog Picks</h2>
       </div>
     </div>
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Picks rendered live from real ESPN games across all sports
   if (typeof HTBPicks !== 'undefined') {
-    HTBPicks.renderHomepage(['mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaam'], 'top-picks-grid', 'dog-picks-grid');
+    HTBPicks.renderHomepage(['mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaam'], 'top-picks-grid', 'dog-picks-grid', 'dog-section-label');
   } else {
     renderFallback('top-picks-grid');
     renderFallback('dog-picks-grid');

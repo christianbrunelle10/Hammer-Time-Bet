@@ -42,25 +42,34 @@
   function pickArr(arr, r) { return arr[Math.floor(r() * arr.length)]; }
   function randConf(min, max, r) { return parseFloat((r() * (max - min) + min).toFixed(1)); }
 
-  /* ── Fetch ESPN scoreboard ─────────────────────────── */
+  /* ── Today's date string for ESPN date filter ──────── */
+  function todayDateParam() {
+    const n = new Date();
+    const m = String(n.getMonth() + 1).padStart(2, '0');
+    const d = String(n.getDate()).padStart(2, '0');
+    return `${n.getFullYear()}${m}${d}`;
+  }
+
+  /* ── Fetch ESPN scoreboard — today's games only ─────── */
   async function getGames(sport) {
     const url = SB[sport];
     if (!url) return [];
     try {
-      const resp = await fetch(url, { signal: AbortSignal.timeout(7000) });
+      const resp = await fetch(`${url}?dates=${todayDateParam()}`, { signal: AbortSignal.timeout(7000) });
       if (!resp.ok) throw 0;
       const { events = [] } = await resp.json();
       return events.map(ev => {
         const comp = ev.competitions[0];
         const home = comp.competitors.find(c => c.homeAway === 'home');
         const away = comp.competitors.find(c => c.homeAway === 'away');
+        const statusName = comp.status.type.name;
         return {
           id:     ev.id,
           sport:  sport.toUpperCase(),
           away:   { name: away.team.shortDisplayName, abbr: away.team.abbreviation, rec: away.records?.[0]?.summary || '' },
           home:   { name: home.team.shortDisplayName, abbr: home.team.abbreviation, rec: home.records?.[0]?.summary || '' },
-          status: comp.status.type.name === 'STATUS_IN_PROGRESS' ? 'live'
-                : comp.status.type.name === 'STATUS_FINAL'       ? 'final' : 'pre',
+          status: statusName === 'STATUS_IN_PROGRESS' ? 'live'
+                : statusName === 'STATUS_FINAL'       ? 'final' : 'pre',
         };
       });
     } catch { return []; }
@@ -386,10 +395,12 @@
     if (role === 'dog') {
       if (parseInt(dogML) < 0) return null; // no true underdog
       const reasons = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
+      // Only label "Live Dog" when the game is actually in progress right now
+      const edgeLabel = game.status === 'live' ? 'Live Dog' : 'Dog Pick';
       return {
         sport: sp, matchup: `${away} @ ${home}`,
         pick: `${dog} ML`, odds: dogML,
-        edge: 'dog', edgeLabel: 'Live Dog',
+        edge: 'dog', edgeLabel,
         conf: randConf(6.0, 7.8, r), reasons,
       };
     }
@@ -550,23 +561,39 @@
 
     /**
      * Render picks for the homepage from multiple sports.
-     * @param {string[]} sports  e.g. ['mlb','nba','nfl','nhl']
-     * @param {string}   topId  DOM id for top picks grid
-     * @param {string}   dogId  DOM id for underdog picks grid
+     * Only uses games scheduled for today's date (enforced via ESPN date param in getGames).
+     * @param {string[]} sports      e.g. ['mlb','nba','nfl','nhl']
+     * @param {string}   topId       DOM id for top picks grid
+     * @param {string}   dogId       DOM id for underdog picks grid
+     * @param {string}   [dogLabelId] Optional DOM id of the dog section label — updated to
+     *                                "Live Dogs" when games are live, "Today's Underdogs" otherwise
      */
-    async renderHomepage(sports, topId, dogId) {
-      const topEl = document.getElementById(topId);
-      const dogEl = document.getElementById(dogId);
+    async renderHomepage(sports, topId, dogId, dogLabelId) {
+      const topEl      = document.getElementById(topId);
+      const dogEl      = document.getElementById(dogId);
+      const dogLabelEl = dogLabelId ? document.getElementById(dogLabelId) : null;
       if (topEl) topEl.innerHTML = LOADING;
       if (dogEl) dogEl.innerHTML = LOADING;
 
-      // Fetch all sports in parallel
+      // Fetch all sports in parallel — each call uses ?dates=TODAY so only today's games return
       const gamesArr = await Promise.allSettled(sports.map(s => getGames(s)));
       const allGames = gamesArr.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
+      // Determine live state before rendering anything
+      const anyLive = allGames.some(g => g.status === 'live');
+
+      // Update section label: "Live Dogs" only when a game is actually in progress
+      if (dogLabelEl) {
+        dogLabelEl.textContent = anyLive ? 'Live Dogs' : "Today's Underdogs";
+      }
+
       if (!allGames.length) {
         if (topEl) topEl.innerHTML = NO_PICKS;
-        if (dogEl) dogEl.innerHTML = NO_PICKS;
+        if (dogEl) dogEl.innerHTML = `
+          <div style="grid-column:1/-1;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:44px 20px;text-align:center">
+            <div style="font-size:13px;font-weight:700;color:#888">No picks available today.</div>
+            <div style="font-size:11px;color:#444;margin-top:6px">No games scheduled across active sports today.</div>
+          </div>`;
         return;
       }
 
@@ -599,10 +626,29 @@
       const topShow = shuffle(topPicks).slice(0, 5);
       const dogShow = shuffle(dogPicks).slice(0, 3);
 
-      console.log(`[HTB Picks] Homepage: ${topShow.length} top, ${dogShow.length} dog from ${allGames.length} real games across ${sports.join(', ')}`);
+      console.log(`[HTB Picks] Homepage: ${topShow.length} top, ${dogShow.length} dog from ${allGames.length} real games across ${sports.join(', ')} (live: ${anyLive})`);
 
-      if (topEl) topEl.innerHTML = topShow.length ? topShow.map(p => cardHTML(p, false)).join('') : NO_PICKS;
-      if (dogEl) dogEl.innerHTML = dogShow.length ? dogShow.map(p => cardHTML(p, true)).join('') : NO_PICKS;
+      if (topEl) {
+        topEl.innerHTML = topShow.length ? topShow.map(p => cardHTML(p, false)).join('') : NO_PICKS;
+      }
+
+      if (dogEl) {
+        if (dogShow.length) {
+          dogEl.innerHTML = dogShow.map(p => cardHTML(p, true)).join('');
+        } else {
+          const msg = anyLive
+            ? 'No live underdog opportunities right now.'
+            : 'No underdog picks available today.';
+          const sub = anyLive
+            ? 'Check back as games progress for underdog value.'
+            : 'Underdog picks appear when today\'s lines post closer to game time.';
+          dogEl.innerHTML = `
+            <div style="grid-column:1/-1;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:44px 20px;text-align:center">
+              <div style="font-size:13px;font-weight:700;color:#888">${msg}</div>
+              <div style="font-size:11px;color:#444;margin-top:6px">${sub}</div>
+            </div>`;
+        }
+      }
     },
   };
 
