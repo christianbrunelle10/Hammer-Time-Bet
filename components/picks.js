@@ -474,12 +474,13 @@
     // ── Dog pick ───────────────────────────────────────
     if (role === 'dog') {
       if (parseInt(dogML) < 0) return null; // no true underdog
-      const reasons   = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
-      const edgeLabel = game.status === 'live' ? 'Live Dog' : 'Dog Pick';
+      const reasons = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
+      // Always "Dog Pick" — ESPN pickcenter only returns pre-game odds.
+      // "Live Dog" would require real in-game lines we don't have.
       return {
         sport: sp, matchup: `${away} @ ${home}`,
         pick: `${dog} ML`, odds: dogML,
-        edge: 'dog', edgeLabel,
+        edge: 'dog', edgeLabel: 'Dog Pick',
         conf: randConf(6.0, 7.8, r), reasons,
       };
     }
@@ -632,6 +633,10 @@
 
       const dogPicks = dogId
         ? games.map(g => {
+            // Only pre-game underdogs — live games use pre-game odds (ESPN pickcenter
+            // doesn't provide live lines), so showing them as dogs would be misleading.
+            // Final games are already over — no pick value.
+            if (g.status !== 'pre') return null;
             const odds = oddsMap[g.id] || null;
             if (!isDogGame(odds)) return null;
             return makePick(g, odds, today, 'dog');
@@ -668,12 +673,10 @@
       const gamesArr = await Promise.allSettled(sports.map(s => getGames(s)));
       const allGames = gamesArr.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
-      // Determine live state before rendering anything
-      const anyLive = allGames.some(g => g.status === 'live');
-
-      // Update section label: "Live Dogs" only when a game is actually in progress
+      // Section label is always "Today's Underdogs" — we never surface live-game
+      // underdogs because ESPN pickcenter only provides pre-game odds, not live lines.
       if (dogLabelEl) {
-        dogLabelEl.textContent = anyLive ? 'Live Dogs' : "Today's Underdogs";
+        dogLabelEl.textContent = "Today's Underdogs";
       }
 
       if (!allGames.length) {
@@ -696,6 +699,9 @@
 
       const dogPicks = allGames
         .map(g => {
+          // Pre-game only — live/final games are excluded from underdog picks
+          // because ESPN pickcenter only carries pre-game lines, not live odds.
+          if (g.status !== 'pre') return null;
           const odds = oddsMap[g.id] || null;
           if (!isDogGame(odds)) return null;
           return makePick(g, odds, today, 'dog');
@@ -715,28 +721,19 @@
       const topShow = shuffle(topPicks).slice(0, 5);
       const dogShow = shuffle(dogPicks).slice(0, 3);
 
-      console.log(`[HTB Picks] Homepage: ${topShow.length} top, ${dogShow.length} dog from ${allGames.length} real games across ${sports.join(', ')} (live: ${anyLive})`);
+      console.log(`[HTB Picks] Homepage: ${topShow.length} top, ${dogShow.length} dog from ${allGames.length} real games across ${sports.join(', ')}`);
 
       if (topEl) {
         topEl.innerHTML = topShow.length ? topShow.map(p => cardHTML(p, false)).join('') : NO_PICKS;
       }
 
       if (dogEl) {
-        if (dogShow.length) {
-          dogEl.innerHTML = dogShow.map(p => cardHTML(p, true)).join('');
-        } else {
-          const msg = anyLive
-            ? 'No live underdog opportunities right now.'
-            : 'No underdog picks available today.';
-          const sub = anyLive
-            ? 'Check back as games progress for underdog value.'
-            : 'Underdog picks appear when today\'s lines post closer to game time.';
-          dogEl.innerHTML = `
-            <div style="grid-column:1/-1;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:44px 20px;text-align:center">
-              <div style="font-size:13px;font-weight:700;color:#888">${msg}</div>
-              <div style="font-size:11px;color:#444;margin-top:6px">${sub}</div>
-            </div>`;
-        }
+        dogEl.innerHTML = dogShow.length
+          ? dogShow.map(p => cardHTML(p, true)).join('')
+          : `<div style="grid-column:1/-1;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:44px 20px;text-align:center">
+               <div style="font-size:13px;font-weight:700;color:#888">No underdog picks available today.</div>
+               <div style="font-size:11px;color:#444;margin-top:6px">Underdog picks appear when today's lines post closer to game time.</div>
+             </div>`;
       }
     },
   };
