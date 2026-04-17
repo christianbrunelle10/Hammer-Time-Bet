@@ -610,6 +610,14 @@ function _gameDetailUrl(id, sport) {
   return `${inSub ? '../' : ''}game/?id=${id}&sport=${sport.toLowerCase()}`;
 }
 
+/* Build a relative URL to the live game page */
+function _liveGameUrl(id, sport) {
+  const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+  const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf'];
+  const inSub   = subDirs.includes(segs[segs.length - 1]);
+  return `${inSub ? '../' : ''}live-game/?id=${id}&sport=${sport.toLowerCase()}`;
+}
+
 /* ============================================================
    CARD RENDERERS
    ============================================================ */
@@ -671,7 +679,7 @@ function _gameCard(game, odds) {
         ${moveBadge}
         <div class="htb-actions">
           <a class="htb-btn htb-btn-box" href="${_gameDetailUrl(game.id, game.sport)}">Full Analysis</a>
-          <a class="htb-btn htb-btn-bet" href="${_gameDetailUrl(game.id, game.sport)}#ai-pick">AI Pick</a>
+          <a class="htb-btn htb-btn-bet" href="${_liveGameUrl(game.id, game.sport)}">Live Game</a>
         </div>
       </div>
     </div>`;

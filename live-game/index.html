@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Game — HammerTimeBet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="../components/nav.js" defer></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:#080808;color:#fff;font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+
+/* ── BACK LINK ── */
+.back-wrap{max-width:1200px;margin:0 auto;padding:16px 20px 0}
+.back-link{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#555;transition:color .15s}
+.back-link:hover{color:#ccc}
+.back-link::before{content:'←';font-size:14px}
+
+/* ── MATCHUP HERO ── */
+.matchup-hero{padding:32px 20px 28px;border-bottom:1px solid #1e1e1e}
+.matchup-inner{max-width:1200px;margin:0 auto}
+.matchup-meta{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.sport-tag{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#666;background:#161616;border:1px solid #222;padding:3px 10px;border-radius:100px}
+.game-status-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px}
+.game-status-badge.live  {background:rgba(0,208,132,.1);color:#00d084;border:1px solid rgba(0,208,132,.2)}
+.game-status-badge.pre   {background:#161616;color:#555;border:1px solid #222}
+.game-status-badge.final {background:#161616;color:#444;border:1px solid #222}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#00d084;animation:blink 1.5s ease-in-out infinite;display:inline-block;margin-right:4px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.refresh-lbl{font-size:10px;color:#444;letter-spacing:.06em}
+
+.scoreboard{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.team-block{flex:1;min-width:140px;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:20px;text-align:center}
+.team-block.winner{border-color:#2e2e2e}
+.team-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:6px}
+.team-name{font-family:'Barlow Condensed',sans-serif;font-size:clamp(22px,4vw,34px);font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:6px}
+.team-record{font-size:11px;color:#555}
+.team-score{font-family:'Barlow Condensed',sans-serif;font-size:clamp(52px,8vw,80px);font-weight:900;line-height:1}
+.team-score.lead {color:#fff}
+.team-score.trail{color:#333}
+.team-score.pre  {color:#444;font-size:32px;padding-top:16px}
+
+.vs-col{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0}
+.vs-label{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#333}
+.game-time-lbl{font-size:11px;color:#555;text-align:center;max-width:120px}
+.live-period{font-size:13px;font-weight:700;color:#00d084;text-align:center}
+
+/* ── SECTIONS ── */
+.section{padding:32px 20px}
+.section+.section{border-top:1px solid #1a1a1a}
+.section-inner{max-width:1200px;margin:0 auto}
+.section-head{margin-bottom:18px}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#f0b429;margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.eyebrow::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
+.sec-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(20px,3vw,28px);font-weight:900;text-transform:uppercase;line-height:1}
+
+/* ── BOX SCORE ── */
+.bs-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bs-table{width:100%;border-collapse:collapse;min-width:380px}
+.bs-table th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:7px 10px;text-align:center;border-bottom:1px solid #1e1e1e}
+.bs-table th:first-child{text-align:left;min-width:90px}
+.bs-table td{font-size:13px;font-weight:600;color:#888;padding:9px 10px;text-align:center;border-bottom:1px solid #141414}
+.bs-table td:first-child{text-align:left;font-size:12px;color:#666}
+.bs-table tr:last-child td{border-bottom:none;color:#ccc;font-weight:700}
+.bs-sep{border-left:1px solid #2a2a2a !important}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:16px}
+.stat-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#101010;border:1px solid #1a1a1a;border-radius:8px}
+.stat-away{font-size:13px;font-weight:700;color:#ccc;min-width:46px;text-align:right}
+.stat-lbl {font-size:11px;color:#555;flex:1;text-align:center}
+.stat-home{font-size:13px;font-weight:700;color:#ccc;min-width:46px;text-align:left}
+.stat-bar-wrap{flex:1;display:flex;align-items:center;gap:6px}
+.stat-bar-track{flex:1;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden}
+.stat-bar-fill{height:100%;background:#f0b429;border-radius:2px;transition:width .4s}
+
+/* ── DRIVES / PLAYS ── */
+.plays-list{display:flex;flex-direction:column;gap:6px}
+.play-row{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#101010;border:1px solid #1a1a1a;border-radius:8px;font-size:12px}
+.play-time{font-size:10px;font-weight:700;color:#555;white-space:nowrap;min-width:36px}
+.play-team{font-size:10px;font-weight:700;color:#888;white-space:nowrap;min-width:40px}
+.play-desc{color:#777;line-height:1.4}
+.play-score{font-size:11px;font-weight:700;color:#f0b429;white-space:nowrap;margin-left:auto}
+
+/* ── LOADING / ERROR ── */
+.htb-loading{display:flex;align-items:center;justify-content:center;gap:12px;padding:60px 20px;color:#555;font-size:13px}
+.htb-spinner{width:18px;height:18px;border:2px solid #222;border-top-color:#f0b429;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.not-found{max-width:500px;margin:80px auto;text-align:center;padding:20px}
+.not-found h2{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;text-transform:uppercase;margin-bottom:10px}
+.not-found p{color:#555;font-size:14px;line-height:1.7}
+.empty-msg{color:#444;font-size:13px;padding:16px 0}
+
+/* ── FOOTER ── */
+footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
+.footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.footer-brand em{font-style:normal;color:#f0b429}
+footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
+
+@media(max-width:560px){
+  .scoreboard{flex-direction:column}
+  .team-block{min-width:0}
+  .vs-col{flex-direction:row;width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<htb-nav></htb-nav>
+
+<div id="game-root">
+  <div class="htb-loading">
+    <div class="htb-spinner"></div>
+    Loading game data…
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand">Hammer<em>Time</em>Bet</div>
+  <p>For entertainment purposes only. Not financial advice. Must be 21+. Please gamble responsibly.</p>
+</footer>
+
+<script>
+/* ============================================================
+   ESPN SUMMARY ENDPOINTS
+   ============================================================ */
+const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
+const ESPN_SUMMARY = {
+  mlb:   id => `${ESPN_BASE}/baseball/mlb/summary?event=${id}`,
+  nba:   id => `${ESPN_BASE}/basketball/nba/summary?event=${id}`,
+  nfl:   id => `${ESPN_BASE}/football/nfl/summary?event=${id}`,
+  ncaaf: id => `${ESPN_BASE}/football/college-football/summary?event=${id}`,
+  ncaam: id => `${ESPN_BASE}/basketball/mens-college-basketball/summary?event=${id}`,
+  nhl:   id => `${ESPN_BASE}/hockey/nhl/summary?event=${id}`,
+};
+
+/* ============================================================
+   ESPN DATA PARSER
+   Extracts score, linescore, and team stats from summary JSON
+   ============================================================ */
+function parseGame(data, sport, gameId) {
+  const comp   = data.header?.competitions?.[0] || {};
+  const comps  = comp.competitors || [];
+  const away   = comps.find(c => c.homeAway === 'away') || comps[0] || {};
+  const home   = comps.find(c => c.homeAway === 'home') || comps[1] || {};
+  const status = comp.status || {};
+  const state  =
+    status.type?.state === 'in'   ? 'live'  :
+    status.type?.state === 'post' ? 'final' : 'pre';
+
+  const gameTime = (() => {
+    if (state !== 'pre') return status.type?.shortDetail || '';
+    try {
+      const d = new Date(comp.date || '');
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    } catch { return comp.date || ''; }
+  })();
+
+  return {
+    id:       String(comp.id || gameId),
+    sport,
+    status:   state,
+    gameTime: state === 'pre' ? gameTime : status.type?.shortDetail || '',
+    period:   state === 'live' ? (status.type?.shortDetail || 'In Progress') : '',
+    away: {
+      name:  away.team?.displayName || away.team?.name || 'Away',
+      abbr:  away.team?.abbreviation || '',
+      score: away.score || '0',
+      rec:   away.records?.[0]?.summary || '',
+    },
+    home: {
+      name:  home.team?.displayName || home.team?.name || 'Home',
+      abbr:  home.team?.abbreviation || '',
+      score: home.score || '0',
+      rec:   home.records?.[0]?.summary || '',
+    },
+  };
+}
+
+/* ============================================================
+   LINESCORE PARSER  — extracts period-by-period scoring
+   ============================================================ */
+function parseLinescore(data, sport, game) {
+  const boxscore = data.boxscore || {};
+  const teams    = boxscore.teams || [];
+  if (!teams.length) return null;
+
+  const awayTeam = teams.find(t => t.homeAway === 'away') || teams[0];
+  const homeTeam = teams.find(t => t.homeAway === 'home') || teams[1];
+
+  /* Period labels by sport */
+  const periodLabel = {
+    mlb:   i => `${i + 1}`,
+    nba:   i => `Q${i + 1}`,
+    nfl:   i => `Q${i + 1}`,
+    ncaaf: i => `Q${i + 1}`,
+    ncaam: i => i < 2 ? `H${i + 1}` : `OT${i - 1}`,
+    nhl:   i => `P${i + 1}`,
+  }[sport] || (i => `${i + 1}`);
+
+  /* Try to pull line scores from the competitions competitors */
+  const comp   = data.header?.competitions?.[0] || {};
+  const comps  = comp.competitors || [];
+  const awayC  = comps.find(c => c.homeAway === 'away') || comps[0] || {};
+  const homeC  = comps.find(c => c.homeAway === 'home') || comps[1] || {};
+  const awayLS = awayC.linescores || [];
+  const homeLS = homeC.linescores || [];
+
+  if (!awayLS.length && !homeLS.length) return null;
+
+  const count = Math.max(awayLS.length, homeLS.length);
+  const lines = Array.from({ length: count }, (_, i) => ({
+    label:   periodLabel(i),
+    awayVal: awayLS[i]?.displayValue ?? '—',
+    homeVal: homeLS[i]?.displayValue ?? '—',
+  }));
+
+  return {
+    awayName:  game.away.name,
+    homeName:  game.home.name,
+    awayScore: game.away.score,
+    homeScore: game.home.score,
+    lines,
+  };
+}
+
+/* ============================================================
+   TEAM STATS PARSER  — pulls stats from boxscore.teams
+   ============================================================ */
+function parseTeamStats(data, sport, game) {
+  const boxscore = data.boxscore || {};
+  const teams    = boxscore.teams || [];
+  if (!teams.length) return [];
+
+  const awayTeam = teams.find(t => t.homeAway === 'away') || teams[0];
+  const homeTeam = teams.find(t => t.homeAway === 'home') || teams[1];
+
+  /* Build a lookup: statName → {away, home} */
+  const awayStats = {};
+  const homeStats = {};
+  (awayTeam?.statistics || []).forEach(s => { awayStats[s.name] = s.displayValue; });
+  (homeTeam?.statistics || []).forEach(s => { homeStats[s.name] = s.displayValue; });
+
+  /* Sport-specific stat display order */
+  const statKeys = {
+    mlb: [
+      { key: 'hits',             label: 'Hits'         },
+      { key: 'runs',             label: 'Runs'         },
+      { key: 'homeRuns',         label: 'Home Runs'    },
+      { key: 'strikeOuts',       label: 'Strikeouts'   },
+      { key: 'walks',            label: 'Walks'        },
+      { key: 'leftOnBase',       label: 'Left On Base' },
+    ],
+    nba: [
+      { key: 'fieldGoalPct',     label: 'FG%'          },
+      { key: 'threePointPct',    label: '3PT%'         },
+      { key: 'freeThrowPct',     label: 'FT%'          },
+      { key: 'totalRebounds',    label: 'Rebounds'     },
+      { key: 'assists',          label: 'Assists'      },
+      { key: 'turnovers',        label: 'Turnovers'    },
+      { key: 'steals',           label: 'Steals'       },
+      { key: 'blocks',           label: 'Blocks'       },
+    ],
+    nfl: [
+      { key: 'totalYards',       label: 'Total Yards'  },
+      { key: 'passingYards',     label: 'Pass Yards'   },
+      { key: 'rushingYards',     label: 'Rush Yards'   },
+      { key: 'firstDowns',       label: '1st Downs'    },
+      { key: 'turnovers',        label: 'Turnovers'    },
+      { key: 'thirdDownEff',     label: '3rd Down'     },
+      { key: 'redZoneEff',       label: 'Red Zone'     },
+      { key: 'penaltyYards',     label: 'Penalty Yds'  },
+    ],
+    ncaaf: [
+      { key: 'totalYards',       label: 'Total Yards'  },
+      { key: 'passingYards',     label: 'Pass Yards'   },
+      { key: 'rushingYards',     label: 'Rush Yards'   },
+      { key: 'firstDowns',       label: '1st Downs'    },
+      { key: 'turnovers',        label: 'Turnovers'    },
+      { key: 'thirdDownEff',     label: '3rd Down'     },
+    ],
+    ncaam: [
+      { key: 'fieldGoalPct',     label: 'FG%'          },
+      { key: 'threePointPct',    label: '3PT%'         },
+      { key: 'freeThrowPct',     label: 'FT%'          },
+      { key: 'totalRebounds',    label: 'Rebounds'     },
+      { key: 'assists',          label: 'Assists'      },
+      { key: 'turnovers',        label: 'Turnovers'    },
+    ],
+    nhl: [
+      { key: 'shotsOnGoal',      label: 'Shots'        },
+      { key: 'saves',            label: 'Saves'        },
+      { key: 'savePct',          label: 'Save %'       },
+      { key: 'powerPlayGoals',   label: 'PP Goals'     },
+      { key: 'hits',             label: 'Hits'         },
+      { key: 'faceOffWinPct',    label: 'Face-off %'   },
+    ],
+  };
+
+  const keys = statKeys[sport] || [];
+  const result = [];
+  keys.forEach(({ key, label }) => {
+    const av = awayStats[key];
+    const hv = homeStats[key];
+    if (av != null || hv != null) {
+      result.push({ label, away: av || '—', home: hv || '—' });
+    }
+  });
+
+  /* Fallback: show whatever stats ESPN returns if none matched */
+  if (!result.length) {
+    const allKeys = new Set([...Object.keys(awayStats), ...Object.keys(homeStats)]);
+    allKeys.forEach(k => {
+      if (result.length >= 8) return;
+      const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+      result.push({ label, away: awayStats[k] || '—', home: homeStats[k] || '—' });
+    });
+  }
+
+  return result;
+}
+
+/* ============================================================
+   RECENT PLAYS PARSER  — last 5 scoring plays from drives
+   ============================================================ */
+function parsePlays(data) {
+  /* Try drives first (NFL/NCAAF) */
+  const drives = data.drives?.previous || [];
+  const plays  = [];
+
+  if (drives.length) {
+    drives.slice(-4).reverse().forEach(drive => {
+      const result = drive.result || '';
+      const start  = drive.start?.text || '';
+      const team   = drive.team?.abbreviation || '';
+      if (result) plays.push({ time: start, team, desc: result, score: '' });
+    });
+  }
+
+  /* Try scoring plays (general) */
+  const scoring = data.scoringPlays || [];
+  if (!plays.length && scoring.length) {
+    scoring.slice(-6).reverse().forEach(p => {
+      plays.push({
+        time:  p.period?.displayValue ? `${p.period.displayValue} ${p.clock?.displayValue || ''}`.trim() : '',
+        team:  p.team?.abbreviation || '',
+        desc:  p.text || p.type?.text || '',
+        score: p.awayScore != null ? `${p.awayScore}–${p.homeScore}` : '',
+      });
+    });
+  }
+
+  return plays.slice(0, 6);
+}
+
+/* ============================================================
+   RENDERERS
+   ============================================================ */
+function renderHero(game) {
+  const isLive  = game.status === 'live';
+  const isFinal = game.status === 'final';
+  const showScore = isLive || isFinal;
+  const aScore = game.away.score;
+  const hScore = game.home.score;
+  const aLead  = parseInt(aScore) > parseInt(hScore);
+  const statusLbl = isLive ? 'LIVE' : isFinal ? 'FINAL' : game.gameTime;
+  const statusCls = isLive ? 'live' : isFinal ? 'final' : 'pre';
+  const sportLabel = game.sport.toUpperCase();
+  const backHref = `../${game.sport}/`;
+
+  return `
+    <div class="back-wrap">
+      <a href="${backHref}" class="back-link">Back to ${sportLabel}</a>
+    </div>
+    <div class="matchup-hero">
+      <div class="matchup-inner">
+        <div class="matchup-meta">
+          <span class="sport-tag">${sportLabel}</span>
+          <span class="game-status-badge ${statusCls}">
+            ${isLive ? '<span class="live-dot"></span>' : ''}${statusLbl}
+          </span>
+          ${isLive ? '<span class="refresh-lbl">Auto-refreshing every 30s</span>' : ''}
+        </div>
+        <div class="scoreboard">
+          <div class="team-block ${showScore && aLead ? 'winner' : ''}">
+            <div class="team-label">Away</div>
+            <div class="team-name">${game.away.name}</div>
+            ${game.away.rec ? `<div class="team-record">${game.away.rec}</div>` : ''}
+            <div class="team-score ${showScore ? (aLead ? 'lead' : 'trail') : 'pre'}">${showScore ? aScore : game.gameTime}</div>
+          </div>
+          <div class="vs-col">
+            <div class="vs-label">VS</div>
+            ${isLive ? `<div class="live-period">${game.period}</div>` : ''}
+            ${!showScore ? `<div class="game-time-lbl">${game.gameTime}</div>` : ''}
+          </div>
+          <div class="team-block ${showScore && !aLead ? 'winner' : ''}">
+            <div class="team-label">Home</div>
+            <div class="team-name">${game.home.name}</div>
+            ${game.home.rec ? `<div class="team-record">${game.home.rec}</div>` : ''}
+            <div class="team-score ${showScore ? (!aLead ? 'lead' : 'trail') : 'pre'}">${showScore ? hScore : game.gameTime}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderLinescore(ls, sport) {
+  if (!ls || !ls.lines.length) return `<p class="empty-msg">Box score will appear once the game starts.</p>`;
+  const hdrs = ls.lines.map(l => `<th>${l.label}</th>`).join('');
+  const aRow = ls.lines.map(l => `<td>${l.awayVal}</td>`).join('');
+  const hRow = ls.lines.map(l => `<td>${l.homeVal}</td>`).join('');
+  return `
+    <div class="bs-table-wrap">
+      <table class="bs-table">
+        <thead><tr><th>Team</th>${hdrs}<th class="bs-sep">Total</th></tr></thead>
+        <tbody>
+          <tr><td>${ls.awayName}</td>${aRow}<td class="bs-sep">${ls.awayScore}</td></tr>
+          <tr><td>${ls.homeName}</td>${hRow}<td class="bs-sep">${ls.homeScore}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderStats(stats, game) {
+  if (!stats.length) return `<p class="empty-msg">Team stats will appear once the game is underway.</p>`;
+  return `
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:0 12px;margin-bottom:10px">
+      <span>${game.away.name}</span><span></span><span style="text-align:right">${game.home.name}</span>
+    </div>
+    <div class="stats-grid">
+      ${stats.map(s => {
+        const aNum = parseFloat(String(s.away).replace('%',''));
+        const hNum = parseFloat(String(s.home).replace('%',''));
+        const total = aNum + hNum;
+        const aWidth = total > 0 ? Math.round((aNum / total) * 100) : 50;
+        const hWidth = 100 - aWidth;
+        return `
+          <div class="stat-row">
+            <span class="stat-away">${s.away}</span>
+            <span class="stat-lbl">${s.label}</span>
+            <span class="stat-home">${s.home}</span>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function renderPlays(plays) {
+  if (!plays.length) return `<p class="empty-msg">Play-by-play will appear once the game is underway.</p>`;
+  return `
+    <div class="plays-list">
+      ${plays.map(p => `
+        <div class="play-row">
+          <span class="play-time">${p.time}</span>
+          <span class="play-team">${p.team}</span>
+          <span class="play-desc">${p.desc}</span>
+          ${p.score ? `<span class="play-score">${p.score}</span>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('game-root').innerHTML = `
+    <div class="not-found">
+      <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+      <h2>Game Not Found</h2>
+      <p>${msg}</p>
+      <a href="../" style="display:inline-block;margin-top:20px;color:#f0b429;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">← Back to Home</a>
+    </div>`;
+}
+
+/* ============================================================
+   RENDER — builds the full page from parsed data
+   ============================================================ */
+function renderPage(game, linescore, stats, plays) {
+  document.title = `${game.away.name} vs ${game.home.name} — Live — HammerTimeBet`;
+
+  document.getElementById('game-root').innerHTML = `
+    ${renderHero(game)}
+
+    <!-- BOX SCORE / LINESCORE -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Score Breakdown</div>
+          <h2 class="sec-title">Box Score</h2>
+        </div>
+        ${renderLinescore(linescore, game.sport)}
+      </div>
+    </section>
+
+    <!-- TEAM STATS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">In-Game Stats</div>
+          <h2 class="sec-title">Team Stats</h2>
+        </div>
+        ${renderStats(stats, game)}
+      </div>
+    </section>
+
+    <!-- RECENT PLAYS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Game Flow</div>
+          <h2 class="sec-title">Recent Plays</h2>
+        </div>
+        ${renderPlays(plays)}
+      </div>
+    </section>
+  `;
+}
+
+/* ============================================================
+   FETCH + INIT
+   ============================================================ */
+let _refreshTimer = null;
+
+async function loadGame(gameId, sport) {
+  const urlFn = ESPN_SUMMARY[sport];
+  if (!urlFn) {
+    showError(`Sport <strong>${sport.toUpperCase()}</strong> is not supported.`);
+    return;
+  }
+
+  try {
+    const resp = await fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) });
+    if (!resp.ok) throw new Error(`ESPN returned ${resp.status}`);
+    const data = await resp.json();
+
+    const game      = parseGame(data, sport, gameId);
+    const linescore = parseLinescore(data, sport, game);
+    const stats     = parseTeamStats(data, sport, game);
+    const plays     = parsePlays(data);
+
+    renderPage(game, linescore, stats, plays);
+
+    /* Auto-refresh only while game is live */
+    clearInterval(_refreshTimer);
+    if (game.status === 'live') {
+      _refreshTimer = setInterval(() => loadGame(gameId, sport), 30_000);
+    }
+  } catch (err) {
+    showError(`Could not load game data for <strong>${sport.toUpperCase()}</strong>.<br><br><span style="font-size:11px;color:#444">${err.message}</span>`);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const params  = new URLSearchParams(window.location.search);
+  const gameId  = params.get('id');
+  const sport   = (params.get('sport') || '').toLowerCase();
+
+  if (!gameId || !sport) {
+    showError('No game ID or sport specified in the URL.');
+    return;
+  }
+
+  loadGame(gameId, sport);
+});
+</script>
+</body>
+</html>
