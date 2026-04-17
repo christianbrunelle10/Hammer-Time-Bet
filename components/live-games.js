@@ -670,8 +670,8 @@ function _gameCard(game, odds) {
         ${oddsBlock}
         ${moveBadge}
         <div class="htb-actions">
-          <a class="htb-btn htb-btn-box" href="${_gameDetailUrl(game.id, game.sport)}">Game Details</a>
-          <button class="htb-btn htb-btn-bet">View Odds</button>
+          <a class="htb-btn htb-btn-box" href="${_gameDetailUrl(game.id, game.sport)}">Full Analysis</a>
+          <a class="htb-btn htb-btn-bet" href="${_gameDetailUrl(game.id, game.sport)}#ai-pick">AI Pick</a>
         </div>
       </div>
     </div>`;
@@ -720,7 +720,6 @@ function _golfCard(data) {
         ` : ''}
         <div class="htb-actions">
           <button class="htb-btn htb-btn-box htb-btn-golf-lb">Full Leaderboard</button>
-          <button class="htb-btn htb-btn-bet">View Odds</button>
         </div>
       </div>
     </div>`;

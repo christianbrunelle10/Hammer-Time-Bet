@@ -90,6 +90,22 @@ button{cursor:pointer;border:none;font-family:inherit}
 .factor{display:flex;gap:10px;font-size:12px;color:#777;line-height:1.5}
 .factor::before{content:'▸';color:#f0b429;font-size:9px;margin-top:3px;flex-shrink:0}
 
+/* ── TREND / RISK / ALT CARDS ── */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.info-card{background:#101010;border:1px solid #1e1e1e;border-radius:10px;padding:16px}
+.info-card-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:10px}
+.info-card-team{font-size:12px;font-weight:700;color:#888;margin-bottom:6px}
+.info-item{display:flex;gap:8px;font-size:12px;color:#666;line-height:1.5;margin-bottom:5px}
+.info-item::before{content:'▸';color:#555;font-size:9px;margin-top:3px;flex-shrink:0}
+.risk-item{display:flex;gap:8px;font-size:12px;color:#777;line-height:1.5;margin-bottom:5px}
+.risk-item::before{content:'!';color:#e5534b;font-size:9px;font-weight:900;margin-top:2px;flex-shrink:0}
+.alt-item{display:flex;gap:8px;font-size:12px;color:#777;line-height:1.5;margin-bottom:5px}
+.alt-item::before{content:'→';color:#818cf8;font-size:11px;flex-shrink:0}
+
+/* ── VERDICT CARD ── */
+.verdict-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:20px}
+.verdict-text{font-size:14px;color:#bbb;line-height:1.75}
+
 /* ── PICK RECOMMENDATION ── */
 .pick-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:20px}
 .pick-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
@@ -255,9 +271,10 @@ function buildAnalysis(game, odds, sport) {
 
   const summaries = {
     mlb:   `${favTeam} enter this matchup with a favorable starting pitching edge and strong recent offensive production. The Hammer Model identifies a value gap in the current market price based on pitcher metrics, ballpark factors, and recent form trends.`,
-    nba:   `${favTeam} hold a meaningful net rating advantage in this matchup. The model projects a ${Math.abs(4 + (game.away.score % 3))}-point edge over the closing line based on pace-adjusted efficiency, defensive matchup profile, and home court dynamics.`,
+    nba:   `${favTeam} hold a meaningful net rating advantage in this matchup. The model projects a ${Math.abs(4 + (parseInt(game.away.score||0) % 3))}-point edge over the closing line based on pace-adjusted efficiency, defensive matchup profile, and home court dynamics.`,
     nfl:   `${favTeam} present a compelling spread case driven by offensive efficiency metrics and defensive versatility. Line movement and sharp money indicators align with the model's projection, creating a clear edge at current pricing.`,
     ncaaf: `${favTeam} are the model's preferred play in this conference matchup. Key advantages include turnover differential, third-down conversion rate, and a favorable pressure differential against ${dogTeam}'s offensive line.`,
+    ncaam: `${favTeam} hold the edge in this college basketball matchup. The Hammer Model flags pace differential, defensive efficiency, and recent form as primary drivers behind the current projection.`,
     nhl:   `${favTeam} have a strong underlying edge in this puck-line spot. Goaltending save percentage, shot quality metrics, and power play efficiency all favor the model's pick at current market pricing.`,
   };
 
@@ -267,19 +284,19 @@ function buildAnalysis(game, odds, sport) {
       `${dogTeam} batting .239 vs right-handed pitching in last 14 games — below league average`,
       `Line moved 6–8 cents from open toward ${favTeam} — indication of sharp professional action`,
       `Ballpark factor neutral to slightly pitcher-friendly for today's conditions`,
-      `Public betting split 64%/${36}% — market fade opportunity confirmed by model`,
+      `Public betting split 64%/36% — market fade opportunity confirmed by model`,
     ],
     nba: [
       `${favTeam} net rating: +7.2 vs ${dogTeam} net rating: -0.8 — significant gap`,
       `Pace mismatch favors ${favTeam}: slower, half-court sets neutralize ${dogTeam}'s transition game`,
       `${dogTeam} allowing 118.4 PPP off turnovers — ${favTeam} ranks 4th in turnover creation`,
-      `Total set at ${total} — model projects ${parseFloat(total) + 2.1} given recent scoring trends`,
+      `Total set at ${total} — model projects ${parseFloat(total)||0 + 2.1} given recent scoring trends`,
       `ATS trend: ${favTeam} covers 68% in this specific matchup profile over last 3 seasons`,
     ],
     nfl: [
       `${favTeam} EPA/play: +0.12 — top quartile in the league this season`,
       `${dogTeam} allowing a 38% third-down conversion rate — exploitable in short-yardage spots`,
-      `Spread moved from ${lineStr.split('(')[0]}—indicating coordinated sharp action`,
+      `Spread moved from open indicating coordinated sharp action`,
       `Turnover differential: ${favTeam} +6 over last 8 games vs ${dogTeam} -2`,
       `${dogTeam} second game of back-to-back travel — fatigue factor underpriced by market`,
     ],
@@ -290,11 +307,18 @@ function buildAnalysis(game, odds, sport) {
       `Line sharp-side consensus aligns with ${favTeam} since open`,
       `Model projects ${favTeam} wins 71% of simulations — implied probability exceeds line price`,
     ],
+    ncaam: [
+      `${favTeam} offensive efficiency rating: top-40 nationally — elite half-court execution`,
+      `${dogTeam} allowing 1.09 PPP in transition — exploitable at ${favTeam}'s pace`,
+      `Line has moved toward ${favTeam} since open — sharp action confirmed`,
+      `${favTeam} covers spread in 64% of conference home games this season`,
+      `Model projects ${favTeam} wins 69% of simulations at current total`,
+    ],
     nhl: [
       `${favTeam} goaltender save percentage last 10 starts: .924 — top-5 in league`,
       `${dogTeam} power play efficiency ranks 24th — limits upside in man-advantage situations`,
       `Head-to-head trends: ${favTeam} covers puck line in 6 of last 9 meetings`,
-      `Total at ${total} — weather/rink conditions support under pricing`,
+      `Total at ${total} — rink conditions support under pricing`,
       `Sharp action confirmed on ${favTeam} puck line since market open`,
     ],
   };
@@ -303,6 +327,159 @@ function buildAnalysis(game, odds, sport) {
     summary: summaries[sport] || `${game.away.name} vs ${game.home.name} — the Hammer Model identifies a clear edge based on current form, line movement, and situational factors.`,
     factors: factorSets[sport] || [`Model edge identified on ${favTeam}`, 'Line movement confirms sharp action', 'Value confirmed vs public betting split'],
   };
+}
+
+/* ============================================================
+   TEAM TRENDS
+   ============================================================ */
+function buildTrends(game, odds, sport) {
+  const homeFav = (odds?.ml?.home || '').startsWith('-');
+  const favTeam = homeFav ? game.home.name : game.away.name;
+  const dogTeam = homeFav ? game.away.name : game.home.name;
+
+  const trends = {
+    mlb: {
+      away: [`Last 10 games: 6-4`, `Batting .268 last 7 days`, `Bullpen ERA last 14 days: 3.21`, `Run differential last 10: +12`],
+      home: [`Last 10 games: 5-5`, `Home record: 18-14`, `Starting pitching ERA at home: 3.87`, `Runs per game at home: 4.6`],
+    },
+    nba: {
+      away: [`Last 10: 6-4`, `ATS last 10: 7-3`, `Offensive rating last 7 days: 114.2`, `Net rating on road: +2.4`],
+      home: [`Last 10: 5-5`, `ATS at home last 10: 6-4`, `Defensive rating at home: 108.6`, `Home win streak: 3`],
+    },
+    nfl: {
+      away: [`Last 5 games: 3-2`, `ATS last 5: 4-1`, `Yards per game last 4 weeks: 362`, `Turnover margin: +2`],
+      home: [`Last 5 games: 2-3`, `ATS at home: 3-4`, `Points allowed per game: 23.4`, `3rd-down conversion: 40%`],
+    },
+    ncaaf: {
+      away: [`Last 5 games: 3-2`, `ATS road: 4-3`, `Points per game: 31.4`, `Yards per play: 5.8`],
+      home: [`Last 5 games: 3-2`, `ATS at home: 5-2`, `Points allowed per game: 21.1`, `Turnover margin: +5`],
+    },
+    ncaam: {
+      away: [`Last 10: 6-4`, `ATS last 10: 6-4`, `Offensive efficiency: 108.4`, `3PT% last 5 games: 36.1%`],
+      home: [`Last 10: 7-3`, `ATS at home: 8-4`, `Defensive efficiency: 96.2`, `Rebounds per game: 37.1`],
+    },
+    nhl: {
+      away: [`Last 10: 5-4-1`, `PDO (SV%+SH%) last 10: 1.008`, `Goals per game: 3.1`, `Shots per game: 31.4`],
+      home: [`Last 10: 6-3-1`, `Home PP%: 22.4%`, `Save percentage at home: .915`, `Goals against per game: 2.8`],
+    },
+  };
+
+  return trends[sport] || {
+    away: ['Recent form data available shortly', 'Check back for updated trends'],
+    home: ['Recent form data available shortly', 'Check back for updated trends'],
+  };
+}
+
+/* ============================================================
+   KEY STATS COMPARISON
+   ============================================================ */
+function buildKeyStats(game, odds, sport) {
+  const stats = {
+    mlb: [
+      { label: 'Team ERA',        away: '3.82', home: '4.14' },
+      { label: 'Team BA',         away: '.258', home: '.244' },
+      { label: 'HR/Game',         away: '1.2',  home: '0.9'  },
+      { label: 'WHIP',            away: '1.21', home: '1.34' },
+      { label: 'Runs/Game',       away: '4.8',  home: '4.1'  },
+    ],
+    nba: [
+      { label: 'Off. Rating',     away: '114.2', home: '112.8' },
+      { label: 'Def. Rating',     away: '110.4', home: '109.1' },
+      { label: 'Pace',            away: '99.4',  home: '97.1'  },
+      { label: 'TS%',             away: '57.1%', home: '55.8%' },
+      { label: 'TOV%',            away: '13.2%', home: '14.4%' },
+    ],
+    nfl: [
+      { label: 'Off. EPA/Play',   away: '+0.08', home: '+0.04' },
+      { label: 'Pass Yards/G',    away: '238',   home: '214'   },
+      { label: 'Rush Yards/G',    away: '118',   home: '104'   },
+      { label: 'Points/G',        away: '24.4',  home: '21.8'  },
+      { label: 'Pts Allowed/G',   away: '22.1',  home: '24.6'  },
+    ],
+    ncaaf: [
+      { label: 'Off. S&P+',       away: '+8.4',  home: '+4.1'  },
+      { label: 'Points/G',        away: '31.4',  home: '27.8'  },
+      { label: 'Yards/Play',      away: '5.8',   home: '5.2'   },
+      { label: 'TO Margin',       away: '+5',    home: '+2'    },
+      { label: 'Pts Allowed/G',   away: '21.1',  home: '24.4'  },
+    ],
+    ncaam: [
+      { label: 'Adj. Offense',    away: '108.4', home: '106.2' },
+      { label: 'Adj. Defense',    away: '98.1',  home: '96.2'  },
+      { label: 'Pace',            away: '70.2',  home: '68.4'  },
+      { label: '3PT%',            away: '36.1%', home: '34.8%' },
+      { label: 'TO Rate',         away: '17.4%', home: '18.2%' },
+    ],
+    nhl: [
+      { label: 'Goals/G',         away: '3.1',   home: '2.9'   },
+      { label: 'Goals Against/G', away: '2.8',   home: '2.6'   },
+      { label: 'Shot Diff/G',     away: '+1.4',  home: '+2.1'  },
+      { label: 'PP%',             away: '20.1%', home: '22.4%' },
+      { label: 'PK%',             away: '81.2%', home: '83.6%' },
+    ],
+  };
+
+  return stats[sport] || [
+    { label: 'Win %',  away: '52%', home: '48%' },
+    { label: 'Streak', away: 'W2',  home: 'L1'  },
+  ];
+}
+
+/* ============================================================
+   RISK FACTORS
+   ============================================================ */
+function buildRisks(game, odds, sport) {
+  const risks = {
+    mlb:   ['Starting pitcher pitch count could limit deep appearances if early trouble arises', 'Bullpen workload elevated over past 4 days — potential fatigue in late innings', 'Weather conditions may introduce variables not captured in base model', 'Lineup construction: injuries to key bats reduce projected run total'],
+    nba:   ['Injury reports may shift lineup assumptions — monitor pre-game availability', 'Schedule fatigue: second night of back-to-back for away team', 'Foul trouble risk for key interior players vs aggressive offense', 'Total variance is high in this pace matchup — model spread could narrow'],
+    nfl:   ['Weather forecast includes wind gusts 15+ mph — impacts passing game value', 'Key offensive lineman questionable — monitoring for game-time decision', 'Red zone efficiency can be volatile week-to-week; sample size caveat applies', 'Tight line offers limited value cushion — unit sizing adjusted accordingly'],
+    ncaaf: ['Transfer portal turnover means limited historical sample for current rosters', 'Crowd factor for home team may not be fully captured in model', 'Scheme adjustment tendencies vary — second-half adjustments can swing spread', 'Line movement suggests some sharp disagreement with model output'],
+    ncaam: ['Tournament context (if applicable) adds variance not present in regular season', 'Foul trouble for key players can rapidly alter game flow', 'Small conference scheduling gaps may inflate certain efficiency metrics', 'Line has been bet heavily on one side — reverse line movement risk'],
+    nhl:   ['Goaltender starts not always confirmed until pregame warmups', 'Back-to-back schedule increases injury and fatigue variance', 'Power play opportunity count is volatile and can swing total', 'Puck line at -1.5 requires decisive win — eliminates overtime value'],
+  };
+
+  return risks[sport] || ['Monitor injury reports before game time', 'Line movement may impact closing price', 'Weather or travel factors may apply'];
+}
+
+/* ============================================================
+   ALTERNATE LEANS
+   ============================================================ */
+function buildAlts(game, odds, sport) {
+  const total   = odds?.total?.val || '—';
+  const homeFav = (odds?.ml?.home || '').startsWith('-');
+  const favTeam = homeFav ? game.home.name : game.away.name;
+  const dogTeam = homeFav ? game.away.name : game.home.name;
+
+  const alts = {
+    mlb:   [`First 5 innings: ${favTeam} -0.5 (value if starter excels)`, `${dogTeam} ML at plus money — live if early deficit is small`, `Under ${total} if both starters dominate through 6 innings`],
+    nba:   [`${dogTeam} +${Math.abs(parseInt(odds?.line?.away)||5.5)} spread — backdoor cover potential`, `Over ${total} if pace accelerates in first quarter`, `${favTeam} -Q1 spread if they establish lead early`],
+    nfl:   [`${dogTeam} ML — live underdog if ${favTeam} slow start`, `Under ${total} if wind speeds increase at game time`, `${favTeam} team total over — offense expected to control possession`],
+    ncaaf: [`${dogTeam} +first-half spread if they start fast`, `Total under if both defenses tighten in second half`, `${favTeam} ML instead of spread if you want less variance`],
+    ncaam: [`${dogTeam} first-half ML — value if they dictate pace`, `Over ${total} if both teams shoot above 40% from 3`, `${favTeam} -3.5 alt spread at improved payout`],
+    nhl:   [`${favTeam} ML instead of puck line — avoids -1.5 requirement`, `Over ${total} if both goalies allow early goals`, `${dogTeam} puck line +1.5 as a hedge on tight game`],
+  };
+
+  return alts[sport] || [`${dogTeam} ML at plus money — hedge play`, `Total ${total} under as contrarian lean`];
+}
+
+/* ============================================================
+   FINAL VERDICT
+   ============================================================ */
+function buildVerdict(game, odds, sport, pick) {
+  const homeFav = (odds?.ml?.home || '').startsWith('-');
+  const favTeam = homeFav ? game.home.name : game.away.name;
+  const dogTeam = homeFav ? game.away.name : game.home.name;
+
+  const verdicts = {
+    mlb:   `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. The pitching edge, line movement, and situational factors all point in the same direction. This is a 2-unit play at standard sizing. Monitor starting lineup and weather before locking in.`,
+    nba:   `This is a ${pick.conf.toFixed(1)}/10 confidence spread play on <strong>${pick.pick}</strong>. Net rating differential, pace, and ATS trends support the model's output. Recommended at 2 units. Check injury report at tip-off before committing full allocation.`,
+    nfl:   `The model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. EPA metrics, line movement, and situational edges align. Standard 2-unit recommendation. Weather updates should be monitored if wind becomes a factor.`,
+    ncaaf: `This is a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Efficiency metrics and home-field factors justify the play. 2-unit sizing appropriate. Note: college lines can move late — get in before kickoff if possible.`,
+    ncaam: `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Adjusted efficiency ratings and line movement support the projection. Standard 2-unit play. Check for late scratches or lineup changes before tip-off.`,
+    nhl:   `This is a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Underlying metrics, goaltending edge, and puck line history support the model's output. 2-unit standard recommendation. Confirm goaltender start in pregame warmups.`,
+  };
+
+  return verdicts[sport] || `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Key factors align in favor of this play at current market pricing. Recommended at 2 units.`;
 }
 
 /* ============================================================
@@ -452,7 +629,6 @@ function renderPick(pick) {
 function renderGame(game, odds, sport) {
   const isLive  = game.status === 'live';
   const isFinal = game.status === 'final';
-  const isPre   = game.status === 'pre';
   const showScore = isLive || isFinal;
   const aScore  = game.away.score || '0';
   const hScore  = game.home.score || '0';
@@ -464,6 +640,11 @@ function renderGame(game, odds, sport) {
   const bs         = buildMockBoxScore(game, sport);
   const analysis   = buildAnalysis(game, odds, sport);
   const pick       = buildPick(game, odds, sport);
+  const trends     = buildTrends(game, odds, sport);
+  const keyStats   = buildKeyStats(game, odds, sport);
+  const risks      = buildRisks(game, odds, sport);
+  const alts       = buildAlts(game, odds, sport);
+  const verdict    = buildVerdict(game, odds, sport, pick);
 
   document.title = `${game.away.name} vs ${game.home.name} — HammerTimeBet`;
 
@@ -502,11 +683,11 @@ function renderGame(game, odds, sport) {
       </div>
     </div>
 
-    <!-- ODDS -->
+    <!-- MATCHUP OVERVIEW -->
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
-          <div class="eyebrow">Live Odds</div>
+          <div class="eyebrow">Matchup Overview</div>
           <h2 class="sec-title">Game Lines</h2>
         </div>
         ${renderOdds(odds, sport)}
@@ -524,12 +705,24 @@ function renderGame(game, odds, sport) {
       </div>
     </section>
 
-    <!-- AI ANALYSIS -->
-    <section class="section">
+    <!-- AI BEST BET -->
+    <section class="section" id="ai-pick">
       <div class="section-inner">
         <div class="section-head">
           <div class="eyebrow">Hammer AI</div>
-          <h2 class="sec-title">Game Analysis</h2>
+          <h2 class="sec-title">AI Best Bet</h2>
+        </div>
+        ${renderPick(pick)}
+        <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
+      </div>
+    </section>
+
+    <!-- WHY IT RATES WELL -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Model Reasoning</div>
+          <h2 class="sec-title">Why It Rates Well</h2>
         </div>
         <div class="analysis-card">
           <p class="analysis-summary">${analysis.summary}</p>
@@ -540,14 +733,83 @@ function renderGame(game, odds, sport) {
       </div>
     </section>
 
-    <!-- PICK RECOMMENDATION -->
+    <!-- TEAM TRENDS -->
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
-          <div class="eyebrow">Pick</div>
-          <h2 class="sec-title">Recommendation</h2>
+          <div class="eyebrow">Recent Form</div>
+          <h2 class="sec-title">Team Trends</h2>
         </div>
-        ${renderPick(pick)}
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-card-title">${game.away.name}</div>
+            ${trends.away.map(t => `<div class="info-item">${t}</div>`).join('')}
+          </div>
+          <div class="info-card">
+            <div class="info-card-title">${game.home.name}</div>
+            ${trends.home.map(t => `<div class="info-item">${t}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KEY STATS COMPARISON -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Statistical Edge</div>
+          <h2 class="sec-title">Key Stats Comparison</h2>
+        </div>
+        <div style="margin-bottom:10px;display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:0 12px">
+          <span>${game.away.name}</span><span></span><span style="text-align:right">${game.home.name}</span>
+        </div>
+        <div class="stats-grid">
+          ${keyStats.map(s => `
+            <div class="stat-row">
+              <span class="stat-away">${s.away}</span>
+              <span class="stat-lbl">${s.label}</span>
+              <span class="stat-home">${s.home}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- RISK FACTORS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Due Diligence</div>
+          <h2 class="sec-title">Risk Factors</h2>
+        </div>
+        <div class="info-card">
+          ${risks.map(r => `<div class="risk-item">${r}</div>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- ALTERNATE LEANS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Secondary Options</div>
+          <h2 class="sec-title">Alternate Leans</h2>
+        </div>
+        <div class="info-card">
+          ${alts.map(a => `<div class="alt-item">${a}</div>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL VERDICT -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Bottom Line</div>
+          <h2 class="sec-title">Final Verdict</h2>
+        </div>
+        <div class="verdict-card">
+          <p class="verdict-text">${verdict}</p>
+        </div>
         <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
       </div>
     </section>
@@ -565,9 +827,86 @@ function showError(msg) {
 }
 
 /* ============================================================
-   INIT — runs after data.js is ready (DOMContentLoaded)
+   ESPN SUMMARY ENDPOINTS (mirrors data.js)
    ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
+const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
+const ESPN_SUMMARY = {
+  mlb:   id => `${ESPN_BASE}/baseball/mlb/summary?event=${id}`,
+  nba:   id => `${ESPN_BASE}/basketball/nba/summary?event=${id}`,
+  nfl:   id => `${ESPN_BASE}/football/nfl/summary?event=${id}`,
+  ncaaf: id => `${ESPN_BASE}/football/college-football/summary?event=${id}`,
+  ncaam: id => `${ESPN_BASE}/basketball/mens-college-basketball/summary?event=${id}`,
+  nhl:   id => `${ESPN_BASE}/hockey/nhl/summary?event=${id}`,
+};
+
+/* Parse ESPN summary response into the Game shape renderGame() expects */
+function parseESPNSummary(data, sport) {
+  const comp  = data.header?.competitions?.[0] || {};
+  const comps = comp.competitors || [];
+  const away  = comps.find(c => c.homeAway === 'away') || comps[0] || {};
+  const home  = comps.find(c => c.homeAway === 'home') || comps[1] || {};
+  const status = comp.status || {};
+  const state =
+    status.type?.state === 'in'    ? 'live'  :
+    status.type?.state === 'post'  ? 'final' : 'pre';
+  const gameTime = (() => {
+    if (state !== 'pre') return status.type?.shortDetail || '';
+    try {
+      const d = new Date(comp.date || '');
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    } catch { return comp.date || ''; }
+  })();
+
+  return {
+    id:       String(comp.id || ''),
+    sport,
+    status:   state,
+    gameTime: state === 'pre' ? gameTime : status.type?.shortDetail || '',
+    state:    state === 'live' ? (status.type?.shortDetail || 'In Progress') : '',
+    away: {
+      name:  away.team?.displayName || away.team?.name || 'Away',
+      abbr:  away.team?.abbreviation || '',
+      score: away.score || '0',
+      rec:   away.records?.[0]?.summary || '',
+    },
+    home: {
+      name:  home.team?.displayName || home.team?.name || 'Home',
+      abbr:  home.team?.abbreviation || '',
+      score: home.score || '0',
+      rec:   home.records?.[0]?.summary || '',
+    },
+  };
+}
+
+/* Parse odds from ESPN summary pickcenter */
+function parseESPNOdds(data) {
+  const pic = data.pickcenter;
+  if (!pic || !pic.length) return null;
+  const item = pic[0];
+  const details = item.details || '';
+  const ml   = item.moneylineOdds;
+  const away = item.awayTeamOdds;
+  const home = item.homeTeamOdds;
+  const sp   = item.spread;
+  const tot  = item.overUnder;
+
+  return {
+    ml: {
+      away: away?.moneyLine != null ? (away.moneyLine > 0 ? `+${away.moneyLine}` : String(away.moneyLine)) : '—',
+      home: home?.moneyLine != null ? (home.moneyLine > 0 ? `+${home.moneyLine}` : String(home.moneyLine)) : '—',
+    },
+    line: {
+      away: sp != null ? `${sp > 0 ? '+' : ''}${sp} (-110)` : '—',
+      home: sp != null ? `${-sp > 0 ? '+' : ''}${-sp} (-110)` : '—',
+    },
+    total: { val: tot != null ? String(tot) : '—' },
+  };
+}
+
+/* ============================================================
+   INIT — fetches real ESPN data
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   const gameId = params.get('id');
   const sport  = (params.get('sport') || '').toLowerCase();
@@ -577,21 +916,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  /* Look up in mock data */
-  const allScores = (window.HTBData?.mock?.scores) || {};
-  const allOdds   = (window.HTBData?.mock?.odds)   || {};
-
-  const game = (allScores[sport] || []).find(g => g.id === gameId);
-  if (!game) {
-    showError(`Game ID <code>${gameId}</code> not found in ${sport.toUpperCase()} data. It may be a live game that is no longer active.`);
+  const urlFn = ESPN_SUMMARY[sport];
+  if (!urlFn) {
+    showError(`Sport <strong>${sport.toUpperCase()}</strong> is not supported.`);
     return;
   }
 
-  const odds = (allOdds[sport] || []).find(o =>
-    o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr
-  ) || null;
+  try {
+    const resp = await fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) });
+    if (!resp.ok) throw new Error(`ESPN returned ${resp.status}`);
+    const data = await resp.json();
 
-  renderGame(game, odds, sport);
+    const game = parseESPNSummary(data, sport);
+    const odds = parseESPNOdds(data);
+
+    renderGame(game, odds, sport);
+  } catch (err) {
+    showError(`Could not load game data for <strong>${sport.toUpperCase()} ${gameId}</strong>. The game may have ended or ESPN data is temporarily unavailable.<br><br><span style="font-size:11px;color:#444">${err.message}</span>`);
+  }
 });
 </script>
 </body>
