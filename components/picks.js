@@ -360,25 +360,105 @@
     },
   };
 
-  /* ── Generate one pick for a game ──────────────────── */
-  function makePick(game, odds, today, role) {
+  /* ── Canonical pick cache ───────────────────────────
+   *
+   * Picks are keyed by gameId + isoDate + role and stored in both an
+   * in-memory Map (fast, per-page) and sessionStorage (survives navigation
+   * between pages in the same browser session).
+   *
+   * This ensures the homepage and every sport page always show the SAME
+   * pick for the same matchup — whichever page computes it first wins, and
+   * every subsequent page reuses that exact object.
+   *
+   * Stale entries (from previous calendar days) are pruned on load.
+   * ─────────────────────────────────────────────────────────────────── */
+  const _TODAY_ISO = new Date().toISOString().slice(0, 10);
+  const _pickMemo  = new Map();
+  const _PICK_PFX  = 'htb:pick:';
+  const _NULL_SENTINEL = '\x00'; // stored when pick is null (no valid underdog)
+
+  // Prune yesterday's picks from sessionStorage on module load
+  (function _pruneStale() {
+    try {
+      const toRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const k = sessionStorage.key(i);
+        if (k && k.startsWith(_PICK_PFX) && !k.includes(_TODAY_ISO)) toRemove.push(k);
+      }
+      toRemove.forEach(k => sessionStorage.removeItem(k));
+    } catch { /* sessionStorage unavailable (private browsing etc.) — fail silently */ }
+  })();
+
+  function _pickStoreKey(gameId, role) {
+    return `${_PICK_PFX}${gameId}:${_TODAY_ISO}:${role}`;
+  }
+
+  /** Load canonical pick from memo/sessionStorage. Returns {found, val}. */
+  function _loadPick(gameId, role) {
+    const key = _pickStoreKey(gameId, role);
+    if (_pickMemo.has(key)) return { found: true, val: _pickMemo.get(key) };
+    try {
+      const raw = sessionStorage.getItem(key);
+      if (raw !== null) {
+        const val = raw === _NULL_SENTINEL ? null : JSON.parse(raw);
+        _pickMemo.set(key, val);
+        return { found: true, val };
+      }
+    } catch {}
+    return { found: false, val: undefined };
+  }
+
+  /** Store canonical pick in memo and sessionStorage. */
+  function _savePick(gameId, role, pick) {
+    const key = _pickStoreKey(gameId, role);
+    _pickMemo.set(key, pick);
+    try {
+      sessionStorage.setItem(key, pick === null ? _NULL_SENTINEL : JSON.stringify(pick));
+    } catch {}
+  }
+
+  /* ── Compute one pick for a game (pure — no caching) ── */
+  function _computePick(game, odds, today, role) {
     const sp   = game.sport;
     const away = game.away.name;
     const home = game.home.name;
     const r    = mkRng(`${game.id}-${today}-${role}`);
     const tmpl = T[sp] || T.MLB;
 
-    const aMLn = parseInt(odds?.awayML || '-110');
-    const hMLn = parseInt(odds?.homeML || '-110');
-    // Lower (more negative) = bigger favorite
-    const favIsHome = hMLn <= aMLn;
+    /* ── Determine favorite ────────────────────────────────────────────
+     * Root cause of cross-page conflicts: when odds are null both ML
+     * values defaulted to '-110', making hMLn === aMLn and favIsHome
+     * always true (home "wins" the tie).  A page with real odds would
+     * correctly pick the away team as favorite, producing OPPOSITE picks.
+     *
+     * Fix: when odds are unavailable, derive favIsHome from a hash of the
+     * game ID so it is (a) deterministic and (b) not always home.
+     * ─────────────────────────────────────────────────────────────────── */
+    let favIsHome;
+    const aMLraw = odds?.awayML;
+    const hMLraw = odds?.homeML;
+    if (aMLraw && hMLraw) {
+      // Both ML values present — use the actual favorite
+      favIsHome = parseInt(hMLraw) <= parseInt(aMLraw);
+    } else if (aMLraw) {
+      // Only away ML present
+      favIsHome = parseInt(aMLraw) >= 0; // away is dog (positive) → home is fav
+    } else if (hMLraw) {
+      // Only home ML present
+      favIsHome = parseInt(hMLraw) < 0;  // home is fav if negative ML
+    } else {
+      // No odds at all — deterministic hash of game ID prevents always picking home
+      const idSum = game.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+      favIsHome = idSum % 2 === 0;
+    }
+
     const fav    = favIsHome ? home : away;
     const dog    = favIsHome ? away : home;
     const favML  = favIsHome ? (odds?.homeML || '-135') : (odds?.awayML || '-135');
     const dogML  = favIsHome ? (odds?.awayML || '+115') : (odds?.homeML || '+115');
 
-    const dfltTotal    = sp === 'MLB' ? '8.0' : sp === 'NHL' ? '5.5' : sp === 'NBA' ? '220.5' : sp === 'NCAAM' ? '145.5' : '47.5';
-    const dfltLine     = sp === 'MLB' || sp === 'NHL' ? '-1.5' : '-3.0';
+    const dfltTotal = sp === 'MLB' ? '8.0' : sp === 'NHL' ? '5.5' : sp === 'NBA' ? '220.5' : sp === 'NCAAM' ? '145.5' : '47.5';
+    const dfltLine  = sp === 'MLB' || sp === 'NHL' ? '-1.5' : '-3.0';
 
     function fmt(str) {
       const lineVal = favIsHome ? (odds?.homeLine || dfltLine) : (odds?.awayLine || dfltLine);
@@ -394,8 +474,7 @@
     // ── Dog pick ───────────────────────────────────────
     if (role === 'dog') {
       if (parseInt(dogML) < 0) return null; // no true underdog
-      const reasons = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
-      // Only label "Live Dog" when the game is actually in progress right now
+      const reasons   = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
       const edgeLabel = game.status === 'live' ? 'Live Dog' : 'Dog Pick';
       return {
         sport: sp, matchup: `${away} @ ${home}`,
@@ -411,16 +490,14 @@
     const conf = randConf(7.0, 9.2, r);
 
     if (pType === 0 || !odds) {
-      // Moneyline favorite
-      pick     = `${fav} ML`;
-      pickOdds = favML;
-      edge     = parseInt(favML) <= -155 ? 'strong' : 'value';
+      pick      = `${fav} ML`;
+      pickOdds  = favML;
+      edge      = parseInt(favML) <= -155 ? 'strong' : 'value';
       edgeLabel = edge === 'strong' ? 'Strong Play' : 'Value Play';
-      reasons  = pickArr(tmpl.ml_fav, r).map(fmt);
+      reasons   = pickArr(tmpl.ml_fav, r).map(fmt);
     } else if (pType === 1) {
-      // Spread / run line / puck line
-      const lineVal  = favIsHome ? (odds.homeLine     || dfltLine)  : (odds.awayLine     || dfltLine);
-      const lineOdds = favIsHome ? (odds.homeLineOdds || '-110')    : (odds.awayLineOdds || '-110');
+      const lineVal  = favIsHome ? (odds.homeLine     || dfltLine) : (odds.awayLine     || dfltLine);
+      const lineOdds = favIsHome ? (odds.homeLineOdds || '-110')   : (odds.awayLineOdds || '-110');
       const lineKey  = sp === 'NHL' ? 'puckline' : sp === 'MLB' ? 'runline' : 'spread';
       pick      = `${fav} ${lineVal}`;
       pickOdds  = lineOdds;
@@ -428,24 +505,36 @@
       edgeLabel = 'Strong Play';
       reasons   = pickArr(tmpl[lineKey] || tmpl.spread || tmpl.ml_fav, r).map(fmt);
     } else if (pType === 2) {
-      // Over
       const tot = odds.total || dfltTotal;
-      pick     = `Over ${tot}`;
-      pickOdds = odds.overOdds || '-110';
-      edge     = 'value';
+      pick      = `Over ${tot}`;
+      pickOdds  = odds.overOdds || '-110';
+      edge      = 'value';
       edgeLabel = 'Value Play';
-      reasons  = pickArr(tmpl.over, r).map(fmt);
+      reasons   = pickArr(tmpl.over, r).map(fmt);
     } else {
-      // Under
       const tot = odds.total || dfltTotal;
-      pick     = `Under ${tot}`;
-      pickOdds = odds.underOdds || '-110';
-      edge     = 'value';
+      pick      = `Under ${tot}`;
+      pickOdds  = odds.underOdds || '-110';
+      edge      = 'value';
       edgeLabel = 'Value Play';
-      reasons  = pickArr(tmpl.under, r).map(fmt);
+      reasons   = pickArr(tmpl.under, r).map(fmt);
     }
 
     return { sport: sp, matchup: `${away} @ ${home}`, pick, odds: pickOdds, edge, edgeLabel, conf, reasons };
+  }
+
+  /* ── Generate one canonical pick for a game ─────────
+   * Checks the cross-page pick cache first.  If a pick has already been
+   * computed for this game today (on this page OR on a previously visited
+   * page in the same browser session), that exact object is returned so
+   * every page always agrees on the same team / bet type / edge label.
+   * ─────────────────────────────────────────────────── */
+  function makePick(game, odds, today, role) {
+    const cached = _loadPick(game.id, role);
+    if (cached.found) return cached.val;          // return stored canonical pick
+    const pick = _computePick(game, odds, today, role);
+    _savePick(game.id, role, pick);               // store for this and future pages
+    return pick;
   }
 
   /* ── Card HTML ─────────────────────────────────────── */
