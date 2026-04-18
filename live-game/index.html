@@ -6,6 +6,7 @@
 <title>Live Game — HammerTimeBet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="../components/canonical.js" defer></script>
 <script src="../components/nav.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -155,41 +156,14 @@ const ESPN_SUMMARY = {
    Extracts score, linescore, and team stats from summary JSON
    ============================================================ */
 function parseGame(data, sport, gameId) {
-  const comp   = data.header?.competitions?.[0] || {};
-  const comps  = comp.competitors || [];
-  const away   = comps.find(c => c.homeAway === 'away') || comps[0] || {};
-  const home   = comps.find(c => c.homeAway === 'home') || comps[1] || {};
-  const status = comp.status || {};
-  const state  =
-    status.type?.state === 'in'   ? 'live'  :
-    status.type?.state === 'post' ? 'final' : 'pre';
-
-  const gameTime = (() => {
-    if (state !== 'pre') return status.type?.shortDetail || '';
-    try {
-      const d = new Date(comp.date || '');
-      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-    } catch { return comp.date || ''; }
-  })();
-
-  return {
-    id:       String(comp.id || gameId),
-    sport,
-    status:   state,
-    gameTime: state === 'pre' ? gameTime : status.type?.shortDetail || '',
-    period:   state === 'live' ? (status.type?.shortDetail || 'In Progress') : '',
-    away: {
-      name:  away.team?.displayName || away.team?.name || 'Away',
-      abbr:  away.team?.abbreviation || '',
-      score: away.score || '0',
-      rec:   away.records?.[0]?.summary || '',
-    },
-    home: {
-      name:  home.team?.displayName || home.team?.name || 'Home',
-      abbr:  home.team?.abbreviation || '',
-      score: home.score || '0',
-      rec:   home.records?.[0]?.summary || '',
-    },
+  // Delegate to canonical layer — single source of truth for game shape.
+  // Canonical uses game.state for the live period text (same content as the
+  // old game.period field); renderHero reads game.state directly.
+  return HTBCanonical.fromESPNSummary(data, sport) || {
+    id: String(gameId), sport, status: 'pre', state: '', gameTime: '',
+    away: { name: 'Away', abbr: '', score: '0', rec: '' },
+    home: { name: 'Home', abbr: '', score: '0', rec: '' },
+    odds: null,
   };
 }
 
@@ -516,7 +490,7 @@ function renderHero(game) {
           </div>
           <div class="vs-col">
             <div class="vs-label">VS</div>
-            ${isLive ? `<div class="live-period">${game.period}</div>` : ''}
+            ${isLive ? `<div class="live-period">${game.state}</div>` : ''}
             ${!showScore ? `<div class="game-time-lbl">${game.gameTime}</div>` : ''}
           </div>
           <div class="team-block ${showScore && !aLead ? 'winner' : ''}">

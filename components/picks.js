@@ -58,24 +58,12 @@
       const resp = await fetch(`${url}?dates=${todayDateParam()}`, { signal: AbortSignal.timeout(7000) });
       if (!resp.ok) throw 0;
       const { events = [] } = await resp.json();
-      return events.map(ev => {
-        const comp = ev.competitions[0];
-        const home = comp.competitors.find(c => c.homeAway === 'home');
-        const away = comp.competitors.find(c => c.homeAway === 'away');
-        const statusName = comp.status.type.name;
-        return {
-          id:     ev.id,
-          sport:  sport.toUpperCase(),
-          away:   { name: away.team.shortDisplayName, abbr: away.team.abbreviation, rec: away.records?.[0]?.summary || '' },
-          home:   { name: home.team.shortDisplayName, abbr: home.team.abbreviation, rec: home.records?.[0]?.summary || '' },
-          status: statusName === 'STATUS_IN_PROGRESS' ? 'live'
-                : statusName === 'STATUS_FINAL'       ? 'final' : 'pre',
-        };
-      });
+      // Delegate to canonical layer — single source of truth for game shape
+      return events.map(ev => HTBCanonical.fromESPNEvent(ev, sport)).filter(Boolean);
     } catch { return []; }
   }
 
-  /* ── Fetch ESPN pickcenter odds ────────────────────── */
+  /* ── Fetch ESPN pickcenter odds and attach to game ──── */
   async function getOdds(sport, gameId) {
     const fn = SM[sport.toLowerCase()];
     if (!fn) return null;
@@ -85,36 +73,8 @@
       const data = await resp.json();
       const pc   = (data.pickcenter || [])[0];
       if (!pc) return null;
-      const fmt = n => n == null ? null : (n >= 0 ? `+${n}` : String(n));
-
-      // ── Spread direction ────────────────────────────────────────────────
-      // ESPN pickcenter stores a single `spread` value (always positive) and
-      // labels each team via .favorite / .underdog flags plus moneyLine.
-      // We derive who is favored from those explicit fields rather than
-      // guessing from the sign of a single spread number.
-      const hML      = pc.homeTeamOdds?.moneyLine;
-      const aML      = pc.awayTeamOdds?.moneyLine;
-      const homeIsFav = pc.homeTeamOdds?.favorite === true
-        || (hML != null && aML != null ? hML < aML
-          : hML != null                ? hML < 0
-          : false);
-      const rawSpread    = pc.spread != null ? Math.abs(Number(pc.spread)) : null;
-      const homeSpreadN  = rawSpread != null ? (homeIsFav ? -rawSpread :  rawSpread) : null;
-      const awaySpreadN  = rawSpread != null ? (homeIsFav ?  rawSpread : -rawSpread) : null;
-      const fmtLine      = n => n == null ? null : (n >= 0 ? `+${n}` : String(n));
-      const fmtOdds      = n => n == null ? '-110' : (n >= 0 ? `+${n}` : String(n));
-
-      return {
-        awayML:       fmt(aML),
-        homeML:       fmt(hML),
-        awayLine:     fmtLine(awaySpreadN),
-        awayLineOdds: fmtOdds(pc.awayTeamOdds?.spreadOdds),
-        homeLine:     fmtLine(homeSpreadN),
-        homeLineOdds: fmtOdds(pc.homeTeamOdds?.spreadOdds),
-        total:        pc.overUnder != null ? String(pc.overUnder) : null,
-        overOdds:     fmt(pc.overOdds),
-        underOdds:    fmt(pc.underOdds),
-      };
+      // Delegate to canonical layer — returns { favorite, away, home, total, overOdds, underOdds }
+      return HTBCanonical.withPickcenter({}, pc).odds;
     } catch { return null; }
   }
 
@@ -461,49 +421,40 @@
 
   /* ── Compute one pick for a game (pure — no caching) ── */
   function _computePick(game, odds, today, role) {
-    const sp   = game.sport;
+    // odds is now canonical shape: { favorite, away:{ml,spread,spreadOdds}, home:{ml,spread,spreadOdds}, total, overOdds, underOdds }
+    const sp   = game.sport;                          // lowercase (mlb, nba, nhl, …)
+    const spUp = sp.toUpperCase();                    // template keys are uppercase
     const away = game.away.name;
     const home = game.home.name;
     const r    = mkRng(`${game.id}-${today}-${role}`);
-    const tmpl = T[sp] || T.MLB;
+    const tmpl = T[spUp] || T.MLB;
 
     /* ── Determine favorite ────────────────────────────────────────────
-     * Root cause of cross-page conflicts: when odds are null both ML
-     * values defaulted to '-110', making hMLn === aMLn and favIsHome
-     * always true (home "wins" the tie).  A page with real odds would
-     * correctly pick the away team as favorite, producing OPPOSITE picks.
-     *
-     * Fix: when odds are unavailable, derive favIsHome from a hash of the
-     * game ID so it is (a) deterministic and (b) not always home.
+     * Use canonical odds.favorite first (set by HTBCanonical.withPickcenter).
+     * When odds are unavailable, derive favIsHome from a hash of the
+     * game ID so it is deterministic and not always home.
      * ─────────────────────────────────────────────────────────────────── */
     let favIsHome;
-    const aMLraw = odds?.awayML;
-    const hMLraw = odds?.homeML;
-    if (aMLraw && hMLraw) {
-      // Both ML values present — use the actual favorite
-      favIsHome = parseInt(hMLraw) <= parseInt(aMLraw);
-    } else if (aMLraw) {
-      // Only away ML present
-      favIsHome = parseInt(aMLraw) >= 0; // away is dog (positive) → home is fav
-    } else if (hMLraw) {
-      // Only home ML present
-      favIsHome = parseInt(hMLraw) < 0;  // home is fav if negative ML
+    if (odds?.favorite === 'home') {
+      favIsHome = true;
+    } else if (odds?.favorite === 'away') {
+      favIsHome = false;
     } else {
-      // No odds at all — deterministic hash of game ID prevents always picking home
+      // No odds — deterministic hash of game ID prevents always picking home
       const idSum = game.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
       favIsHome = idSum % 2 === 0;
     }
 
     const fav    = favIsHome ? home : away;
     const dog    = favIsHome ? away : home;
-    const favML  = favIsHome ? (odds?.homeML || '-135') : (odds?.awayML || '-135');
-    const dogML  = favIsHome ? (odds?.awayML || '+115') : (odds?.homeML || '+115');
+    const favML  = favIsHome ? (odds?.home?.ml || '-135') : (odds?.away?.ml || '-135');
+    const dogML  = favIsHome ? (odds?.away?.ml || '+115') : (odds?.home?.ml || '+115');
 
-    const dfltTotal = sp === 'MLB' ? '8.0' : sp === 'NHL' ? '5.5' : sp === 'NBA' ? '220.5' : sp === 'NCAAM' ? '145.5' : '47.5';
-    const dfltLine  = sp === 'MLB' || sp === 'NHL' ? '-1.5' : '-3.0';
+    const dfltTotal = sp === 'mlb' ? '8.0' : sp === 'nhl' ? '5.5' : sp === 'nba' ? '220.5' : sp === 'ncaam' ? '145.5' : '47.5';
+    const dfltLine  = sp === 'mlb' || sp === 'nhl' ? '-1.5' : '-3.0';
 
     function fmt(str) {
-      const lineVal = favIsHome ? (odds?.homeLine || dfltLine) : (odds?.awayLine || dfltLine);
+      const lineVal = favIsHome ? (odds?.home?.spread || dfltLine) : (odds?.away?.spread || dfltLine);
       return str
         .replace(/\{fav\}/g,  fav).replace(/\{dog\}/g,  dog)
         .replace(/\{home\}/g, home).replace(/\{away\}/g, away)
@@ -517,8 +468,6 @@
     if (role === 'dog') {
       if (parseInt(dogML) < 0) return null; // no true underdog
       const reasons = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
-      // Always "Dog Pick" — ESPN pickcenter only returns pre-game odds.
-      // "Live Dog" would require real in-game lines we don't have.
       return {
         sport: sp, matchup: `${away} @ ${home}`,
         pick: `${dog} ML`, odds: dogML,
@@ -539,9 +488,9 @@
       edgeLabel = edge === 'strong' ? 'Strong Play' : 'Value Play';
       reasons   = pickArr(tmpl.ml_fav, r).map(fmt);
     } else if (pType === 1) {
-      const lineVal  = favIsHome ? (odds.homeLine     || dfltLine) : (odds.awayLine     || dfltLine);
-      const lineOdds = favIsHome ? (odds.homeLineOdds || '-110')   : (odds.awayLineOdds || '-110');
-      const lineKey  = sp === 'NHL' ? 'puckline' : sp === 'MLB' ? 'runline' : 'spread';
+      const lineVal  = favIsHome ? (odds.home?.spread     || dfltLine) : (odds.away?.spread     || dfltLine);
+      const lineOdds = favIsHome ? (odds.home?.spreadOdds || '-110')   : (odds.away?.spreadOdds || '-110');
+      const lineKey  = sp === 'nhl' ? 'puckline' : sp === 'mlb' ? 'runline' : 'spread';
       pick      = `${fav} ${lineVal}`;
       pickOdds  = lineOdds;
       edge      = 'strong';
@@ -642,8 +591,9 @@
   }
 
   function isDogGame(odds) {
-    const aML = parseInt(odds?.awayML || '0');
-    const hML = parseInt(odds?.homeML || '0');
+    // Canonical odds shape: odds.away.ml / odds.home.ml
+    const aML = parseInt(odds?.away?.ml || '0');
+    const hML = parseInt(odds?.home?.ml || '0');
     return aML > 0 || hML > 0;
   }
 

@@ -333,39 +333,39 @@ function _todayParam() {
    ============================================================ */
 const HTB_MOCK_SCORES = {
   mlb: [
-    { id:'401672101', sport:'MLB', away:{ name:'Rangers',      abbr:'TEX',  score:'1',  rec:'8-9'  }, home:{ name:'Dodgers',   abbr:'LAD',  score:'3',  rec:'12-5' }, status:'live',  state:'Bot 5th',   gameTime:'7:10 PM ET'  },
-    { id:'401672102', sport:'MLB', away:{ name:'Rockies',      abbr:'COL',  score:'0',  rec:'4-14' }, home:{ name:'Padres',    abbr:'SD',   score:'2',  rec:'9-8'  }, status:'live',  state:'Top 3rd',   gameTime:'9:40 PM ET'  },
-    { id:'401672103', sport:'MLB', away:{ name:'Red Sox',      abbr:'BOS',  score:'0',  rec:'7-10' }, home:{ name:'Cardinals', abbr:'STL',  score:'0',  rec:'9-8'  }, status:'pre',   state:'',          gameTime:'2:15 PM ET'  },
-    { id:'401672104', sport:'MLB', away:{ name:'Astros',       abbr:'HOU',  score:'4',  rec:'10-7' }, home:{ name:'Mariners',  abbr:'SEA',  score:'2',  rec:'8-9'  }, status:'live',  state:'Top 7th',   gameTime:'9:40 PM ET'  },
+    { id:'401672101', sport:'mlb', away:{ name:'Rangers',      abbr:'TEX',  score:'1',  rec:'8-9'  }, home:{ name:'Dodgers',   abbr:'LAD',  score:'3',  rec:'12-5' }, status:'live',  state:'Bot 5th',   gameTime:'7:10 PM ET'  },
+    { id:'401672102', sport:'mlb', away:{ name:'Rockies',      abbr:'COL',  score:'0',  rec:'4-14' }, home:{ name:'Padres',    abbr:'SD',   score:'2',  rec:'9-8'  }, status:'live',  state:'Top 3rd',   gameTime:'9:40 PM ET'  },
+    { id:'401672103', sport:'mlb', away:{ name:'Red Sox',      abbr:'BOS',  score:'0',  rec:'7-10' }, home:{ name:'Cardinals', abbr:'STL',  score:'0',  rec:'9-8'  }, status:'pre',   state:'',          gameTime:'2:15 PM ET'  },
+    { id:'401672104', sport:'mlb', away:{ name:'Astros',       abbr:'HOU',  score:'4',  rec:'10-7' }, home:{ name:'Mariners',  abbr:'SEA',  score:'2',  rec:'8-9'  }, status:'live',  state:'Top 7th',   gameTime:'9:40 PM ET'  },
   ],
   nba: [
-    { id:'401705101', sport:'NBA', away:{ name:'Celtics',      abbr:'BOS',  score:'68', rec:'52-18' }, home:{ name:'Knicks',   abbr:'NYK',  score:'61', rec:'44-26' }, status:'live',  state:'Q3 5:44',   gameTime:'7:30 PM ET'  },
-    { id:'401705102', sport:'NBA', away:{ name:'Lakers',       abbr:'LAL',  score:'0',  rec:'37-33' }, home:{ name:'Warriors', abbr:'GSW',  score:'0',  rec:'38-32' }, status:'pre',   state:'',          gameTime:'10:00 PM ET' },
-    { id:'401705103', sport:'NBA', away:{ name:'Nuggets',      abbr:'DEN',  score:'88', rec:'50-20' }, home:{ name:'Suns',     abbr:'PHX',  score:'82', rec:'34-36' }, status:'live',  state:'Q4 2:11',   gameTime:'9:00 PM ET'  },
-    { id:'401705104', sport:'NBA', away:{ name:'76ers',        abbr:'PHI',  score:'0',  rec:'35-35' }, home:{ name:'Heat',     abbr:'MIA',  score:'0',  rec:'39-31' }, status:'pre',   state:'',          gameTime:'8:00 PM ET'  },
+    { id:'401705101', sport:'nba', away:{ name:'Celtics',      abbr:'BOS',  score:'68', rec:'52-18' }, home:{ name:'Knicks',   abbr:'NYK',  score:'61', rec:'44-26' }, status:'live',  state:'Q3 5:44',   gameTime:'7:30 PM ET'  },
+    { id:'401705102', sport:'nba', away:{ name:'Lakers',       abbr:'LAL',  score:'0',  rec:'37-33' }, home:{ name:'Warriors', abbr:'GSW',  score:'0',  rec:'38-32' }, status:'pre',   state:'',          gameTime:'10:00 PM ET' },
+    { id:'401705103', sport:'nba', away:{ name:'Nuggets',      abbr:'DEN',  score:'88', rec:'50-20' }, home:{ name:'Suns',     abbr:'PHX',  score:'82', rec:'34-36' }, status:'live',  state:'Q4 2:11',   gameTime:'9:00 PM ET'  },
+    { id:'401705104', sport:'nba', away:{ name:'76ers',        abbr:'PHI',  score:'0',  rec:'35-35' }, home:{ name:'Heat',     abbr:'MIA',  score:'0',  rec:'39-31' }, status:'pre',   state:'',          gameTime:'8:00 PM ET'  },
   ],
   nfl: [
-    { id:'401671801', sport:'NFL', away:{ name:'Chiefs',       abbr:'KC',   score:'17', rec:'11-3' }, home:{ name:'Bills',    abbr:'BUF',  score:'14', rec:'10-4' }, status:'live',  state:'Q3 7:42',   gameTime:'4:25 PM ET'  },
-    { id:'401671802', sport:'NFL', away:{ name:'Eagles',       abbr:'PHI',  score:'0',  rec:'9-5'  }, home:{ name:'Cowboys',  abbr:'DAL',  score:'0',  rec:'8-6'  }, status:'pre',   state:'',          gameTime:'4:25 PM ET'  },
-    { id:'401671803', sport:'NFL', away:{ name:'49ers',        abbr:'SF',   score:'24', rec:'10-4' }, home:{ name:'Seahawks', abbr:'SEA',  score:'20', rec:'7-7'  }, status:'live',  state:'Q4 2:54',   gameTime:'4:05 PM ET'  },
-    { id:'401671804', sport:'NFL', away:{ name:'Ravens',       abbr:'BAL',  score:'0',  rec:'12-2' }, home:{ name:'Steelers', abbr:'PIT',  score:'0',  rec:'9-5'  }, status:'pre',   state:'',          gameTime:'8:20 PM ET'  },
-    { id:'401671805', sport:'NFL', away:{ name:'Dolphins',     abbr:'MIA',  score:'0',  rec:'8-6'  }, home:{ name:'Jets',     abbr:'NYJ',  score:'0',  rec:'5-9'  }, status:'pre',   state:'',          gameTime:'1:00 PM ET'  },
+    { id:'401671801', sport:'nfl', away:{ name:'Chiefs',       abbr:'KC',   score:'17', rec:'11-3' }, home:{ name:'Bills',    abbr:'BUF',  score:'14', rec:'10-4' }, status:'live',  state:'Q3 7:42',   gameTime:'4:25 PM ET'  },
+    { id:'401671802', sport:'nfl', away:{ name:'Eagles',       abbr:'PHI',  score:'0',  rec:'9-5'  }, home:{ name:'Cowboys',  abbr:'DAL',  score:'0',  rec:'8-6'  }, status:'pre',   state:'',          gameTime:'4:25 PM ET'  },
+    { id:'401671803', sport:'nfl', away:{ name:'49ers',        abbr:'SF',   score:'24', rec:'10-4' }, home:{ name:'Seahawks', abbr:'SEA',  score:'20', rec:'7-7'  }, status:'live',  state:'Q4 2:54',   gameTime:'4:05 PM ET'  },
+    { id:'401671804', sport:'nfl', away:{ name:'Ravens',       abbr:'BAL',  score:'0',  rec:'12-2' }, home:{ name:'Steelers', abbr:'PIT',  score:'0',  rec:'9-5'  }, status:'pre',   state:'',          gameTime:'8:20 PM ET'  },
+    { id:'401671805', sport:'nfl', away:{ name:'Dolphins',     abbr:'MIA',  score:'0',  rec:'8-6'  }, home:{ name:'Jets',     abbr:'NYJ',  score:'0',  rec:'5-9'  }, status:'pre',   state:'',          gameTime:'1:00 PM ET'  },
   ],
   ncaaf: [
-    { id:'401628281', sport:'NCAAF', away:{ name:'Ohio State', abbr:'OSU',  score:'14', rec:'' }, home:{ name:'Georgia',  abbr:'UGA',  score:'21', rec:'' }, status:'live', state:'Q3 4:22', gameTime:'3:30 PM ET' },
-    { id:'401628282', sport:'NCAAF', away:{ name:'Tennessee',  abbr:'TENN', score:'0',  rec:'' }, home:{ name:'Alabama',  abbr:'BAMA', score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'7:00 PM ET' },
-    { id:'401628283', sport:'NCAAF', away:{ name:'Notre Dame', abbr:'ND',   score:'7',  rec:'' }, home:{ name:'USC',      abbr:'USC',  score:'10', rec:'' }, status:'live', state:'Q2 2:15', gameTime:'7:30 PM ET' },
-    { id:'401628284', sport:'NCAAF', away:{ name:'Texas',      abbr:'TEX',  score:'0',  rec:'' }, home:{ name:'Oklahoma', abbr:'OU',   score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'8:00 PM ET' },
+    { id:'401628281', sport:'ncaaf', away:{ name:'Ohio State', abbr:'OSU',  score:'14', rec:'' }, home:{ name:'Georgia',  abbr:'UGA',  score:'21', rec:'' }, status:'live', state:'Q3 4:22', gameTime:'3:30 PM ET' },
+    { id:'401628282', sport:'ncaaf', away:{ name:'Tennessee',  abbr:'TENN', score:'0',  rec:'' }, home:{ name:'Alabama',  abbr:'BAMA', score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'7:00 PM ET' },
+    { id:'401628283', sport:'ncaaf', away:{ name:'Notre Dame', abbr:'ND',   score:'7',  rec:'' }, home:{ name:'USC',      abbr:'USC',  score:'10', rec:'' }, status:'live', state:'Q2 2:15', gameTime:'7:30 PM ET' },
+    { id:'401628284', sport:'ncaaf', away:{ name:'Texas',      abbr:'TEX',  score:'0',  rec:'' }, home:{ name:'Oklahoma', abbr:'OU',   score:'0',  rec:'' }, status:'pre',  state:'',        gameTime:'8:00 PM ET' },
   ],
   ncaam: [
-    { id:'401628401', sport:'NCAAM', away:{ name:'Duke',       abbr:'DUKE', score:'58', rec:'28-6' }, home:{ name:'North Carolina', abbr:'UNC',  score:'52', rec:'24-9'  }, status:'live', state:'2H 8:14', gameTime:'9:00 PM ET'  },
-    { id:'401628402', sport:'NCAAM', away:{ name:'Kansas',     abbr:'KU',   score:'0',  rec:'26-7' }, home:{ name:'Kentucky',       abbr:'UK',   score:'0',  rec:'25-8'  }, status:'pre',  state:'',        gameTime:'8:30 PM ET'  },
-    { id:'401628403', sport:'NCAAM', away:{ name:'Gonzaga',    abbr:'GONZ', score:'41', rec:'27-5' }, home:{ name:'Arizona',        abbr:'ARIZ', score:'38', rec:'25-7'  }, status:'live', state:'H1 3:52', gameTime:'10:00 PM ET' },
-    { id:'401628404', sport:'NCAAM', away:{ name:'Purdue',     abbr:'PUR',  score:'0',  rec:'24-9' }, home:{ name:'Michigan St',    abbr:'MSU',  score:'0',  rec:'23-10' }, status:'pre',  state:'',        gameTime:'7:00 PM ET'  },
+    { id:'401628401', sport:'ncaam', away:{ name:'Duke',       abbr:'DUKE', score:'58', rec:'28-6' }, home:{ name:'North Carolina', abbr:'UNC',  score:'52', rec:'24-9'  }, status:'live', state:'2H 8:14', gameTime:'9:00 PM ET'  },
+    { id:'401628402', sport:'ncaam', away:{ name:'Kansas',     abbr:'KU',   score:'0',  rec:'26-7' }, home:{ name:'Kentucky',       abbr:'UK',   score:'0',  rec:'25-8'  }, status:'pre',  state:'',        gameTime:'8:30 PM ET'  },
+    { id:'401628403', sport:'ncaam', away:{ name:'Gonzaga',    abbr:'GONZ', score:'41', rec:'27-5' }, home:{ name:'Arizona',        abbr:'ARIZ', score:'38', rec:'25-7'  }, status:'live', state:'H1 3:52', gameTime:'10:00 PM ET' },
+    { id:'401628404', sport:'ncaam', away:{ name:'Purdue',     abbr:'PUR',  score:'0',  rec:'24-9' }, home:{ name:'Michigan St',    abbr:'MSU',  score:'0',  rec:'23-10' }, status:'pre',  state:'',        gameTime:'7:00 PM ET'  },
   ],
   nhl: [
-    { id:'401701201', sport:'NHL', away:{ name:'Golden Knights', abbr:'VGK', score:'2', rec:'' }, home:{ name:'Avalanche', abbr:'COL', score:'1', rec:'' }, status:'live', state:'3rd 11:22', gameTime:'9:00 PM ET'  },
-    { id:'401701202', sport:'NHL', away:{ name:'Flames',         abbr:'CGY', score:'0', rec:'' }, home:{ name:'Kraken',    abbr:'SEA', score:'0', rec:'' }, status:'pre',  state:'',          gameTime:'10:00 PM ET' },
+    { id:'401701201', sport:'nhl', away:{ name:'Golden Knights', abbr:'VGK', score:'2', rec:'' }, home:{ name:'Avalanche', abbr:'COL', score:'1', rec:'' }, status:'live', state:'3rd 11:22', gameTime:'9:00 PM ET'  },
+    { id:'401701202', sport:'nhl', away:{ name:'Flames',         abbr:'CGY', score:'0', rec:'' }, home:{ name:'Kraken',    abbr:'SEA', score:'0', rec:'' }, status:'pre',  state:'',          gameTime:'10:00 PM ET' },
   ],
 };
 
@@ -437,7 +437,7 @@ async function _fetchScores(sport) {
     const r = await fetch(`${url}?dates=${_todayParam()}`, { signal: AbortSignal.timeout(5000) });
     if (!r.ok) return [];
     const { events = [] } = await r.json();
-    return events.map(e => _parseEvent(e, sport));
+    return events.map(e => _parseEvent(e, sport)).filter(Boolean);
   } catch {
     return [];
   }
@@ -449,38 +449,34 @@ let _oddsSource    = 'espn'; // 'proxy' | 'espn' | 'none'
 
 const _PROXY_PLACEHOLDER = 'your-project.vercel.app';
 
-/* Parse ESPN pickcenter[0] into the internal odds shape */
+/* Parse ESPN pickcenter[0] into the display odds shape.
+   Uses HTBCanonical for correct spread direction — do not implement
+   favorite detection independently here. */
 function _parsePickcenter(pc) {
-  const fmt = n => (n === undefined || n === null) ? null : (n >= 0 ? `+${n}` : String(n));
-
-  const awayML = fmt(pc.awayTeamOdds?.moneyLine);
-  const homeML = fmt(pc.homeTeamOdds?.moneyLine);
-
-  const awayLine     = pc.pointSpread?.away?.close?.line  || null;
-  const awayLineOdds = pc.pointSpread?.away?.close?.odds  || null;
-  const homeLine     = pc.pointSpread?.home?.close?.line  || null;
-  const homeLineOdds = pc.pointSpread?.home?.close?.odds  || null;
-
-  const ou        = pc.overUnder != null ? String(pc.overUnder) : null;
-  const overOdds  = fmt(pc.overOdds);
-  const underOdds = fmt(pc.underOdds);
+  // Canonical layer handles all spread direction and favorite detection
+  const canonical = HTBCanonical.withPickcenter({}, pc).odds;
+  if (!canonical) return null;
 
   // Return null if there's genuinely no data
-  if (!awayML && !awayLine && !ou) return null;
+  if (!canonical.away.ml && !canonical.away.spread && !canonical.total) return null;
+
+  // Map canonical shape → display shape used by the card renderer and mock data
+  const fmtLine = (spread, spreadOdds) =>
+    spread ? `${spread} (${spreadOdds || '-110'})` : '—';
 
   return {
     ml: {
-      away: awayML || '—',
-      home: homeML || '—',
+      away: canonical.away.ml || '—',
+      home: canonical.home.ml || '—',
     },
     line: {
-      away: awayLine ? (awayLineOdds ? `${awayLine} (${awayLineOdds})` : awayLine) : '—',
-      home: homeLine ? (homeLineOdds ? `${homeLine} (${homeLineOdds})` : homeLine) : '—',
+      away: fmtLine(canonical.away.spread, canonical.away.spreadOdds),
+      home: fmtLine(canonical.home.spread, canonical.home.spreadOdds),
     },
     total: {
-      val:   ou || '—',
-      over:  overOdds  || '—',
-      under: underOdds || '—',
+      val:   canonical.total     || '—',
+      over:  canonical.overOdds  || '—',
+      under: canonical.underOdds || '—',
     },
   };
 }
@@ -575,25 +571,14 @@ async function _fetchGolf() {
 }
 
 function _parseEvent(event, sport) {
-  const comp  = event.competitions[0];
-  const home  = comp.competitors.find(c => c.homeAway === 'home');
-  const away  = comp.competitors.find(c => c.homeAway === 'away');
-  const sType = comp.status.type.name;
-  return {
-    id:       event.id,
-    sport:    sport.toUpperCase(),
-    away:     { name: away.team.shortDisplayName, abbr: away.team.abbreviation, score: away.score || '0', rec: away.records?.[0]?.summary || '' },
-    home:     { name: home.team.shortDisplayName, abbr: home.team.abbreviation, score: home.score || '0', rec: home.records?.[0]?.summary || '' },
-    status:   sType === 'STATUS_IN_PROGRESS' ? 'live' : sType === 'STATUS_FINAL' ? 'final' : 'pre',
-    state:    comp.status.type.detail    || '',
-    gameTime: comp.status.type.shortDetail || '',
-  };
+  // Delegate to canonical layer — single source of truth for game shape
+  return HTBCanonical.fromESPNEvent(event, sport);
 }
 
 function _matchOdds(game, list) {
   return list.find(o => {
-    // Legacy mock format uses abbreviations
-    if (o.awayAbbr) return o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr;
+    // Legacy mock format uses abbreviations — require BOTH to match (AND, not OR)
+    if (o.awayAbbr) return o.awayAbbr === game.away.abbr && o.homeAbbr === game.home.abbr;
     // Proxy format uses full team names — match when name ends with ESPN short display name
     // e.g. "Los Angeles Dodgers".endsWith("Dodgers") === true
     const al = (o.awayTeam || '').toLowerCase();
@@ -646,7 +631,7 @@ function _gameCard(game, odds) {
   return `
     <div class="htb-card" data-game-id="${game.id}">
       <div class="htb-card-hd">
-        <span class="htb-sport-tag">${game.sport}</span>
+        <span class="htb-sport-tag">${game.sport.toUpperCase()}</span>
         <span class="htb-status ${game.status}">${statusLbl}</span>
       </div>
       <div class="htb-card-body">

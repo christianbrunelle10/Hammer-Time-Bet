@@ -6,6 +6,7 @@
 <title>Game Details — HammerTimeBet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
+<script src="../components/canonical.js" defer></script>
 <script src="../components/data.js"  defer></script>
 <script src="../components/nav.js"   defer></script>
 <style>
@@ -373,17 +374,20 @@ function parsePlayerStats(data, sport, game) {
    missing values, and '—' placeholders safely.
    ============================================================ */
 function isFavHome(odds) {
+  // Prefer canonical favorite field set by HTBCanonical.fromESPNSummary
+  if (odds?.favorite === 'home') return true;
+  if (odds?.favorite === 'away') return false;
+  // Fallback: compare moneylines from display shape
   const hStr = odds?.ml?.home || '';
   const aStr = odds?.ml?.away || '';
   const hML  = parseInt(hStr.replace('+', ''), 10);
   const aML  = parseInt(aStr.replace('+', ''), 10);
-  if (!isNaN(hML) && !isNaN(aML)) return hML <= aML; // lower = more negative = favorite
+  if (!isNaN(hML) && !isNaN(aML)) return hML <= aML;
   if (!isNaN(hML)) return hML < 0;
   if (!isNaN(aML)) return aML > 0;
   // No ML data: check spread direction
   const hLn = parseInt((odds?.line?.home || '').split(' ')[0], 10);
   if (!isNaN(hLn)) return hLn < 0;
-  // Final fallback: home team is conventionally the slight favorite
   return true;
 }
 
@@ -1020,81 +1024,23 @@ const ESPN_SUMMARY = {
   nhl:   id => `${ESPN_BASE}/hockey/nhl/summary?event=${id}`,
 };
 
-/* Parse ESPN summary response into the Game shape renderGame() expects */
+/* Parse ESPN summary response — delegates to canonical layer */
 function parseESPNSummary(data, sport) {
-  const comp  = data.header?.competitions?.[0] || {};
-  const comps = comp.competitors || [];
-  const away  = comps.find(c => c.homeAway === 'away') || comps[0] || {};
-  const home  = comps.find(c => c.homeAway === 'home') || comps[1] || {};
-  const status = comp.status || {};
-  const state =
-    status.type?.state === 'in'    ? 'live'  :
-    status.type?.state === 'post'  ? 'final' : 'pre';
-  const gameTime = (() => {
-    if (state !== 'pre') return status.type?.shortDetail || '';
-    try {
-      const d = new Date(comp.date || '');
-      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-    } catch { return comp.date || ''; }
-  })();
-
-  return {
-    id:       String(comp.id || ''),
-    sport,
-    status:   state,
-    gameTime: state === 'pre' ? gameTime : status.type?.shortDetail || '',
-    state:    state === 'live' ? (status.type?.shortDetail || 'In Progress') : '',
-    away: {
-      name:  away.team?.displayName || away.team?.name || 'Away',
-      abbr:  away.team?.abbreviation || '',
-      score: away.score || '0',
-      rec:   away.records?.[0]?.summary || '',
-    },
-    home: {
-      name:  home.team?.displayName || home.team?.name || 'Home',
-      abbr:  home.team?.abbreviation || '',
-      score: home.score || '0',
-      rec:   home.records?.[0]?.summary || '',
-    },
-  };
+  return HTBCanonical.fromESPNSummary(data, sport);
 }
 
-/* Parse odds from ESPN summary pickcenter */
-function parseESPNOdds(data) {
-  const pic = data.pickcenter;
-  if (!pic || !pic.length) return null;
-  const item = pic[0];
-  const away = item.awayTeamOdds;
-  const home = item.homeTeamOdds;
-  const sp   = item.spread;
-  const tot  = item.overUnder;
-  const fmtML = n => n == null ? '—' : (n > 0 ? `+${n}` : String(n));
-
-  // ── Spread direction ─────────────────────────────────────────────────────
-  // ESPN's `spread` is always stored as a positive absolute value.
-  // We determine which team is the favorite from the explicit .favorite flag
-  // on each team's odds object, then fall back to comparing moneylines.
-  // This avoids the prior bug where `sp` was applied directly to the away
-  // side (assigning the favorite's spread to the underdog and vice-versa).
-  const hML      = home?.moneyLine;
-  const aML      = away?.moneyLine;
-  const homeIsFav = home?.favorite === true
-    || (hML != null && aML != null ? hML < aML
-      : hML != null                ? hML < 0
-      : true); // convention: default home as slight favorite when no data
-  const absSpread  = sp != null ? Math.abs(Number(sp)) : null;
-  const fmtSpread  = n => n == null ? '—' : `${n >= 0 ? '+' : ''}${n} (-110)`;
-
+/* Convert canonical game.odds → display shape expected by renderGame() and build*() functions.
+   Preserves odds.favorite so isFavHome() can use it without re-parsing. */
+function adaptOddsForDisplay(game) {
+  const o = game?.odds;
+  if (!o) return null;
+  const fmtLine = (spread, spreadOdds) =>
+    spread ? `${spread} (${spreadOdds || '-110'})` : '—';
   return {
-    ml: {
-      away: fmtML(aML),
-      home: fmtML(hML),
-    },
-    line: {
-      away: fmtSpread(absSpread != null ? (homeIsFav ?  absSpread : -absSpread) : null),
-      home: fmtSpread(absSpread != null ? (homeIsFav ? -absSpread :  absSpread) : null),
-    },
-    total: { val: tot != null ? String(tot) : '—' },
+    favorite: o.favorite,
+    ml:    { away: o.away.ml || '—', home: o.home.ml || '—' },
+    line:  { away: fmtLine(o.away.spread, o.away.spreadOdds), home: fmtLine(o.home.spread, o.home.spreadOdds) },
+    total: { val: o.total || '—' },
   };
 }
 
@@ -1123,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await resp.json();
 
     const game = parseESPNSummary(data, sport);
-    const odds = parseESPNOdds(data);
+    const odds = adaptOddsForDisplay(game);   // converts game.odds → display shape
 
     renderGame(game, odds, sport, data);
   } catch (err) {
