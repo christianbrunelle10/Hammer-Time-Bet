@@ -94,6 +94,19 @@ a{color:inherit;text-decoration:none}
 .not-found p{color:#555;font-size:14px;line-height:1.7}
 .empty-msg{color:#444;font-size:13px;padding:16px 0}
 
+/* ── PLAYER STATS ── */
+.ps-team-block{margin-bottom:28px}
+.ps-team-name{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#888;padding-bottom:10px;border-bottom:1px solid #1a1a1a;margin-bottom:14px}
+.ps-cat-block{margin-bottom:18px}
+.ps-cat-title{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#555;margin-bottom:8px}
+.ps-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ps-tbl{width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap}
+.ps-tbl th{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#444;padding:5px 8px;text-align:center;border-bottom:1px solid #1e1e1e;background:#0d0d0d}
+.ps-tbl th.ps-pl{text-align:left;min-width:110px}
+.ps-tbl td{font-size:11px;color:#666;padding:6px 8px;text-align:center;border-bottom:1px solid #111}
+.ps-tbl td.ps-pl{text-align:left;color:#aaa;font-weight:600;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.ps-tbl tr:last-child td{border-bottom:none}
+
 /* ── FOOTER ── */
 footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
 .footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
@@ -229,131 +242,241 @@ function parseLinescore(data, sport, game) {
 
 /* ============================================================
    TEAM STATS PARSER  — pulls stats from boxscore.teams
+   Handles both flat statistics[] (NBA/NFL/NHL) and
+   category-nested statistics[].stats[] (MLB) formats.
+   Uses ESPN's own label fields — no hardcoded key→label map needed.
    ============================================================ */
 function parseTeamStats(data, sport, game) {
-  const boxscore = data.boxscore || {};
-  const teams    = boxscore.teams || [];
+  const teams = (data.boxscore || {}).teams || [];
   if (!teams.length) return [];
 
   const awayTeam = teams.find(t => t.homeAway === 'away') || teams[0];
-  const homeTeam = teams.find(t => t.homeAway === 'home') || teams[1];
+  const homeTeam = teams.find(t => t.homeAway === 'home') || teams[1] || teams[0];
 
-  /* Build a lookup: statName → {away, home} */
-  const awayStats = {};
-  const homeStats = {};
-  (awayTeam?.statistics || []).forEach(s => { awayStats[s.name] = s.displayValue; });
-  (homeTeam?.statistics || []).forEach(s => { homeStats[s.name] = s.displayValue; });
+  /* Flatten stats — handles {name, displayValue} flat lists AND {name, stats:[]} category nesting */
+  function flatten(statList) {
+    const vals = {}, lbls = {};
+    (statList || []).forEach(s => {
+      if (s.stats) {
+        /* MLB category format: {name:'batting', stats:[{name:'hits', displayValue:'7'}]} */
+        s.stats.forEach(sub => {
+          if (!sub.name) return;
+          const v = sub.displayValue != null ? String(sub.displayValue) : '';
+          if (v !== '') vals[sub.name] = v;
+          const l = sub.label || sub.displayName || sub.shortDisplayName;
+          if (l) lbls[sub.name] = l;
+        });
+      } else if (s.name) {
+        /* Flat format: {name:'totalYards', displayValue:'324', label:'Total Yards'} */
+        const v = s.displayValue != null ? String(s.displayValue) : '';
+        if (v !== '') vals[s.name] = v;
+        const l = s.label || s.displayName || s.shortDisplayName;
+        if (l) lbls[s.name] = l;
+      }
+    });
+    return { vals, lbls };
+  }
 
-  /* Sport-specific stat display order */
-  const statKeys = {
-    mlb: [
-      { key: 'hits',             label: 'Hits'         },
-      { key: 'runs',             label: 'Runs'         },
-      { key: 'homeRuns',         label: 'Home Runs'    },
-      { key: 'strikeOuts',       label: 'Strikeouts'   },
-      { key: 'walks',            label: 'Walks'        },
-      { key: 'leftOnBase',       label: 'Left On Base' },
-    ],
-    nba: [
-      { key: 'fieldGoalPct',     label: 'FG%'          },
-      { key: 'threePointPct',    label: '3PT%'         },
-      { key: 'freeThrowPct',     label: 'FT%'          },
-      { key: 'totalRebounds',    label: 'Rebounds'     },
-      { key: 'assists',          label: 'Assists'      },
-      { key: 'turnovers',        label: 'Turnovers'    },
-      { key: 'steals',           label: 'Steals'       },
-      { key: 'blocks',           label: 'Blocks'       },
-    ],
-    nfl: [
-      { key: 'totalYards',       label: 'Total Yards'  },
-      { key: 'passingYards',     label: 'Pass Yards'   },
-      { key: 'rushingYards',     label: 'Rush Yards'   },
-      { key: 'firstDowns',       label: '1st Downs'    },
-      { key: 'turnovers',        label: 'Turnovers'    },
-      { key: 'thirdDownEff',     label: '3rd Down'     },
-      { key: 'redZoneEff',       label: 'Red Zone'     },
-      { key: 'penaltyYards',     label: 'Penalty Yds'  },
-    ],
-    ncaaf: [
-      { key: 'totalYards',       label: 'Total Yards'  },
-      { key: 'passingYards',     label: 'Pass Yards'   },
-      { key: 'rushingYards',     label: 'Rush Yards'   },
-      { key: 'firstDowns',       label: '1st Downs'    },
-      { key: 'turnovers',        label: 'Turnovers'    },
-      { key: 'thirdDownEff',     label: '3rd Down'     },
-    ],
-    ncaam: [
-      { key: 'fieldGoalPct',     label: 'FG%'          },
-      { key: 'threePointPct',    label: '3PT%'         },
-      { key: 'freeThrowPct',     label: 'FT%'          },
-      { key: 'totalRebounds',    label: 'Rebounds'     },
-      { key: 'assists',          label: 'Assists'      },
-      { key: 'turnovers',        label: 'Turnovers'    },
-    ],
-    nhl: [
-      { key: 'shotsOnGoal',      label: 'Shots'        },
-      { key: 'saves',            label: 'Saves'        },
-      { key: 'savePct',          label: 'Save %'       },
-      { key: 'powerPlayGoals',   label: 'PP Goals'     },
-      { key: 'hits',             label: 'Hits'         },
-      { key: 'faceOffWinPct',    label: 'Face-off %'   },
-    ],
+  const aw = flatten(awayTeam?.statistics);
+  const hw = flatten(homeTeam?.statistics);
+  const labelMap = { ...hw.lbls, ...aw.lbls };
+
+  /* All keys present in either team, preserving away-team ordering */
+  const allKeys = [
+    ...Object.keys(aw.vals),
+    ...Object.keys(hw.vals).filter(k => !(k in aw.vals)),
+  ];
+  if (!allKeys.length) return [];
+
+  /* Priority keys per sport (ESPN's actual camelCase names) */
+  const priority = {
+    mlb:   ['runs','hits','errors','leftOnBase','homeRuns','strikeOuts','walks','rbi'],
+    nba:   ['fieldGoals','threePointFieldGoals','freeThrows','totalRebounds',
+            'offensiveRebounds','assists','steals','blocks','turnovers','fouls'],
+    nfl:   ['totalYards','passingYards','rushingYards','firstDowns','turnovers',
+            'thirdDownEff','redZoneEff','penaltyYards'],
+    ncaaf: ['totalYards','passingYards','rushingYards','firstDowns','turnovers','thirdDownEff'],
+    ncaam: ['fieldGoals','threePointFieldGoals','freeThrows','totalRebounds',
+            'assists','steals','turnovers'],
+    nhl:   ['shotsOnGoal','saves','savePct','powerPlayGoals','powerPlayOpportunities',
+            'hits','faceOffWinPercentage','blockedShots','giveaways','takeaways'],
   };
+  const wantedLower = new Set((priority[sport] || []).map(k => k.toLowerCase()));
 
-  const keys = statKeys[sport] || [];
-  const result = [];
-  keys.forEach(({ key, label }) => {
-    const av = awayStats[key];
-    const hv = homeStats[key];
-    if (av != null || hv != null) {
-      result.push({ label, away: av || '—', home: hv || '—' });
-    }
+  const prioRows = [], otherRows = [];
+  allKeys.forEach(key => {
+    const av = aw.vals[key];
+    const hv = hw.vals[key];
+    if (!av && !hv) return;
+    const rawLabel = labelMap[key] ||
+      key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
+    const row = { label: rawLabel, away: av || '—', home: hv || '—' };
+    (wantedLower.has(key.toLowerCase()) ? prioRows : otherRows).push(row);
   });
 
-  /* Fallback: show whatever stats ESPN returns if none matched */
-  if (!result.length) {
-    const allKeys = new Set([...Object.keys(awayStats), ...Object.keys(homeStats)]);
-    allKeys.forEach(k => {
-      if (result.length >= 8) return;
-      const label = k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-      result.push({ label, away: awayStats[k] || '—', home: homeStats[k] || '—' });
-    });
+  /* Priority stats first; if nothing matched priority, show first 10 from ESPN */
+  return prioRows.length ? prioRows : otherRows.slice(0, 10);
+}
+
+/* ============================================================
+   PLAYER STATS COLUMN FILTER — per-sport label whitelist
+   Returns [{label, idx}] for columns to display
+   ============================================================ */
+function filterStatCols(labels, sport, catName) {
+  const all = labels.map((l, i) => ({ label: l, idx: i }));
+  const wantNBA   = new Set(['MIN','FG','3PT','FT','OREB','REB','AST','STL','BLK','TO','PF','PTS']);
+  const wantNCAAM = new Set(['MIN','FG','3PT','FT','REB','AST','STL','TO','PTS']);
+  const mlbWant = {
+    batting:  new Set(['AB','R','H','RBI','HR','BB','SO','AVG']),
+    pitching: new Set(['IP','H','R','ER','BB','SO','HR','ERA']),
+  };
+  const nhlWant = {
+    skaters: new Set(['G','A','PTS','+/-','SOG','PIM']),
+    goalies: new Set(['SA','GA','SV','SV%','TOI']),
+  };
+
+  if (sport === 'nba') {
+    const f = all.filter(c => wantNBA.has(c.label));
+    return f.length ? f : all.slice(0, 10);
   }
+  if (sport === 'ncaam') {
+    const f = all.filter(c => wantNCAAM.has(c.label));
+    return f.length ? f : all.slice(0, 9);
+  }
+  if (sport === 'mlb') {
+    const ws = mlbWant[catName.toLowerCase()];
+    if (ws) {
+      const f = all.filter(c => ws.has(c.label));
+      return f.length ? f : all.slice(0, 8);
+    }
+  }
+  if (sport === 'nhl') {
+    const ws = nhlWant[catName.toLowerCase()];
+    if (ws) {
+      const f = all.filter(c => ws.has(c.label));
+      return f.length ? f : all.slice(0, 6);
+    }
+  }
+  return all; // NFL/NCAAF have reasonable column counts — show all
+}
+
+/* ============================================================
+   PLAYER STATS PARSER — ESPN boxscore.players[]
+   Each entry: {teamName, homeAway, categories:[{name,displayName,cols,athletes}]}
+   ============================================================ */
+function parsePlayerStats(data, sport, game) {
+  const pd = (data.boxscore || {}).players || [];
+  if (!pd.length) return [];
+
+  const result = [];
+  pd.forEach(entry => {
+    const teamName = entry.team?.displayName || entry.team?.name ||
+      (entry.homeAway === 'away' ? game.away.name : game.home.name);
+    const homeAway = entry.homeAway || '';
+    const categories = [];
+
+    (entry.statistics || []).forEach(cat => {
+      const catName = cat.name || '';
+      const allLabels = cat.labels || cat.keys || [];
+      if (!allLabels.length) return;
+
+      const cols = filterStatCols(allLabels, sport, catName);
+      if (!cols.length) return;
+
+      const athletes = (cat.athletes || []).filter(a =>
+        a.stats && a.stats.some(v => v != null && v !== '' && v !== '0' && v !== '0.0' && v !== '--' && v !== '-')
+      );
+      if (!athletes.length) return;
+
+      categories.push({
+        name: catName,
+        displayName: cat.displayName || catName.replace(/^(.)/, c => c.toUpperCase()),
+        cols,
+        athletes: athletes.map(a => ({
+          name: a.athlete?.shortName || a.athlete?.displayName || '—',
+          stats: a.stats || [],
+        })),
+      });
+    });
+
+    if (categories.length) result.push({ teamName, homeAway, categories });
+  });
 
   return result;
 }
 
 /* ============================================================
-   RECENT PLAYS PARSER  — last 5 scoring plays from drives
+   RECENT PLAYS PARSER  — scoring plays / drives / play-by-play
    ============================================================ */
-function parsePlays(data) {
-  /* Try drives first (NFL/NCAAF) */
-  const drives = data.drives?.previous || [];
-  const plays  = [];
+function parsePlays(data, sport) {
+  const plays = [];
 
-  if (drives.length) {
-    drives.slice(-4).reverse().forEach(drive => {
-      const result = drive.result || '';
-      const start  = drive.start?.text || '';
-      const team   = drive.team?.abbreviation || '';
-      if (result) plays.push({ time: start, team, desc: result, score: '' });
-    });
-  }
-
-  /* Try scoring plays (general) */
-  const scoring = data.scoringPlays || [];
-  if (!plays.length && scoring.length) {
-    scoring.slice(-6).reverse().forEach(p => {
-      plays.push({
-        time:  p.period?.displayValue ? `${p.period.displayValue} ${p.clock?.displayValue || ''}`.trim() : '',
-        team:  p.team?.abbreviation || '',
-        desc:  p.text || p.type?.text || '',
-        score: p.awayScore != null ? `${p.awayScore}–${p.homeScore}` : '',
+  /* NFL/NCAAF: drive summaries */
+  if (sport === 'nfl' || sport === 'ncaaf') {
+    const drives = data.drives?.previous || [];
+    if (drives.length) {
+      drives.slice(-5).reverse().forEach(drive => {
+        const result = drive.result || drive.displayResult || '';
+        const team   = drive.team?.abbreviation || drive.offensiveTeam?.abbreviation || '';
+        const pos    = drive.start?.text || '';
+        const yards  = typeof drive.yards === 'number' ? `${drive.yards} yds` : '';
+        const nplays = drive.offensivePlays != null ? `${drive.offensivePlays} plays` : '';
+        const detail = [nplays, yards].filter(Boolean).join(', ');
+        const desc   = result ? `${result}${detail ? ` (${detail})` : ''}` : '';
+        if (desc) plays.push({ time: pos, team, desc, score: '' });
       });
+      if (plays.length) return plays;
+    }
+  }
+
+  /* Detailed play-by-play array (live games) */
+  const playsArr = data.plays || [];
+  if (playsArr.length) {
+    playsArr.slice(-8).reverse().forEach(p => {
+      const pDisp = p.period?.displayValue || '';
+      const pNum  = p.period?.number ?? p.period?.value ?? '';
+      let pLabel  = pDisp;
+      if (!pLabel && pNum !== '') {
+        pLabel = sport === 'mlb'  ? `${Number(pNum) % 2 === 1 ? 'Top' : 'Bot'} ${Math.ceil(Number(pNum) / 2)}` :
+                 sport === 'nhl'  ? `P${pNum}` :
+                 (sport === 'nba' || sport === 'ncaam') ? `Q${pNum}` : `Qtr ${pNum}`;
+      }
+      const clock  = p.clock?.displayValue || '';
+      const time   = [pLabel, clock].filter(Boolean).join(' ').trim();
+      const team   = p.team?.abbreviation || p.team?.shortDisplayName || '';
+      const desc   = p.text || p.type?.text || p.description || '';
+      const aScore = p.awayScore ?? p.awayTeamScore ?? null;
+      const hScore = p.homeScore ?? p.homeTeamScore ?? null;
+      const score  = (aScore != null && hScore != null) ? `${aScore}–${hScore}` : '';
+      if (desc) plays.push({ time, team, desc, score });
+    });
+    if (plays.length) return plays.slice(0, 8);
+  }
+
+  /* Scoring plays — all sports */
+  const scoring = data.scoringPlays || [];
+  if (scoring.length) {
+    scoring.slice(-8).reverse().forEach(p => {
+      const pDisp = p.period?.displayValue || '';
+      const pNum  = p.period?.number ?? p.period?.value ?? '';
+      let pLabel  = pDisp;
+      if (!pLabel && pNum !== '') {
+        pLabel = sport === 'mlb'  ? `${Number(pNum) % 2 === 1 ? 'Top' : 'Bot'} ${Math.ceil(Number(pNum) / 2)}` :
+                 sport === 'nhl'  ? `P${pNum}` :
+                 (sport === 'nba' || sport === 'ncaam') ? `Q${pNum}` : `Qtr ${pNum}`;
+      }
+      const clock  = p.clock?.displayValue || '';
+      const time   = [pLabel, clock].filter(Boolean).join(' ').trim();
+      const team   = p.team?.abbreviation || p.team?.shortDisplayName || '';
+      const desc   = p.text || p.shortText || p.description || p.type?.text || '';
+      const aScore = p.awayScore ?? p.awayTeamScore ?? null;
+      const hScore = p.homeScore ?? p.homeTeamScore ?? null;
+      const score  = (aScore != null && hScore != null) ? `${aScore}–${hScore}` : '';
+      if (desc) plays.push({ time, team, desc, score });
     });
   }
 
-  return plays.slice(0, 6);
+  return plays.slice(0, 8);
 }
 
 /* ============================================================
@@ -369,7 +492,7 @@ function renderHero(game) {
   const statusLbl = isLive ? 'LIVE' : isFinal ? 'FINAL' : game.gameTime;
   const statusCls = isLive ? 'live' : isFinal ? 'final' : 'pre';
   const sportLabel = game.sport.toUpperCase();
-  const backHref = `../${game.sport}/`;
+  const backHref = `/${game.sport}/`;
 
   return `
     <div class="back-wrap">
@@ -425,7 +548,7 @@ function renderLinescore(ls, sport) {
 }
 
 function renderStats(stats, game) {
-  if (!stats.length) return `<p class="empty-msg">Team stats will appear once the game is underway.</p>`;
+  if (!stats.length) return `<p class="empty-msg">Team stats not available for this game.</p>`;
   return `
     <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:0 12px;margin-bottom:10px">
       <span>${game.away.name}</span><span></span><span style="text-align:right">${game.home.name}</span>
@@ -448,7 +571,7 @@ function renderStats(stats, game) {
 }
 
 function renderPlays(plays) {
-  if (!plays.length) return `<p class="empty-msg">Play-by-play will appear once the game is underway.</p>`;
+  if (!plays.length) return `<p class="empty-msg">Live play-by-play is not available for this matchup.</p>`;
   return `
     <div class="plays-list">
       ${plays.map(p => `
@@ -459,6 +582,40 @@ function renderPlays(plays) {
           ${p.score ? `<span class="play-score">${p.score}</span>` : ''}
         </div>`).join('')}
     </div>`;
+}
+
+/* ============================================================
+   PLAYER STATS RENDERER — individual athlete stat tables
+   ============================================================ */
+function renderPlayerStats(playerStats, game, sport) {
+  if (!playerStats.length) {
+    return `<p class="empty-msg">Player stats not available for this game.</p>`;
+  }
+  return playerStats.map(team => `
+    <div class="ps-team-block">
+      <div class="ps-team-name">${team.teamName}</div>
+      ${team.categories.map(cat => `
+        <div class="ps-cat-block">
+          <div class="ps-cat-title">${cat.displayName}</div>
+          <div class="ps-tbl-wrap">
+            <table class="ps-tbl">
+              <thead>
+                <tr>
+                  <th class="ps-pl">Player</th>
+                  ${cat.cols.map(c => `<th>${c.label}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${cat.athletes.map(a => `
+                  <tr>
+                    <td class="ps-pl">${a.name}</td>
+                    ${cat.cols.map(c => `<td>${a.stats[c.idx] ?? '—'}</td>`).join('')}
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
 }
 
 function showError(msg) {
@@ -474,7 +631,7 @@ function showError(msg) {
 /* ============================================================
    RENDER — builds the full page from parsed data
    ============================================================ */
-function renderPage(game, linescore, stats, plays) {
+function renderPage(game, linescore, stats, playerStats, plays) {
   document.title = `${game.away.name} vs ${game.home.name} — Live — HammerTimeBet`;
 
   document.getElementById('game-root').innerHTML = `
@@ -499,6 +656,17 @@ function renderPage(game, linescore, stats, plays) {
           <h2 class="sec-title">Team Stats</h2>
         </div>
         ${renderStats(stats, game)}
+      </div>
+    </section>
+
+    <!-- PLAYER STATS -->
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Player Breakdown</div>
+          <h2 class="sec-title">Player Stats</h2>
+        </div>
+        ${renderPlayerStats(playerStats, game, game.sport)}
       </div>
     </section>
 
@@ -532,12 +700,13 @@ async function loadGame(gameId, sport) {
     if (!resp.ok) throw new Error(`ESPN returned ${resp.status}`);
     const data = await resp.json();
 
-    const game      = parseGame(data, sport, gameId);
-    const linescore = parseLinescore(data, sport, game);
-    const stats     = parseTeamStats(data, sport, game);
-    const plays     = parsePlays(data);
+    const game        = parseGame(data, sport, gameId);
+    const linescore   = parseLinescore(data, sport, game);
+    const stats       = parseTeamStats(data, sport, game);
+    const playerStats = parsePlayerStats(data, sport, game);
+    const plays       = parsePlays(data, sport);
 
-    renderPage(game, linescore, stats, plays);
+    renderPage(game, linescore, stats, playerStats, plays);
 
     /* Auto-refresh only while game is live */
     clearInterval(_refreshTimer);

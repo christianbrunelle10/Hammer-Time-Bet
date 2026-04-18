@@ -602,20 +602,13 @@ function _matchOdds(game, list) {
   }) || null;
 }
 
-/* Build a relative URL to the game detail page that works from any depth */
+/* Absolute URLs — work from any page depth on the custom domain */
 function _gameDetailUrl(id, sport) {
-  const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-  const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf'];
-  const inSub   = subDirs.includes(segs[segs.length - 1]);
-  return `${inSub ? '../' : ''}game/?id=${id}&sport=${sport.toLowerCase()}`;
+  return `/game/?id=${id}&sport=${sport.toLowerCase()}`;
 }
 
-/* Build a relative URL to the live game page */
 function _liveGameUrl(id, sport) {
-  const segs    = window.location.pathname.replace(/\/$/, '').split('/').filter(Boolean);
-  const subDirs = ['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl', 'golf'];
-  const inSub   = subDirs.includes(segs[segs.length - 1]);
-  return `${inSub ? '../' : ''}live-game/?id=${id}&sport=${sport.toLowerCase()}`;
+  return `/live-game/?id=${id}&sport=${sport.toLowerCase()}`;
 }
 
 /* ============================================================
