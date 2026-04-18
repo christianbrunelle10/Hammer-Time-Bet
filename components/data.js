@@ -131,8 +131,10 @@
      ============================================================ */
   function _parseBoxScoreBase(data) {
     const bs        = data.boxscore;
-    const home      = bs?.teams?.[1];
-    const away      = bs?.teams?.[0];
+    const teams     = bs?.teams || [];
+    // Use ESPN's explicit homeAway label — never rely on array index ordering
+    const home      = teams.find(t => t.homeAway === 'home') || teams[1];
+    const away      = teams.find(t => t.homeAway === 'away') || teams[0];
     return {
       homeName:  home?.team?.shortDisplayName || 'Home',
       awayName:  away?.team?.shortDisplayName || 'Away',
@@ -505,8 +507,10 @@
        Returns: Odds | null
     ---------------------------------------------------------- */
     matchOdds(game, oddsList) {
+      // Require BOTH abbreviations to match — prevents partial matches from
+      // assigning one team's odds to a completely different game.
       return oddsList.find(o =>
-        o.awayAbbr === game.away.abbr || o.homeAbbr === game.home.abbr
+        o.awayAbbr === game.away.abbr && o.homeAbbr === game.home.abbr
       ) || null;
     },
 

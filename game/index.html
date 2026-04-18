@@ -367,10 +367,31 @@ function parsePlayerStats(data, sport, game) {
 }
 
 /* ============================================================
+   FAVORITE DETECTION HELPER
+   Determines whether the home team is the favorite using the
+   parsed odds object (ml.home / ml.away). Handles null odds,
+   missing values, and '—' placeholders safely.
+   ============================================================ */
+function isFavHome(odds) {
+  const hStr = odds?.ml?.home || '';
+  const aStr = odds?.ml?.away || '';
+  const hML  = parseInt(hStr.replace('+', ''), 10);
+  const aML  = parseInt(aStr.replace('+', ''), 10);
+  if (!isNaN(hML) && !isNaN(aML)) return hML <= aML; // lower = more negative = favorite
+  if (!isNaN(hML)) return hML < 0;
+  if (!isNaN(aML)) return aML > 0;
+  // No ML data: check spread direction
+  const hLn = parseInt((odds?.line?.home || '').split(' ')[0], 10);
+  if (!isNaN(hLn)) return hLn < 0;
+  // Final fallback: home team is conventionally the slight favorite
+  return true;
+}
+
+/* ============================================================
    AI ANALYSIS TEMPLATES
    ============================================================ */
 function buildAnalysis(game, odds, sport) {
-  const homeFav  = (odds?.ml?.home || '').startsWith('-');
+  const homeFav  = isFavHome(odds);
   const favTeam  = homeFav ? game.home.name : game.away.name;
   const dogTeam  = homeFav ? game.away.name : game.home.name;
   const total    = odds?.total?.val || '—';
@@ -440,7 +461,7 @@ function buildAnalysis(game, odds, sport) {
    TEAM TRENDS
    ============================================================ */
 function buildTrends(game, odds, sport) {
-  const homeFav = (odds?.ml?.home || '').startsWith('-');
+  const homeFav = isFavHome(odds);
   const favTeam = homeFav ? game.home.name : game.away.name;
   const dogTeam = homeFav ? game.away.name : game.home.name;
 
@@ -553,7 +574,7 @@ function buildRisks(game, odds, sport) {
    ============================================================ */
 function buildAlts(game, odds, sport) {
   const total   = odds?.total?.val || '—';
-  const homeFav = (odds?.ml?.home || '').startsWith('-');
+  const homeFav = isFavHome(odds);
   const favTeam = homeFav ? game.home.name : game.away.name;
   const dogTeam = homeFav ? game.away.name : game.home.name;
 
@@ -573,7 +594,7 @@ function buildAlts(game, odds, sport) {
    FINAL VERDICT
    ============================================================ */
 function buildVerdict(game, odds, sport, pick) {
-  const homeFav = (odds?.ml?.home || '').startsWith('-');
+  const homeFav = isFavHome(odds);
   const favTeam = homeFav ? game.home.name : game.away.name;
   const dogTeam = homeFav ? game.away.name : game.home.name;
 
@@ -593,21 +614,24 @@ function buildVerdict(game, odds, sport, pick) {
    PICK GENERATOR
    ============================================================ */
 function buildPick(game, odds, sport) {
-  const homeML  = parseInt((odds?.ml?.home || '0').replace('+', ''));
-  const awayML  = parseInt((odds?.ml?.away || '0').replace('+', ''));
-  const homeFav = homeML < 0;
+  const homeFav = isFavHome(odds);
   const fav     = homeFav ? game.home : game.away;
   const dog     = homeFav ? game.away : game.home;
   const favML   = homeFav ? odds?.ml?.home : odds?.ml?.away;
+  // awayML only needed for confidence computation below
+  const awayML  = parseInt((odds?.ml?.away || '').replace('+', ''), 10) || 0;
+  const homeML  = parseInt((odds?.ml?.home || '').replace('+', ''), 10) || 0;
   const lineKey = sport === 'mlb' ? 'Run Line' : sport === 'nhl' ? 'Puck Line' : 'Spread';
   const spread  = homeFav ? odds?.line?.home : odds?.line?.away;
   const spreadNum = spread?.split(' ')[0] || '';
 
-  const useLine  = Math.abs(homeML) < 160;
+  // Use the favorite's ML for pick type and confidence — not always homeML
+  const favMLNum = parseInt((favML || '').replace('+', ''), 10) || 0;
+  const useLine  = spreadNum && Math.abs(favMLNum) < 160; // use spread when fav is not a heavy favorite
   const pickName = useLine ? `${fav.name} ${spreadNum}` : `${fav.name} ML`;
   const pickOdds = useLine ? spread?.match(/\(([^)]+)\)/)?.[1] || favML : favML;
-  const conf     = 7.2 + (Math.abs(homeML) > 130 ? 0.6 : 0.2);
-  const badge    = conf >= 8.0 ? 'strong' : (Math.abs(homeML) > 140 ? 'value' : 'strong');
+  const conf     = 7.2 + (Math.abs(favMLNum) > 130 ? 0.6 : 0.2);
+  const badge    = conf >= 8.0 ? 'strong' : (Math.abs(favMLNum) > 140 ? 'value' : 'strong');
   const badgeLbl = badge === 'value' ? 'Value Play' : 'Strong Play';
 
   const reasons = buildAnalysis(game, odds, sport).factors.slice(0, 4);
@@ -1040,21 +1064,35 @@ function parseESPNOdds(data) {
   const pic = data.pickcenter;
   if (!pic || !pic.length) return null;
   const item = pic[0];
-  const details = item.details || '';
-  const ml   = item.moneylineOdds;
   const away = item.awayTeamOdds;
   const home = item.homeTeamOdds;
   const sp   = item.spread;
   const tot  = item.overUnder;
+  const fmtML = n => n == null ? '—' : (n > 0 ? `+${n}` : String(n));
+
+  // ── Spread direction ─────────────────────────────────────────────────────
+  // ESPN's `spread` is always stored as a positive absolute value.
+  // We determine which team is the favorite from the explicit .favorite flag
+  // on each team's odds object, then fall back to comparing moneylines.
+  // This avoids the prior bug where `sp` was applied directly to the away
+  // side (assigning the favorite's spread to the underdog and vice-versa).
+  const hML      = home?.moneyLine;
+  const aML      = away?.moneyLine;
+  const homeIsFav = home?.favorite === true
+    || (hML != null && aML != null ? hML < aML
+      : hML != null                ? hML < 0
+      : true); // convention: default home as slight favorite when no data
+  const absSpread  = sp != null ? Math.abs(Number(sp)) : null;
+  const fmtSpread  = n => n == null ? '—' : `${n >= 0 ? '+' : ''}${n} (-110)`;
 
   return {
     ml: {
-      away: away?.moneyLine != null ? (away.moneyLine > 0 ? `+${away.moneyLine}` : String(away.moneyLine)) : '—',
-      home: home?.moneyLine != null ? (home.moneyLine > 0 ? `+${home.moneyLine}` : String(home.moneyLine)) : '—',
+      away: fmtML(aML),
+      home: fmtML(hML),
     },
     line: {
-      away: sp != null ? `${sp > 0 ? '+' : ''}${sp} (-110)` : '—',
-      home: sp != null ? `${-sp > 0 ? '+' : ''}${-sp} (-110)` : '—',
+      away: fmtSpread(absSpread != null ? (homeIsFav ?  absSpread : -absSpread) : null),
+      home: fmtSpread(absSpread != null ? (homeIsFav ? -absSpread :  absSpread) : null),
     },
     total: { val: tot != null ? String(tot) : '—' },
   };

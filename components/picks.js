@@ -86,13 +86,31 @@
       const pc   = (data.pickcenter || [])[0];
       if (!pc) return null;
       const fmt = n => n == null ? null : (n >= 0 ? `+${n}` : String(n));
+
+      // ── Spread direction ────────────────────────────────────────────────
+      // ESPN pickcenter stores a single `spread` value (always positive) and
+      // labels each team via .favorite / .underdog flags plus moneyLine.
+      // We derive who is favored from those explicit fields rather than
+      // guessing from the sign of a single spread number.
+      const hML      = pc.homeTeamOdds?.moneyLine;
+      const aML      = pc.awayTeamOdds?.moneyLine;
+      const homeIsFav = pc.homeTeamOdds?.favorite === true
+        || (hML != null && aML != null ? hML < aML
+          : hML != null                ? hML < 0
+          : false);
+      const rawSpread    = pc.spread != null ? Math.abs(Number(pc.spread)) : null;
+      const homeSpreadN  = rawSpread != null ? (homeIsFav ? -rawSpread :  rawSpread) : null;
+      const awaySpreadN  = rawSpread != null ? (homeIsFav ?  rawSpread : -rawSpread) : null;
+      const fmtLine      = n => n == null ? null : (n >= 0 ? `+${n}` : String(n));
+      const fmtOdds      = n => n == null ? '-110' : (n >= 0 ? `+${n}` : String(n));
+
       return {
-        awayML:       fmt(pc.awayTeamOdds?.moneyLine),
-        homeML:       fmt(pc.homeTeamOdds?.moneyLine),
-        awayLine:     pc.pointSpread?.away?.close?.line  || null,
-        awayLineOdds: pc.pointSpread?.away?.close?.odds  || null,
-        homeLine:     pc.pointSpread?.home?.close?.line  || null,
-        homeLineOdds: pc.pointSpread?.home?.close?.odds  || null,
+        awayML:       fmt(aML),
+        homeML:       fmt(hML),
+        awayLine:     fmtLine(awaySpreadN),
+        awayLineOdds: fmtOdds(pc.awayTeamOdds?.spreadOdds),
+        homeLine:     fmtLine(homeSpreadN),
+        homeLineOdds: fmtOdds(pc.homeTeamOdds?.spreadOdds),
         total:        pc.overUnder != null ? String(pc.overUnder) : null,
         overOdds:     fmt(pc.overOdds),
         underOdds:    fmt(pc.underOdds),
@@ -408,6 +426,30 @@
     return { found: false, val: undefined };
   }
 
+  /**
+   * Validate that a pick's team name is actually one of the teams in the game.
+   * Totals (Over/Under) always pass — they don't name a specific team.
+   * Returns the pick unchanged if valid, or null if the team can't be confirmed.
+   */
+  function _validatePick(pick, game) {
+    if (!pick) return null;
+    const pStr = pick.pick.toLowerCase();
+    // Totals reference no specific team
+    if (pStr.startsWith('over') || pStr.startsWith('under')) return pick;
+    // Extract the team portion: everything before the first spread/ML number
+    const teamPart = pick.pick.replace(/\s+[-+]?\d.*$/, '').trim().toLowerCase();
+    const awayLow  = game.away.name.toLowerCase();
+    const homeLow  = game.home.name.toLowerCase();
+    const valid =
+      awayLow.includes(teamPart) || homeLow.includes(teamPart) ||
+      teamPart.includes(awayLow) || teamPart.includes(homeLow);
+    if (!valid) {
+      console.warn(`[HTB] Pick rejected — "${pick.pick}" team not found in "${game.away.name} @ ${game.home.name}"`);
+      return null;
+    }
+    return pick;
+  }
+
   /** Store canonical pick in memo and sessionStorage. */
   function _savePick(gameId, role, pick) {
     const key = _pickStoreKey(gameId, role);
@@ -532,9 +574,10 @@
    * ─────────────────────────────────────────────────── */
   function makePick(game, odds, today, role) {
     const cached = _loadPick(game.id, role);
-    if (cached.found) return cached.val;          // return stored canonical pick
-    const pick = _computePick(game, odds, today, role);
-    _savePick(game.id, role, pick);               // store for this and future pages
+    if (cached.found) return cached.val;              // return stored canonical pick
+    const raw  = _computePick(game, odds, today, role);
+    const pick = _validatePick(raw, game);            // reject if team can't be confirmed
+    _savePick(game.id, role, pick);                   // store for this and future pages
     return pick;
   }
 
