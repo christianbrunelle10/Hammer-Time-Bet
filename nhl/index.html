@@ -81,55 +81,12 @@ button{cursor:pointer;border:none;font-family:inherit}
 .pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#444;margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
 .pick-card:hover .pc-hint{opacity:1}
 
-/* ── BOX SCORE MODAL ── */
-.bs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
-.bs-overlay.open{opacity:1;pointer-events:all}
-.bs-panel{background:#111;border:1px solid #2a2a2a;border-radius:14px;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s}
-.bs-overlay.open .bs-panel{transform:translateY(0)}
-.bs-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #1e1e1e;position:sticky;top:0;background:#111;z-index:1}
-.bs-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:900;text-transform:uppercase}
-.bs-close{background:#1a1a1a;border:1px solid #2a2a2a;color:#888;width:32px;height:32px;border-radius:6px;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .15s}
-.bs-close:hover{color:#fff}
-.bs-body{padding:20px}
-.bs-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px;color:#555;font-size:13px}
-.bs-spinner{width:18px;height:18px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:spin .65s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Score summary inside modal */
-.bs-score-row{display:flex;gap:8px;margin-bottom:20px}
-.bs-team-col{flex:1;background:#161616;border:1px solid #1e1e1e;border-radius:10px;padding:14px;text-align:center}
-.bs-team-name{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.bs-team-score{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;line-height:1}
-.bs-team-score.lead{color:#fff}
-.bs-team-score.trail{color:#444}
-.bs-period{text-align:center;font-size:12px;color:#555;margin-bottom:20px;letter-spacing:.06em}
-
-/* Period-by-period table */
-.bs-table{width:100%;border-collapse:collapse;margin-bottom:20px}
-.bs-table th{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#444;padding:8px 10px;text-align:center;border-bottom:1px solid #1e1e1e}
-.bs-table th:first-child{text-align:left}
-.bs-table td{font-size:13px;font-weight:600;color:#bbb;padding:10px 10px;text-align:center;border-bottom:1px solid #141414}
-.bs-table td:first-child{text-align:left;color:#888}
-.bs-table tr:last-child td{border-bottom:none;color:#fff;font-weight:800}
-
-/* Team stats */
-.bs-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.bs-stat-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #141414}
-.bs-stat-row:last-child{border-bottom:none}
-.bs-stat-lbl{font-size:11px;color:#555;flex:1;text-align:center}
-.bs-stat-val{font-size:13px;font-weight:700;color:#ccc;min-width:44px;text-align:center}
-.bs-stat-bar-wrap{flex:2;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden}
-.bs-stat-bar{height:100%;border-radius:2px;background:#f0b429}
-.bs-section-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f0b429;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
-.bs-section-lbl::before{content:'';display:block;width:14px;height:2px;background:#f0b429}
-
-/* ── FOOTER ── */
 footer{background:#0a0a0a;border-top:1px solid #1a1a1a;padding:28px 20px;text-align:center}
 .footer-brand{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
 .footer-brand em{font-style:normal;color:#f0b429}
 footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
-@media(max-width:560px){.nhl-hero-stats{gap:16px}.nhl-stat-val{font-size:22px}.bs-score-row{flex-direction:column}}
+@media(max-width:560px){.nhl-hero-stats{gap:16px}.nhl-stat-val{font-size:22px}}
 </style>
 </head>
 <body>
@@ -182,19 +139,6 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
   </div>
 </section>
 
-<!-- ── BOX SCORE MODAL ──────────────────────────────── -->
-<div class="bs-overlay" id="bs-overlay" role="dialog" aria-modal="true" aria-labelledby="bs-title">
-  <div class="bs-panel">
-    <div class="bs-head">
-      <div class="bs-title" id="bs-title">Box Score</div>
-      <button class="bs-close" id="bs-close" aria-label="Close">✕</button>
-    </div>
-    <div class="bs-body" id="bs-body">
-      <div class="bs-loading"><div class="bs-spinner"></div>Loading…</div>
-    </div>
-  </div>
-</div>
-
 <!-- ── FOOTER ───────────────────────────────────────── -->
 <footer>
   <div class="footer-brand">Hammer<em>Time</em>Bet</div>
@@ -203,131 +147,6 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 
 <script>
-/* ============================================================
-   NHL PICKS — rendered live from real ESPN games via HTBPicks
-   ============================================================ */
-
-/* ============================================================
-   ESPN BOX SCORE SERVICE
-   ============================================================ */
-const ESPN_NHL_SUMMARY = id =>
-  `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`;
-
-async function fetchBoxScore(gameId) {
-  try {
-    const r = await fetch(ESPN_NHL_SUMMARY(gameId), { signal: AbortSignal.timeout(6000) });
-    return r.ok ? await r.json() : null;
-  } catch { return null; }
-}
-
-/* ============================================================
-   BOX SCORE MODAL
-   ============================================================ */
-const overlay = document.getElementById('bs-overlay');
-const bsBody  = document.getElementById('bs-body');
-const bsTitle = document.getElementById('bs-title');
-
-function openModal() { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
-function closeModal() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
-
-document.getElementById('bs-close').addEventListener('click', closeModal);
-overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-function renderBoxScore(data, teams) {
-  if (!data) {
-    bsBody.innerHTML = `<div class="bs-loading" style="flex-direction:column;gap:8px">
-      <div>📡 Live box score unavailable</div>
-      <div style="font-size:11px;color:#444">Live data unavailable for this game.</div>
-    </div>`;
-    return;
-  }
-
-  const bs       = data.boxscore;
-  const home     = bs?.teams?.[1];
-  const away     = bs?.teams?.[0];
-  const homeScore = bs?.teams?.[1]?.team?.score || '—';
-  const awayScore = bs?.teams?.[0]?.team?.score || '—';
-  const status   = data.header?.competitions?.[0]?.status?.type?.detail || 'Game Data';
-  const hName    = home?.team?.shortDisplayName || teams[1] || 'Home';
-  const aName    = away?.team?.shortDisplayName || teams[0] || 'Away';
-
-  // Period scores
-  const hLine = home?.linescores || [];
-  const aLine = away?.linescores || [];
-  const periods = Math.max(hLine.length, aLine.length) || 3;
-  const pHeaders = Array.from({ length: periods }, (_, i) => `<th>${i < 3 ? `P${i+1}` : 'OT'}</th>`).join('');
-  const pHomeVals = Array.from({ length: periods }, (_, i) => `<td>${hLine[i]?.displayValue ?? '—'}</td>`).join('');
-  const pAwayVals = Array.from({ length: periods }, (_, i) => `<td>${aLine[i]?.displayValue ?? '—'}</td>`).join('');
-
-  // Team stats
-  const statKeys = ['saves','savePct','shots','powerPlayGoals','hits','blocked'];
-  const statLabels = { saves:'Saves', savePct:'Save %', shots:'Shots', powerPlayGoals:'PP Goals', hits:'Hits', blocked:'Blocked' };
-  const hStats = {};
-  const aStats = {};
-  (home?.statistics || []).forEach(s => hStats[s.name] = s.displayValue);
-  (away?.statistics || []).forEach(s => aStats[s.name] = s.displayValue);
-
-  const statsHTML = statKeys.map(k => {
-    const hv = hStats[k] || '—';
-    const av = aStats[k] || '—';
-    return `<div class="bs-stat-row">
-      <span class="bs-stat-val">${av}</span>
-      <span class="bs-stat-lbl">${statLabels[k]}</span>
-      <span class="bs-stat-val">${hv}</span>
-    </div>`;
-  }).join('');
-
-  const hLead = parseInt(homeScore) >= parseInt(awayScore);
-
-  bsBody.innerHTML = `
-    <div class="bs-score-row">
-      <div class="bs-team-col">
-        <div class="bs-team-name">${aName}</div>
-        <div class="bs-team-score ${!hLead ? 'lead' : 'trail'}">${awayScore}</div>
-      </div>
-      <div class="bs-team-col">
-        <div class="bs-team-name">${hName}</div>
-        <div class="bs-team-score ${hLead ? 'lead' : 'trail'}">${homeScore}</div>
-      </div>
-    </div>
-    <div class="bs-period">${status}</div>
-
-    <div class="bs-section-lbl">Period by Period</div>
-    <table class="bs-table">
-      <thead><tr><th>Team</th>${pHeaders}<th>T</th></tr></thead>
-      <tbody>
-        <tr><td>${aName}</td>${pAwayVals}<td>${awayScore}</td></tr>
-        <tr><td>${hName}</td>${pHomeVals}<td>${homeScore}</td></tr>
-      </tbody>
-    </table>
-
-    <div class="bs-section-lbl">Team Stats</div>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <div style="font-size:11px;font-weight:700;color:#555;flex:1;text-align:center">${aName}</div>
-      <div style="flex:2"></div>
-      <div style="font-size:11px;font-weight:700;color:#555;flex:1;text-align:center">${hName}</div>
-    </div>
-    ${statsHTML}
-  `;
-}
-
-async function showBoxScore(gameId, sport, teams) {
-  bsTitle.textContent = teams.join(' vs ');
-  bsBody.innerHTML = `<div class="bs-loading"><div class="bs-spinner"></div>Loading game data…</div>`;
-  openModal();
-  const data = await fetchBoxScore(gameId);
-  renderBoxScore(data, teams);
-}
-
-/* ── Listen for box score events from htb-live-games ── */
-document.addEventListener('htb:boxscore', e => {
-  showBoxScore(e.detail.gameId, e.detail.sport, e.detail.teams);
-});
-
-/* ============================================================
-   RENDER PICKS — live from real ESPN games
-   ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof HTBPicks !== 'undefined') {
     HTBPicks.render('nhl', 'nhl-picks-grid');
