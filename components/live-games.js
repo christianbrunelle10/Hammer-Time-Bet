@@ -712,6 +712,102 @@ function _golfCard(data) {
 }
 
 /* ============================================================
+   FEATURED GAME SELECTION
+   Used when max > 0 (homepage) to pick a curated, sport-diverse
+   set instead of blindly slicing the first N from the first sport.
+   ============================================================ */
+
+/**
+ * Score a game for homepage curation priority.
+ * Higher = more likely to be featured.
+ *
+ * Factors:
+ *  • Live games are highest priority
+ *  • Seasonal sport weights (NBA/NHL during playoffs, NFL in-season, etc.)
+ *  • Playoff/postseason detection from state text
+ *  • Final games are deprioritised (game is over)
+ */
+function _scoreGame(game) {
+  let score = 0;
+
+  // Live games are the most valuable homepage slot
+  if (game.status === 'live') score += 40;
+
+  // Month-aware sport weights — reflects seasonal importance
+  const month = new Date().getMonth() + 1; // 1-12
+  const BASE = {
+    // NBA/NHL playoffs run April-June — heavily prioritised during that window
+    nba:   (month >= 4 && month <= 6) ? 38 : 18,
+    nhl:   (month >= 4 && month <= 6) ? 38 : 18,
+    // NFL dominates Sep-Jan; out of season it rarely has games anyway
+    nfl:   (month >= 9 || month <= 1) ? 32 : 6,
+    // College football Aug-Dec, college basketball Nov-Apr tournament
+    ncaaf: (month >= 9 && month <= 12) ? 24 : 6,
+    ncaam: (month >= 11 || month <= 4) ? 24 : 6,
+    // MLB is a volume sport — keep baseline moderate so it doesn't crowd others
+    mlb:   15,
+    golf:   8,
+  };
+  score += BASE[game.sport] || 10;
+
+  // Playoff / postseason detection from the status detail string.
+  // ESPN includes phrases like "NBA Playoffs", "1st Round", "Game 2", etc.
+  const stateText = `${game.state || ''} ${game.gameTime || ''}`;
+  if (/playoff|postseason|round|series|game \d/i.test(stateText)) score += 28;
+
+  // Completed games are less compelling than upcoming or live
+  if (game.status === 'final') score -= 12;
+
+  return score;
+}
+
+/**
+ * Select up to `max` game pairs with sport diversity enforcement.
+ * Sports with fewer total games are never squeezed out by high-volume
+ * sports like MLB that may have 10+ games on the same day.
+ *
+ * Algorithm:
+ *  1. Score every game and sort descending.
+ *  2. Compute a per-sport cap based on how many sports have games.
+ *  3. Fill selected slots respecting the cap, spilling overflow into a
+ *     second pass that fills any remaining slots in pure score order.
+ */
+function _selectFeatured(pairs, max) {
+  if (max <= 0 || pairs.length <= max) return pairs;
+
+  const sportsPresent = new Set(pairs.map(p => p.game.sport)).size;
+  // Per-sport cap: aim for at least one slot per sport, relaxed when few sports are active
+  const perSportCap = sportsPresent <= 2
+    ? max                                           // only 1-2 sports → no cap needed
+    : Math.max(1, Math.ceil(max / sportsPresent) + 1); // e.g. 4 slots / 3 sports → cap 3
+
+  const sorted   = [...pairs].sort((a, b) => _scoreGame(b.game) - _scoreGame(a.game));
+  const counts   = {};
+  const selected = [];
+  const spillover = [];
+
+  for (const pair of sorted) {
+    const sp = pair.game.sport;
+    const n  = counts[sp] || 0;
+    if (n < perSportCap) {
+      selected.push(pair);
+      counts[sp] = n + 1;
+    } else {
+      spillover.push(pair); // already in score order
+    }
+    if (selected.length >= max) break;
+  }
+
+  // Fill any remaining slots from spillover (score-sorted, diversity already served)
+  let i = 0;
+  while (selected.length < max && i < spillover.length) {
+    selected.push(spillover[i++]);
+  }
+
+  return selected.slice(0, max);
+}
+
+/* ============================================================
    WEB COMPONENT
    ============================================================ */
 class HTBLiveGames extends HTMLElement {
@@ -774,7 +870,16 @@ class HTBLiveGames extends HTMLElement {
 
     if (golfData) this._golfData = golfData;
 
-    const teamCards = teamResults.flat().map(({ game, odds }) => _gameCard(game, odds));
+    // Apply curated diversity selection before rendering cards.
+    // Golf always gets its own slot; team game count is (max - golfSlot).
+    // On sport-specific pages (max=0) this is a no-op — all games show.
+    let teamPairs = teamResults.flat();
+    if (this._max > 0 && teamPairs.length > 0) {
+      const golfSlot = golfData ? 1 : 0;
+      teamPairs = _selectFeatured(teamPairs, Math.max(0, this._max - golfSlot));
+    }
+
+    const teamCards = teamPairs.map(({ game, odds }) => _gameCard(game, odds));
     const golfCards = golfData ? [_golfCard(golfData)] : [];
     let all         = [...teamCards, ...golfCards];
 
@@ -787,7 +892,7 @@ class HTBLiveGames extends HTMLElement {
 
     // ── Games found ──
     if (solo) this._setSectionTitle(HTB_SPORT_TITLES[solo]?.active);
-    if (this._max > 0) all = all.slice(0, this._max);
+    // max already enforced by _selectFeatured above — no further slice needed
 
     const ts     = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const oddsTs = _oddsUpdatedAt
