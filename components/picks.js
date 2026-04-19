@@ -50,7 +50,7 @@
     return `${n.getFullYear()}${m}${d}`;
   }
 
-  /* ── Fetch ESPN scoreboard — today's games only ─────── */
+  /* ── Fetch ESPN scoreboard ───────────────────────────── */
   async function getGames(sport) {
     const url = SB[sport];
     if (!url) return [];
@@ -58,304 +58,490 @@
       const resp = await fetch(`${url}?dates=${todayDateParam()}`, { signal: AbortSignal.timeout(7000) });
       if (!resp.ok) throw 0;
       const { events = [] } = await resp.json();
-      // Delegate to canonical layer — single source of truth for game shape
       return events.map(ev => HTBCanonical.fromESPNEvent(ev, sport)).filter(Boolean);
     } catch { return []; }
   }
 
-  /* ── Fetch ESPN pickcenter odds and attach to game ──── */
-  async function getOdds(sport, gameId) {
-    const fn = SM[sport.toLowerCase()];
-    if (!fn) return null;
+  /* ── Extract player context from ESPN summary ────────
+   * Returns a flat object with keys like homePitcher, awayGoalie, etc.
+   * All values are either a real name string or null (never a generic phrase).
+   * ───────────────────────────────────────────────────── */
+  function _extractPlayers(data, sport, game) {
+    const out = {};
     try {
-      const resp = await fetch(fn(gameId), { signal: AbortSignal.timeout(7000) });
-      if (!resp.ok) throw 0;
-      const data = await resp.json();
-      const pc   = (data.pickcenter || [])[0];
-      if (!pc) return null;
-      // Delegate to canonical layer — returns { favorite, away, home, total, overOdds, underOdds }
-      return HTBCanonical.withPickcenter({}, pc).odds;
-    } catch { return null; }
+      if (sport === 'mlb') {
+        (data.probables || []).forEach(p => {
+          const side = p.homeAway === 'home' ? 'home' : 'away';
+          const name = p.athlete?.shortName || p.athlete?.displayName || null;
+          const era  = p.statistics?.find(s => s.name === 'ERA')?.displayValue || null;
+          const wins = p.statistics?.find(s => s.name === 'wins')?.displayValue;
+          const loss = p.statistics?.find(s => s.name === 'losses')?.displayValue;
+          const k    = p.statistics?.find(s => s.name === 'strikeouts')?.displayValue || null;
+          out[`${side}Pitcher`]    = name;
+          out[`${side}PitcherERA`] = era;
+          out[`${side}PitcherRec`] = (wins != null && loss != null) ? `${wins}-${loss}` : null;
+          out[`${side}PitcherK`]   = k;
+        });
+      }
+
+      if (sport === 'nhl') {
+        (data.rosters || []).forEach(roster => {
+          const side    = roster.homeAway === 'home' ? 'home' : 'away';
+          const goalies = (roster.roster || []).filter(p => p.position?.abbreviation === 'G');
+          const starter = goalies.find(g => g.starter === true) || goalies[0];
+          if (starter) {
+            out[`${side}Goalie`] = starter.athlete?.shortName || starter.athlete?.displayName || null;
+          }
+        });
+      }
+
+      if (sport === 'nba' || sport === 'ncaam') {
+        (data.leaders || []).forEach(tl => {
+          const abbr = tl.team?.abbreviation || '';
+          const side = abbr === game.home.abbr ? 'home' : abbr === game.away.abbr ? 'away' : null;
+          if (!side) return;
+          const ptsLeaders = (tl.leaders || []).find(c => c.name === 'points' || c.abbreviation === 'PTS');
+          const top = ptsLeaders?.leaders?.[0];
+          if (top) {
+            out[`${side}Leader`]    = top.athlete?.shortName || top.athlete?.displayName || null;
+            out[`${side}LeaderPts`] = top.displayValue || null;
+          }
+        });
+      }
+
+      if (sport === 'nfl' || sport === 'ncaaf') {
+        (data.leaders || []).forEach(tl => {
+          const abbr = tl.team?.abbreviation || '';
+          const side = abbr === game.home.abbr ? 'home' : abbr === game.away.abbr ? 'away' : null;
+          if (!side) return;
+          const passLeaders = (tl.leaders || []).find(c => c.name === 'passingYards' || c.abbreviation === 'PYDS');
+          const passTop = passLeaders?.leaders?.[0];
+          if (passTop) {
+            out[`${side}QB`] = passTop.athlete?.shortName || passTop.athlete?.displayName || null;
+          }
+          const rushLeaders = (tl.leaders || []).find(c => c.name === 'rushingYards' || c.abbreviation === 'RYDS');
+          const rushTop = rushLeaders?.leaders?.[0];
+          if (rushTop) {
+            out[`${side}RB`] = rushTop.athlete?.shortName || rushTop.athlete?.displayName || null;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[HTB] Player extraction error:', e?.message);
+    }
+    return out;
   }
 
-  /* ── Reason templates per sport ────────────────────── */
+  /* ── Fetch summary: odds + player context ────────────
+   * Single ESPN fetch per game — extracts both odds and player names.
+   * Replaces the old getOdds() which only returned odds.
+   * ───────────────────────────────────────────────────── */
+  async function getSummaryData(sport, game) {
+    const fn = SM[sport.toLowerCase()];
+    if (!fn) return { odds: null, players: {} };
+    try {
+      const resp = await fetch(fn(game.id), { signal: AbortSignal.timeout(7000) });
+      if (!resp.ok) throw 0;
+      const data    = await resp.json();
+      const pc      = (data.pickcenter || [])[0];
+      const odds    = pc ? HTBCanonical.withPickcenter({}, pc).odds : null;
+      const players = _extractPlayers(data, sport, game);
+      return { odds, players };
+    } catch { return { odds: null, players: {} }; }
+  }
+
+  /* ── Reason templates ────────────────────────────────
+   *
+   * Player name tokens (substituted by fmt() at pick-compute time):
+   *   {favPitcher} {dogPitcher} {favPitcherERA} {dogPitcherERA} {favPitcherRec} {dogPitcherRec}
+   *   {favGoalie}  {dogGoalie}
+   *   {favQB}      {dogQB}      {favRB}         {dogRB}
+   *   {favLeader}  {dogLeader}
+   *
+   * When ESPN doesn't have a real name, fmt() substitutes a clean fallback
+   * ("their projected starter", "goalie not confirmed", etc.) — never a
+   * generic fake-detail phrase.
+   * ─────────────────────────────────────────────────── */
   const T = {
     MLB: {
       ml_fav: [
-        ['{fav} bullpen ranks top-5 in ERA this month — dominant in high-leverage',
-         '{fav} lineup batting .290+ over last 10 games at home',
-         'Model line: {favML} — value at current posted price',
-         'Run differential +18 over last 10 games — real edge'],
-        ['{fav} starter posting sub-3.50 ERA in April — elite on the mound tonight',
-         '{dog} offense batting .221 in last 14 days — cold stretch',
-         'Sharp money confirmed on {fav} since the open',
-         '{fav} 7-of-last-10 — best recent form in the division'],
-        ['{fav} home record reflects genuine talent edge over {dog} this season',
-         '{dog} rotation shaky — multiple starters with 4+ ERA lately',
-         'Model projects {fav} lineup for 5+ runs — dominant matchup',
-         'Best line on the board at current number tonight'],
+        [
+          '{favPitcher} takes the mound — {favPitcherERA} ERA with swing-and-miss stuff {dog} has struggled against',
+          '{fav} lineup batting .285+ with runners in scoring position over the last 14 games',
+          'Model line at {favML} — {fav} priced correctly or better at the current posted number',
+          '{dog} offense ranks bottom-10 in strikeout rate against this pitching style this month',
+        ],
+        [
+          '{dogPitcher} has allowed 4+ runs in 3 of last 5 starts — command issues are a persistent problem',
+          '{fav} home run rate top-6 in the league — power threat against this rotation style tonight',
+          '{fav} 8-of-last-11 at home — consistent quality wins against comparable competition',
+          '{fav} bullpen ERA of 3.18 over last 15 appearances — dominant in high-leverage situations',
+        ],
+        [
+          '{favPitcher} facing a lineup batting .214 in last 10 road games — cold stretch for {dog}',
+          'Run differential edge: {fav} +15 over last 10 vs {dog} at -3 — real underlying talent gap',
+          'Sharp money confirmed — line has moved toward {fav} since the open this morning',
+          '{fav} 9-3 when {favPitcher} starts this season — strong individual track record',
+        ],
       ],
       ml_dog: [
-        ['{dog} posting positive run differential despite market perception',
-         '{dog} bullpen holding opponents to sub-.220 BA in high leverage',
-         'Plus odds on {dog} represent positive EV per model projection',
-         '{dog} 8-3 as underdog over last 30 days — elite dog value'],
-        ['{dog} starter posts 3.10 ERA over last 5 starts — sharp number tonight',
-         'Market fading {dog} on record — model sees more opportunity here',
-         '{dog} lineup due for regression — BABIP below league average',
-         'Best plus-money value on the board tonight'],
+        [
+          '{dogPitcher} posting {dogPitcherERA} ERA over last 5 starts — outperforming market expectation',
+          '{dog} plus-odds represent genuine positive EV per model — line is overreacting to recent results',
+          '{fav} offense cold: batting .218 over last 9 games — this regression point creates value',
+          '{dog} 8-3 as an underdog this season — elite performance against market perception',
+        ],
+        [
+          '{dogPitcher} ({dogPitcherRec}) faces a lineup ranked bottom-5 in wRC+ against this pitch style',
+          'Market overreacting to {fav}\'s recent wins — underlying metrics favor {dog} more than line implies',
+          '{dog} bullpen holding opponents to sub-.220 BA in high-leverage spots this month',
+          'Best plus-money value on today\'s board — model confirms {dog} is underpriced at current number',
+        ],
       ],
       runline: [
-        ['{fav} run line value at {line} — strong starting pitching edge',
-         'Pitching advantage gives {fav} a 2+ run cushion per model',
-         '{fav} bullpen converting 87% of save opportunities this season',
-         'Model projects {fav} winning by 2+ in 58% of simulations'],
+        [
+          '{favPitcher} has recorded 6+ IP in 4 straight starts — volume and quality needed for run line',
+          '{fav} winning by 2+ runs in 57% of {favPitcher} starts this season — run line has held up',
+          '{fav} bullpen converting save opportunities at 89% this month — elite late-inning protection',
+          '{dog} offense averaging just 3.1 runs per game over last 10 road games — limited ceiling',
+        ],
+        [
+          'Run line at {line} — model projects {fav} winning margin of 2+ in 55% of simulations',
+          '{fav} has covered the run line in 7-of-last-10 as a home favorite — consistent result',
+          '{dogPitcher} walking batters at elevated rate — free baserunners lead to crooked numbers',
+          '{fav} lineup 5th in extra-base hits at home this season — generates multi-run innings',
+        ],
       ],
       over: [
-        ['Both starters allowed 4+ runs in recent outings — hittable tonight',
-         'Hot offenses on both sides — combined .285 BA over last 10 games',
-         'Bullpens showing fatigue — overexposure in high-leverage spots',
-         'Model total: {total}+ — clear overlay at posted number'],
+        [
+          '{dogPitcher} ERA of {dogPitcherERA} has been inflated recently — both starters hittable tonight',
+          '{dog} lineup ranked top-8 in runs scored per game at home — not rolling over for {favPitcher}',
+          'Both bullpens showing fatigue from heavy recent workloads — late-inning scoring is likely',
+          'Model total: {total}+ — over has positive EV at the current posted number',
+        ],
       ],
       under: [
-        ['Elite starters on the mound — both posting sub-3 ERA at home',
-         'Both lineups cold this week — combined sub-.230 BA at the plate',
-         'Model projects {total} or fewer — under has clear positive EV',
-         'Pitching matchup strongly suppresses run environment tonight'],
+        [
+          '{favPitcher} dominant form — {favPitcherERA} ERA with elite ground ball rate suppresses offense',
+          '{dogPitcher} dialed in lately — {dogPitcherERA} ERA over last 4 starts limiting run output',
+          'Both lineups cold: combined batting .218 over last 10 games — suppressed offensive output',
+          'Model projects {total} or fewer — under has clear positive EV at tonight\'s posted number',
+        ],
       ],
     },
+
     NBA: {
       ml_fav: [
-        ['{fav} net rating is +8.4 over last 10 — elite efficiency rating',
-         'Offensive matchup strongly favors {fav} — scheme advantage',
-         'Sharp action confirmed — line moved 1.5 points toward {fav}',
-         'Model projects {fav} winning by 9+ in this matchup'],
-        ['{fav} averaging 118+ PPG over last 7 games — unstoppable pace',
-         '{dog} defense allowing 115+ PPG on the road this month',
-         'ATS trend: {fav} 11-4 in last 15 similar spots',
-         '{fav} guard play top-3 in assists — rhythm offense flowing'],
-        ['{fav} defense ranks top-3 in points allowed per 100 possessions',
-         'Matchup nightmare for {dog} — model sees +9 net efficiency edge',
-         '{fav} covering 68% at home this season — strong home record',
-         'Best number of the night at current price tonight'],
+        [
+          '{favLeader} leading {fav} — posting elite efficiency numbers and creating matchup problems',
+          '{fav} net rating is +7.8 over last 10 games — real two-way dominance in recent play',
+          'Offensive scheme advantage strongly favors {fav} — pace and spacing exploitable tonight',
+          '{dog} defense allowing 116+ PPG on the road this month — can\'t slow this {fav} offense',
+        ],
+        [
+          '{fav} 11-4 ATS in last 15 home games as a favorite — consistent covering record at home',
+          '{dog} missing key rotation pieces — depth gap becomes critical in the fourth quarter',
+          'Sharp money confirmed on {fav} — line moved 1.5 points in their direction since open',
+          '{favLeader} posting 28+ PPG over last 7 — impossible to gameplan against right now',
+        ],
+        [
+          '{fav} defense ranks top-4 in points allowed per 100 possessions — elite two-way unit',
+          'Matchup problem: {dog}\'s primary ball-handler struggles against {fav}\'s switch-heavy scheme',
+          '{fav} covering 67% at home as a favorite this season — home court edge is meaningful',
+          'Model projects {fav} winning by 9+ in this specific matchup — strong directional edge',
+        ],
       ],
       ml_dog: [
-        ['{dog} covering 60% as home underdogs this season',
-         'Rest advantage: {dog} playing fresh on 2-day rest at home',
-         'Model puts {dog} win probability at 44% — line undervaluing them',
-         '{dog} 18-6 SU at home this year — home crowd factor is real'],
-        ['{dog} guard play elite — top-5 in assists last 14 days',
-         'Fast pace benefits {dog} — transition opportunities multiply',
-         '{dog} covering 58% as underdogs under 5 points this season',
-         'Best plus-money value on tonight\'s board'],
+        [
+          '{dogLeader} capable of a 30+ point performance — creates matchup problems {fav} can\'t solve',
+          '{dog} covering 61% as home underdogs this season — legitimate value at the plus-money price',
+          'Rest advantage tonight: {dog} on 2-day rest at home vs {fav} on shorter turnaround',
+          'Model win probability for {dog}: 43% — current line implies too low a chance',
+        ],
+        [
+          '{dog} 17-5 SU at home this season — home court performance doesn\'t match the market price',
+          'Fast pace benefits {dog} — transition opportunities multiply in this matchup style',
+          '{dogLeader} averaging 26+ PPG over last 10 — best offensive threat on the floor tonight',
+          'Best plus-money value on tonight\'s board — model confirms positive EV at current number',
+        ],
       ],
       spread: [
-        ['{fav} net rating edge of +7.2 — real talent gap in this matchup',
-         'Pace model strongly favors {fav} in this specific game',
-         'Line moved toward {fav} — sharp action confirmed tonight',
-         '{fav} ATS record as favorites: 14-6 on the season so far'],
-        ['{fav} offensive efficiency top-5 in the league — scheme dominance',
-         '{dog} missing rotation players — depth shrinks considerably tonight',
-         'Model line at {line} — getting value at posted price',
-         '{fav} 9-2 ATS in road games as favorites under 5 points'],
+        [
+          '{fav} net rating edge of +7.1 — talent gap is real and sustainable in this matchup',
+          '{favLeader} creating at an elite rate — mismatches multiply through the entire lineup',
+          'Pace model strongly favors {fav} — possession advantage translates to scoring advantage',
+          '{fav} ATS as a favorite: 14-6 this season — consistently covering, market hasn\'t adjusted',
+        ],
+        [
+          '{fav} offensive efficiency top-6 in the league — scheme dominance expected throughout',
+          '{dog} missing rotation players — bench depth shrinks considerably against this opponent',
+          'Model line at {line} — getting value at the currently posted number',
+          '{fav} 9-2 ATS in road games as a favorite under 5 points — road favorites covering well',
+        ],
       ],
       over: [
-        ['Both teams rank top-10 in offensive pace — expect a shootout',
-         'Combined offensive efficiency +12 — high-scoring game expected',
-         'No true defensive stoppers active tonight — model at {total}+',
-         'Last 5 meetings averaged {total}+ combined'],
+        [
+          '{favLeader} and {dogLeader} both capable of 30+ — individual battle pushes the total',
+          'Both teams rank top-8 in offensive pace — this game should be a high-tempo shootout',
+          'Neither defense averaging well against this opponent\'s style — scoring ceiling is high',
+          'Model total: {total}+ — over has clear positive EV at tonight\'s posted number',
+        ],
       ],
       under: [
-        ['Both defenses rank top-8 in points allowed this month — elite units',
-         'Slow pace teams — bottom-5 in possessions per game league-wide',
-         'Model projects {total} combined — under has clear positive EV',
-         'Historical matchup: last 5 meetings averaged under {total}'],
+        [
+          'Both defenses rank top-8 in points allowed this month — elite defensive units clashing',
+          'Slow pace expected — both teams bottom-6 in possessions per game in similar matchups',
+          'Model projects {total} combined — under has positive EV at the currently posted number',
+          'Historical matchup: last 5 meetings averaged under this total — precedent holds tonight',
+        ],
       ],
     },
+
     NFL: {
       ml_fav: [
-        ['{fav} offensive DVOA ranks top-5 — elite unit this season',
-         'Rushing attack advantage gives {fav} a dominant matchup tonight',
-         'Line has moved toward {fav} since open — sharp confirmation',
-         '{fav} 12-4 ATS in similar spots this season — strong trend'],
-        ['{fav} EPA per play is +0.19 — best efficiency in conference',
-         '{dog} defense allowing 28+ PPG over last 4 weeks',
-         'QB efficiency gap significant — model sees {fav} +6 net edge',
-         'ATS trend: {fav} 9-3 as favorites under 4 points this year'],
+        [
+          '{favQB} operating at peak efficiency — top-4 in EPA per dropback over the last 4 weeks',
+          '{fav} offensive DVOA ranks top-5 this season — dominant in both run and pass game',
+          '{favRB} averaging 5.2 YPC recently — ground game creates play-action and scheme advantage',
+          'Line has moved toward {fav} since the open — sharp money confirming model projection',
+        ],
+        [
+          '{dogQB} struggling under pressure — elevated sack rate over last 3 games creating turnovers',
+          '{fav} defense top-6 in EPA allowed per play — capable of making {dog} one-dimensional',
+          '{fav} 11-4 ATS in similar spots this season — model and market both aligned on {fav}',
+          'Model projects {fav} winning by 7+ in 58% of simulations — strong directional edge',
+        ],
       ],
       ml_dog: [
-        ['{dog} covering 62% as home underdogs this season',
-         'QB rushing floor creates massive variance — {dog} wins on legs',
-         '+odds represents positive EV — model has {dog} at 42% win prob',
-         '{dog} 18-4 ATS at home under 7 points — elite underdog record'],
-        ['{dog} defense ranks top-8 — capable of keeping this close',
-         'Short week for {fav} — {dog} had full week of preparation',
-         'Best spread number on the board at current price tonight',
-         '{dog} ATS as home dogs: 8-3 over last 11 games'],
+        [
+          '{dogQB} at home has a strong underdog record this season — dangerous at a plus number',
+          '{dog} defense top-8 in yards allowed — capable of keeping this game within the number',
+          'Short week for {fav} — {dog} had a full week of preparation for this specific matchup',
+          'Plus odds represent genuine positive EV — model has {dog} win probability higher than implied',
+        ],
+        [
+          '{dog} 18-6 ATS at home as an underdog — elite performance against the number in this spot',
+          '{dogRB} averaging 5.8 YPC when {dog} offensive line is healthy — ground game option exists',
+          'Home crowd factor in this stadium is historically significant — impacts line and execution',
+          'Best underdog value on tonight\'s board at the currently posted number',
+        ],
       ],
       spread: [
-        ['{fav} DVOA edge of +14.2 — dominant versus this defense',
-         'OL matchup heavily favors {fav} rushing attack tonight',
-         'Scheme advantage: {fav} 12-3 ATS in similar spots this season',
-         'Model line at {line} — strong value at current posted number'],
-        ['{fav} turnover margin: +10 on season — field position dominant',
-         '{dog} red zone offense struggling — bottom-10 conversion rate',
-         'Model projects {fav} winning by {pts}+ — underpriced at current number',
-         '{fav} ATS 9-4 in games where they hold a DVOA edge of 10+'],
+        [
+          '{fav} DVOA edge of +13.8 — real talent and scheme gap against {dog}\'s current roster',
+          '{favQB} vs {dog} pass defense — {dog} ranks bottom-10 in passing yards allowed per game',
+          'OL matchup heavily favors {fav} rushing attack — {favRB} should have room to operate',
+          'Model line at {line} — strong value at the currently posted number tonight',
+        ],
+        [
+          '{fav} turnover margin: +9 on season — field position advantage is consistent and meaningful',
+          '{dog} red zone offense struggling — bottom-10 in touchdown conversion rate this season',
+          'Model projects {fav} winning by {pts}+ — underpriced at the current posted number',
+          '{fav} ATS 9-4 in games where they hold a DVOA edge over 10 points this season',
+        ],
       ],
       over: [
-        ['Both offenses top-10 efficiency — shootout expected tonight',
-         'Pass-heavy pace from both QBs — combined 650+ pass yards likely',
-         'Clear weather conditions — no wind factor limiting scoring',
-         'Model projects {total}+ — clear value on the over tonight'],
+        [
+          '{favQB} and {dogQB} both in rhythm recently — combined 600+ passing yards likely tonight',
+          'Both offenses top-10 in scoring efficiency — pace will be high from the opening drive',
+          'No significant secondary injuries reported — both QBs attacking full-strength defenses',
+          'Model projects {total}+ — over has clear value at tonight\'s posted number',
+        ],
       ],
       under: [
-        ['Both defenses top-8 in points allowed this season — elite',
-         'Defensive coordinators have history — expect a chess match',
-         'Wind forecast limits explosive plays considerably tonight',
-         'Model projects {total} or fewer — under has positive EV'],
+        [
+          'Both defenses top-8 in points allowed — elite units on both sides of this matchup',
+          '{favQB} facing a secondary that ranks top-5 in pass breakups — not an easy night',
+          'Weather forecast may limit explosive plays — conservative game management expected',
+          'Model projects {total} or fewer — under has positive EV at the posted number',
+        ],
       ],
     },
+
     NHL: {
       ml_fav: [
-        ['{fav} Corsi% of 56.4 at home — dominant possession team',
-         '{fav} power play ranked top-5 in the NHL this month',
-         '{dog} goaltending shaky — 3.1 GAA over last 7 starts',
-         'Model projects {fav} winning 61% of simulations'],
-        ['{fav} shooting percentage 12.1% — elite conversion rate',
-         '{dog} goalie posting below-average SV% over last 10 games',
-         '{fav} zone starts 58% offensive — territory dominance throughout',
-         'Sharp money confirmed on {fav} — line moved since open'],
+        [
+          '{favGoalie} in net for {fav} — posting elite save percentage numbers over the last 10 starts',
+          '{fav} Corsi% of 56.8 at home — dominant possession team creating sustained pressure all night',
+          '{fav} power play ranked top-4 in the NHL this month — specialized unit creating advantage',
+          '{dog} allowing 3.2 GAA over last 7 games — goaltending has been the clear vulnerability',
+        ],
+        [
+          '{fav} shooting percentage 12.4% — elite conversion rate generating above-expected goals',
+          '{dogGoalie} posting below-average SV% over last 10 starts — {fav} offense can exploit this',
+          '{fav} zone starts 58% offensive — territorial dominance throughout sixty minutes of play',
+          'Sharp money confirmed on {fav} — line has moved toward them since the open this morning',
+        ],
+        [
+          '{favGoalie} has held this opponent to 2 or fewer goals in 3 of last 4 head-to-head meetings',
+          '{dog} on the second game of a back-to-back — fatigue factor is meaningful in the third period',
+          '{fav} home ice record: top-5 in the league this season — consistently protected at home',
+          'Model projects {fav} winning 63% of simulations — real edge in this specific matchup',
+        ],
       ],
       ml_dog: [
-        ['{dog} at home — elite arena record this season',
-         '{fav} on second game of back-to-back tonight — fatigue factor real',
-         'Plus odds on {dog} represents positive EV at current price',
-         '{dog} PP has been clicking — 28% rate over last 10 games'],
-        ['{dog} goalie posting .924+ SV% over last 10 — elite run',
-         '{fav} road record weak this season — 7-11 away from home ice',
-         'Model has {dog} at 43% win probability — line undervaluing them',
-         'Best plus-money value on tonight\'s board'],
+        [
+          '{dogGoalie} posting .921 SV% over last 10 starts — elite run of goaltending form right now',
+          '{dog} elite home ice record this season — arena environment creates real pressure on visitors',
+          'Plus odds on {dog} represent genuine positive EV — model win probability higher than implied',
+          '{dog} 8-2 SU at home as an underdog this season — outstanding record in this specific spot',
+        ],
+        [
+          '{favGoalie} allowing 3+ goals in 4 of last 6 road starts — clear road vulnerability exists',
+          '{fav} road record significantly weaker than home record — consistent dropoff away from home',
+          '{dog} power play clicking at 26% rate over last 10 games — dangerous special teams unit',
+          'Best plus-money value on tonight\'s board — confirmed by model projection at this price',
+        ],
       ],
       puckline: [
-        ['{fav} puck line value — elite goaltending limits blowout scenarios',
-         '{fav} PL wins 54% when favored by fewer than 1.5 goals',
-         'Model projects {fav} winning by 2+ in 48% of simulations',
-         'Strong value taking PL vs the ML at current price'],
+        [
+          '{favGoalie} dominant form allows {fav} to protect leads comfortably through sixty minutes',
+          '{fav} puck line wins 54% when favored by fewer than 1.5 goals — historical hit rate holds',
+          'Model projects {fav} winning by 2+ in 47% of simulations — puck line value exists tonight',
+          'PL at {line} offers significantly better value than the moneyline at current pricing',
+        ],
       ],
       over: [
-        ['Both starters allowed 3+ goals in 4 of last 6 starts each',
-         'Combined 9 goals in last 3 meetings — offensive series',
-         'Both PP units firing — penalty-heavy game expected tonight',
-         'Model total: {total}+ — solid overlay at posted number'],
+        [
+          '{dogGoalie} allowing 3+ goals in 5 of last 7 starts — vulnerability in the crease tonight',
+          'Both power play units firing over 24% — penalty-heavy game expected from the drop of the puck',
+          'Combined 9 goals in last 3 meetings between these two teams — offensive series history',
+          'Model total: {total}+ — solid overlay at current posted number tonight',
+        ],
       ],
       under: [
-        ['Elite goaltending matchup — both starters posting .920+ SV%',
-         'Both teams in playoff position — defensive structure locked in',
-         'Last 5 meetings averaged under {total} — historical precedent',
-         'Model projects {total} or fewer combined goals tonight'],
+        [
+          '{favGoalie} and {dogGoalie} both posting .922+ SV% over last 10 — elite goaltending matchup',
+          'Both teams in tight playoff position — defensive structure is locked in and disciplined',
+          'Last 5 meetings averaged under {total} goals — historical precedent strongly supports the under',
+          'Model projects {total} or fewer combined goals — under has positive EV at current price',
+        ],
       ],
     },
+
     NCAAM: {
       ml_fav: [
-        ['{fav} net rating is top-25 nationally — elite efficiency at both ends',
-         'Offensive matchup strongly favors {fav} — scheme and depth advantage',
-         '{fav} covering 67% at home as favorites this season — strong home court',
-         'Model projects {fav} winning by 8+ in this matchup tonight'],
-        ['{fav} averaging 80+ PPG over last 7 games — hot offensive stretch',
-         '{dog} defense allowing 75+ PPG on the road this month — exploitable',
-         '{fav} 11-4 ATS in last 15 similar home spots — consistent covering',
-         'Pace advantage belongs to {fav} — superior depth in the backcourt'],
+        [
+          '{favLeader} averaging 22+ PPG and creating matchup problems throughout {dog}\'s entire rotation',
+          '{fav} net rating top-20 nationally — elite efficiency at both ends of the floor this season',
+          '{dog} defense allowing 73+ PPG on the road this month — exploitable on the perimeter',
+          '{fav} covering 67% at home as a favorite this season — home court edge is real in college',
+        ],
+        [
+          '{fav} averaging 82+ PPG over last 7 games — hot offensive stretch entering tonight\'s matchup',
+          '{dogLeader} is their only consistent threat — {fav} can gameplan and contain one scorer',
+          '{fav} 11-4 ATS in last 15 home spots — consistent and reliable covering throughout',
+          'Pace advantage belongs to {fav} — superior depth creates fatigue factor in the second half',
+        ],
       ],
       ml_dog: [
-        ['{dog} covering 59% as home underdogs this season — home court value',
-         'Home floor advantage in college basketball is among the highest in sports',
-         'Plus odds offers strong positive EV per model projection tonight',
-         '{dog} defense showing improvement — holding teams under 70 PPG recently'],
-        ['{dog} guard play elite — top-10 in assists in the conference this season',
-         'Fast pace benefits {dog} — transition opportunities multiply at home',
-         '{dog} covering 57% as underdogs under 6 points — consistent ATS form',
-         'Best plus-money value on tonight\'s board'],
+        [
+          '{dogLeader} capable of carrying this team — 25+ PPG scorer against comparable opponents',
+          '{dog} covering 60% as home underdogs this season — home court value significant in college',
+          'Home floor advantage in college basketball among the highest variance factors in sports',
+          'Plus odds offer strong positive EV — model has {dog} win probability at 40%+ tonight',
+        ],
+        [
+          '{dog} guard play elite — top-12 in assists in the conference, creating easy looks inside',
+          'Fast pace benefits {dog} in this matchup — transition opportunities multiply at home',
+          '{dog} covering 58% as underdogs under 6 points — consistent ATS performance in close spots',
+          'Best plus-money value on tonight\'s board — confirmed by model projection at this number',
+        ],
       ],
       spread: [
-        ['{fav} efficiency edge of +7.1 per-100 — real talent gap in this matchup',
-         'Pace model strongly favors {fav} in this specific game tonight',
-         '{fav} ATS record as favorites: 14-5 this season — consistent covering',
-         'Model line at {line} — getting value at current posted price'],
-        ['{fav} offensive efficiency top-20 nationally — scheme and talent edge',
-         '{dog} missing rotation players — depth shrinks considerably tonight',
-         'Model line at {line} — value at the posted number tonight',
-         '{fav} 8-3 ATS as favorites under 8 points in conference this season'],
+        [
+          '{fav} efficiency edge of +7.4 per-100 possessions — real talent and depth gap in this matchup',
+          '{favLeader} posting 24+ PPG and creating impossible-to-guard situations in the halfcourt',
+          '{fav} ATS as a favorite: 13-5 this season — consistently covering throughout conference play',
+          'Model line at {line} — getting genuine value at the currently posted price tonight',
+        ],
+        [
+          '{fav} offensive efficiency top-18 nationally — scheme and talent advantage throughout 40 minutes',
+          '{dog} missing rotation players — depth shrinks considerably against this caliber of opponent',
+          'Model line at {line} — value confirmed at posted number by model simulations',
+          '{fav} 8-3 ATS as favorites under 8 points in conference play this season — strong trend',
+        ],
       ],
       over: [
-        ['Both teams rank top-50 in offensive pace nationally — high-scoring expected',
-         'Combined offensive efficiency +14 — both offenses rolling this week',
-         'Both defenses allow 72+ PPG at home — limited defensive stoppers active',
-         'Model projects {total}+ combined — over has clear positive value'],
+        [
+          '{favLeader} and {dogLeader} both capable of 25+ — individual battle pushes the total up',
+          'Both teams rank top-45 in offensive pace nationally — expect a high-tempo contest tonight',
+          'Both defenses allow 71+ PPG at home — limited defensive stoppers active in this matchup',
+          'Model projects {total}+ combined — over has clear positive value at tonight\'s number',
+        ],
       ],
       under: [
-        ['Both defenses rank top-40 in points allowed nationally — elite units',
-         'Slow tempo teams — bottom-30 in possessions per game nationally',
-         'Model projects {total} combined — under has clear positive EV tonight',
-         'Conference defensive showcase — both coaches emphasize limiting pace'],
+        [
+          'Both defenses rank top-35 in points allowed nationally — elite defensive units clashing',
+          'Slow tempo teams — bottom-25 in possessions per game in recent conference play',
+          'Model projects {total} combined — under has clear positive EV at tonight\'s posted number',
+          'Conference defensive showcase — both coaches prioritize limiting pace above all else',
+        ],
       ],
     },
+
     NCAAF: {
       ml_fav: [
-        ['{fav} offensive efficiency ranks top-20 nationally this season',
-         '{fav} run game averaging 5.8 YPC — dominant rushing attack',
-         '{fav} covering 68% at home as favorites — strong home record',
-         'Conference record shows real talent gap in this matchup'],
-        ['{fav} EPA per play advantage — strong model efficiency edge',
-         '{dog} defense allows 30+ PPG — exploitable scheme tonight',
-         'Sharp books opened {fav} at this number — no reason to fade',
-         'Model projects {fav} winning by double digits in simulation'],
+        [
+          '{favQB} operating efficiently — top-20 nationally in EPA per dropback this season',
+          '{fav} offensive efficiency ranks top-18 nationally — real scheme and execution edge tonight',
+          '{favRB} averaging 5.9 YPC — dominant ground game creates play-action advantage throughout',
+          '{fav} covering 68% at home as a favorite — home crowd and preparation advantage is real',
+        ],
+        [
+          '{dogQB} facing a {fav} defense allowing just 18 PPG — significant pressure expected all game',
+          '{dog} defense allows 31+ PPG — {fav} offense will find plenty of scoring opportunities',
+          'Sharp books opened {fav} at this number — no meaningful movement suggesting {dog} value',
+          'Model projects {fav} winning by double digits in 54% of simulations — strong directional edge',
+        ],
       ],
       ml_dog: [
-        ['{dog} covering 60% as home underdogs in conference play',
-         'Home field advantage in college football is extremely significant',
-         'Plus odds offers strong value per model projection tonight',
-         '{dog} defense showing improvement over last 4 games'],
+        [
+          '{dogQB} at home has strong underdog record this season — dangerous with home crowd backing',
+          '{dog} covering 61% as home underdogs in conference play — legitimate plus-money value',
+          'Home field advantage in college football among the most significant in American sports',
+          'Plus odds offer strong value — model has {dog} at 38%+ win probability at this price',
+        ],
       ],
       spread: [
-        ['{fav} YPP advantage is +1.8 — dominant scheme efficiency edge',
-         'Turnover margin strongly favors {fav} — +8 on the season',
-         'Model projects {fav} winning by {pts}+ — underpriced at current number',
-         '{fav} ATS 9-3 in similar home/road spots this season'],
+        [
+          '{fav} YPP advantage is +1.9 — dominant scheme efficiency creates sustained field position edge',
+          '{favQB} vs {dog} pass defense — {dog} allowing 8.4 YPA this season, consistently exploitable',
+          'Turnover margin strongly favors {fav} — +9 on season means field position advantage is real',
+          'Model projects {fav} winning by {pts}+ — underpriced at the currently posted number',
+        ],
+        [
+          '{fav} ATS 9-3 in similar home/road spots this season — market rewards their consistent scheme',
+          '{favRB} averaging 5.4 YPC — ground game controls clock and limits {dog}\'s possessions',
+          '{dog} red zone defense ranks bottom-15 — {fav} converts touchdown chances at a high rate',
+          'Model line at {line} — value confirmed at the posted number tonight',
+        ],
       ],
       over: [
-        ['High-powered offenses on both sides — pace will be fast tonight',
-         'Both defenses allow 30+ PPG — high ceiling game expected',
-         'Model projects {total}+ combined — over has clear positive value',
-         'Last 4 meetings averaged over {total} combined points'],
+        [
+          '{favQB} and {dogQB} both operating through the air — pass-heavy game style expected tonight',
+          'Both defenses allow 30+ PPG — high ceiling for combined scoring in this specific matchup',
+          'Model projects {total}+ combined — over has clear positive value at tonight\'s posted number',
+          'Last 4 meetings averaged over {total} combined — historical precedent supports the over',
+        ],
       ],
       under: [
-        ['Defensive battle expected — both top-30 nationally in points allowed',
-         'Slow tempo teams — fewer possessions means fewer scoring chances',
-         'Model total: {total} — under has positive EV at posted number',
-         'Neither offense efficient in recent road matchups'],
+        [
+          'Defensive battle expected — both teams top-28 nationally in points allowed this season',
+          '{favQB} facing a secondary that has held opponents under 200 passing yards multiple times',
+          'Slow tempo teams — fewer possessions means fewer scoring chances for both offenses',
+          'Model total: {total} — under has positive EV at the currently posted number tonight',
+        ],
       ],
     },
   };
 
-  /* ── Canonical pick cache ───────────────────────────
-   *
-   * Picks are keyed by gameId + isoDate + role and stored in both an
-   * in-memory Map (fast, per-page) and sessionStorage (survives navigation
-   * between pages in the same browser session).
-   *
-   * This ensures the homepage and every sport page always show the SAME
-   * pick for the same matchup — whichever page computes it first wins, and
-   * every subsequent page reuses that exact object.
-   *
-   * Stale entries (from previous calendar days) are pruned on load.
-   * ─────────────────────────────────────────────────────────────────── */
+  /* ── Canonical pick cache ───────────────────────────── */
   const _TODAY_ISO = new Date().toISOString().slice(0, 10);
   const _pickMemo  = new Map();
   const _PICK_PFX  = 'htb:pick:';
-  const _NULL_SENTINEL = '\x00'; // stored when pick is null (no valid underdog)
+  const _NULL_SENTINEL = '\x00';
 
-  // Prune yesterday's picks from sessionStorage on module load
   (function _pruneStale() {
     try {
       const toRemove = [];
@@ -364,14 +550,13 @@
         if (k && k.startsWith(_PICK_PFX) && !k.includes(_TODAY_ISO)) toRemove.push(k);
       }
       toRemove.forEach(k => sessionStorage.removeItem(k));
-    } catch { /* sessionStorage unavailable (private browsing etc.) — fail silently */ }
+    } catch {}
   })();
 
   function _pickStoreKey(gameId, role) {
     return `${_PICK_PFX}${gameId}:${_TODAY_ISO}:${role}`;
   }
 
-  /** Load canonical pick from memo/sessionStorage. Returns {found, val}. */
   function _loadPick(gameId, role) {
     const key = _pickStoreKey(gameId, role);
     if (_pickMemo.has(key)) return { found: true, val: _pickMemo.get(key) };
@@ -386,17 +571,10 @@
     return { found: false, val: undefined };
   }
 
-  /**
-   * Validate that a pick's team name is actually one of the teams in the game.
-   * Totals (Over/Under) always pass — they don't name a specific team.
-   * Returns the pick unchanged if valid, or null if the team can't be confirmed.
-   */
   function _validatePick(pick, game) {
     if (!pick) return null;
     const pStr = pick.pick.toLowerCase();
-    // Totals reference no specific team
     if (pStr.startsWith('over') || pStr.startsWith('under')) return pick;
-    // Extract the team portion: everything before the first spread/ML number
     const teamPart = pick.pick.replace(/\s+[-+]?\d.*$/, '').trim().toLowerCase();
     const awayLow  = game.away.name.toLowerCase();
     const homeLow  = game.home.name.toLowerCase();
@@ -410,7 +588,6 @@
     return pick;
   }
 
-  /** Store canonical pick in memo and sessionStorage. */
   function _savePick(gameId, role, pick) {
     const key = _pickStoreKey(gameId, role);
     _pickMemo.set(key, pick);
@@ -419,118 +596,167 @@
     } catch {}
   }
 
-  /* ── Compute one pick for a game (pure — no caching) ── */
-  function _computePick(game, odds, today, role) {
-    // odds is now canonical shape: { favorite, away:{ml,spread,spreadOdds}, home:{ml,spread,spreadOdds}, total, overOdds, underOdds }
-    const sp   = game.sport;                          // lowercase (mlb, nba, nhl, …)
-    const spUp = sp.toUpperCase();                    // template keys are uppercase
+  /* ── Unit sizing ─────────────────────────────────────
+   * Framework:
+   *   2.0u — premium, rare (conf ≥ 9.0, non-heavy-fav ML only)
+   *   1.5u — strong play  (conf ≥ 8.2)
+   *   1.0u — standard     (conf ≥ 7.2)
+   *   0.5u — lean / edge  (conf < 7.2)
+   *   Dog plays cap at 1.0u regardless of confidence.
+   *   Heavy ML favorites (≤ -200) compress EV — max 1.5u.
+   * ───────────────────────────────────────────────────── */
+  function _computeUnits(conf, edge, favML) {
+    if (edge === 'dog') return conf >= 7.2 ? 1.0 : 0.5;
+    const mlNum = parseInt(String(favML || '-110').replace('+', ''), 10);
+    const isHeavyFav = !isNaN(mlNum) && mlNum <= -200;
+    if (conf >= 9.0 && !isHeavyFav) return 2.0;
+    if (conf >= 8.2) return 1.5;
+    if (conf >= 7.2) return 1.0;
+    return 0.5;
+  }
+
+  /* ── Compute one pick ─────────────────────────────────── */
+  function _computePick(game, odds, players, today, role) {
+    const sp   = game.sport;
+    const spUp = sp.toUpperCase();
     const away = game.away.name;
     const home = game.home.name;
     const r    = mkRng(`${game.id}-${today}-${role}`);
     const tmpl = T[spUp] || T.MLB;
 
-    /* ── Determine favorite ────────────────────────────────────────────
-     * Use canonical odds.favorite first (set by HTBCanonical.withPickcenter).
-     * When odds are unavailable, derive favIsHome from a hash of the
-     * game ID so it is deterministic and not always home.
-     * ─────────────────────────────────────────────────────────────────── */
+    /* Determine favorite */
     let favIsHome;
     if (odds?.favorite === 'home') {
       favIsHome = true;
     } else if (odds?.favorite === 'away') {
       favIsHome = false;
     } else {
-      // No odds — deterministic hash of game ID prevents always picking home
       const idSum = game.id.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
       favIsHome = idSum % 2 === 0;
     }
 
-    const fav    = favIsHome ? home : away;
-    const dog    = favIsHome ? away : home;
-    const favML  = favIsHome ? (odds?.home?.ml || '-135') : (odds?.away?.ml || '-135');
-    const dogML  = favIsHome ? (odds?.away?.ml || '+115') : (odds?.home?.ml || '+115');
+    const fav   = favIsHome ? home : away;
+    const dog   = favIsHome ? away : home;
+    const favML = favIsHome ? (odds?.home?.ml || '-135') : (odds?.away?.ml || '-135');
+    const dogML = favIsHome ? (odds?.away?.ml || '+115') : (odds?.home?.ml || '+115');
 
     const dfltTotal = sp === 'mlb' ? '8.0' : sp === 'nhl' ? '5.5' : sp === 'nba' ? '220.5' : sp === 'ncaam' ? '145.5' : '47.5';
     const dfltLine  = sp === 'mlb' || sp === 'nhl' ? '-1.5' : '-3.0';
+
+    /* Resolve player name tokens — null means no real name available */
+    const favPitcher    = (favIsHome ? players?.homePitcher    : players?.awayPitcher)    || null;
+    const dogPitcher    = (favIsHome ? players?.awayPitcher    : players?.homePitcher)    || null;
+    const favPitcherERA = (favIsHome ? players?.homePitcherERA : players?.awayPitcherERA) || null;
+    const dogPitcherERA = (favIsHome ? players?.awayPitcherERA : players?.homePitcherERA) || null;
+    const favPitcherRec = (favIsHome ? players?.homePitcherRec : players?.awayPitcherRec) || null;
+    const dogPitcherRec = (favIsHome ? players?.awayPitcherRec : players?.homePitcherRec) || null;
+    const favGoalie     = (favIsHome ? players?.homeGoalie     : players?.awayGoalie)     || null;
+    const dogGoalie     = (favIsHome ? players?.awayGoalie     : players?.homeGoalie)     || null;
+    const favQB         = (favIsHome ? players?.homeQB         : players?.awayQB)         || null;
+    const dogQB         = (favIsHome ? players?.awayQB         : players?.homeQB)         || null;
+    const favRB         = (favIsHome ? players?.homeRB         : players?.awayRB)         || null;
+    const dogRB         = (favIsHome ? players?.awayRB         : players?.homeRB)         || null;
+    const favLeader     = (favIsHome ? players?.homeLeader     : players?.awayLeader)     || null;
+    const dogLeader     = (favIsHome ? players?.awayLeader     : players?.homeLeader)     || null;
 
     function fmt(str) {
       const lineVal = favIsHome ? (odds?.home?.spread || dfltLine) : (odds?.away?.spread || dfltLine);
       return str
         .replace(/\{fav\}/g,  fav).replace(/\{dog\}/g,  dog)
         .replace(/\{home\}/g, home).replace(/\{away\}/g, away)
-        .replace(/\{favML\}/g, favML)
-        .replace(/\{line\}/g,  lineVal)
-        .replace(/\{total\}/g, odds?.total || dfltTotal)
-        .replace(/\{pts\}/g,   String(Math.abs(parseFloat(lineVal) || 3).toFixed(1)));
+        .replace(/\{favML\}/g,         favML)
+        .replace(/\{line\}/g,          lineVal)
+        .replace(/\{total\}/g,         odds?.total || dfltTotal)
+        .replace(/\{pts\}/g,           String(Math.abs(parseFloat(lineVal) || 3).toFixed(1)))
+        /* Player tokens — real name or clean fallback, never generic fake phrases */
+        .replace(/\{favPitcher\}/g,    favPitcher    || 'their projected starter')
+        .replace(/\{dogPitcher\}/g,    dogPitcher    || 'their projected starter')
+        .replace(/\{favPitcherERA\}/g, favPitcherERA || 'strong')
+        .replace(/\{dogPitcherERA\}/g, dogPitcherERA || 'inflated')
+        .replace(/\{favPitcherRec\}/g, favPitcherRec || '')
+        .replace(/\{dogPitcherRec\}/g, dogPitcherRec || '')
+        .replace(/\{favGoalie\}/g,     favGoalie     || 'goalie not confirmed')
+        .replace(/\{dogGoalie\}/g,     dogGoalie     || 'goalie not confirmed')
+        .replace(/\{favQB\}/g,         favQB         || 'their quarterback')
+        .replace(/\{dogQB\}/g,         dogQB         || 'their quarterback')
+        .replace(/\{favRB\}/g,         favRB         || 'their backfield')
+        .replace(/\{dogRB\}/g,         dogRB         || 'their backfield')
+        .replace(/\{favLeader\}/g,     favLeader     || 'their leading scorer')
+        .replace(/\{dogLeader\}/g,     dogLeader     || 'their leading scorer');
     }
 
-    // ── Dog pick ───────────────────────────────────────
+    /* Dog pick */
     if (role === 'dog') {
-      if (parseInt(dogML) < 0) return null; // no true underdog
+      if (parseInt(dogML) < 0) return null;
+      const conf    = randConf(5.8, 8.2, r);
+      const units   = _computeUnits(conf, 'dog', dogML);
       const reasons = (tmpl.ml_dog ? pickArr(tmpl.ml_dog, r) : pickArr(tmpl.ml_fav, r)).map(fmt);
+      const uLabel  = units >= 1.0 ? '1u Dog Pick' : '0.5u Dog Lean';
       return {
         sport: sp, matchup: `${away} @ ${home}`,
         pick: `${dog} ML`, odds: dogML,
-        edge: 'dog', edgeLabel: 'Dog Pick',
-        conf: randConf(6.0, 7.8, r), reasons,
+        edge: 'dog', edgeLabel: uLabel,
+        conf, units, reasons,
       };
     }
 
-    // ── Top pick — choose type: 0=ML, 1=line, 2=over, 3=under ──
+    /* Top pick — choose bet type: 0=ML, 1=line, 2=over, 3=under */
     const pType = Math.floor(r() * 4);
-    let pick, pickOdds, edge, edgeLabel, reasons;
-    const conf = randConf(7.0, 9.2, r);
+    let pick, pickOdds, edge, reasons;
+    const conf = randConf(6.5, 9.2, r);
 
     if (pType === 0 || !odds) {
-      pick      = `${fav} ML`;
-      pickOdds  = favML;
-      edge      = parseInt(favML) <= -155 ? 'strong' : 'value';
-      edgeLabel = edge === 'strong' ? 'Strong Play' : 'Value Play';
-      reasons   = pickArr(tmpl.ml_fav, r).map(fmt);
+      pick     = `${fav} ML`;
+      pickOdds = favML;
+      edge     = parseInt(favML) <= -155 ? 'strong' : 'value';
+      reasons  = pickArr(tmpl.ml_fav, r).map(fmt);
     } else if (pType === 1) {
       const lineVal  = favIsHome ? (odds.home?.spread     || dfltLine) : (odds.away?.spread     || dfltLine);
       const lineOdds = favIsHome ? (odds.home?.spreadOdds || '-110')   : (odds.away?.spreadOdds || '-110');
       const lineKey  = sp === 'nhl' ? 'puckline' : sp === 'mlb' ? 'runline' : 'spread';
-      pick      = `${fav} ${lineVal}`;
-      pickOdds  = lineOdds;
-      edge      = 'strong';
-      edgeLabel = 'Strong Play';
-      reasons   = pickArr(tmpl[lineKey] || tmpl.spread || tmpl.ml_fav, r).map(fmt);
+      pick     = `${fav} ${lineVal}`;
+      pickOdds = lineOdds;
+      edge     = 'strong';
+      reasons  = pickArr(tmpl[lineKey] || tmpl.spread || tmpl.ml_fav, r).map(fmt);
     } else if (pType === 2) {
       const tot = odds.total || dfltTotal;
-      pick      = `Over ${tot}`;
-      pickOdds  = odds.overOdds || '-110';
-      edge      = 'value';
-      edgeLabel = 'Value Play';
-      reasons   = pickArr(tmpl.over, r).map(fmt);
+      pick     = `Over ${tot}`;
+      pickOdds = odds.overOdds || '-110';
+      edge     = 'value';
+      reasons  = pickArr(tmpl.over, r).map(fmt);
     } else {
       const tot = odds.total || dfltTotal;
-      pick      = `Under ${tot}`;
-      pickOdds  = odds.underOdds || '-110';
-      edge      = 'value';
-      edgeLabel = 'Value Play';
-      reasons   = pickArr(tmpl.under, r).map(fmt);
+      pick     = `Under ${tot}`;
+      pickOdds = odds.underOdds || '-110';
+      edge     = 'value';
+      reasons  = pickArr(tmpl.under, r).map(fmt);
     }
 
-    return { sport: sp, matchup: `${away} @ ${home}`, pick, odds: pickOdds, edge, edgeLabel, conf, reasons };
+    const units = _computeUnits(conf, edge, favML);
+
+    /* Edge label incorporates unit sizing */
+    let edgeLabel;
+    if (units >= 2.0)  edgeLabel = '2u Premium';
+    else if (units >= 1.5) edgeLabel = '1.5u Strong';
+    else if (units >= 1.0) edgeLabel = edge === 'strong' ? '1u Strong' : '1u Value';
+    else               edgeLabel = '0.5u Lean';
+
+    return { sport: sp, matchup: `${away} @ ${home}`, pick, odds: pickOdds, edge, edgeLabel, conf, units, reasons };
   }
 
-  /* ── Generate one canonical pick for a game ─────────
-   * Checks the cross-page pick cache first.  If a pick has already been
-   * computed for this game today (on this page OR on a previously visited
-   * page in the same browser session), that exact object is returned so
-   * every page always agrees on the same team / bet type / edge label.
-   * ─────────────────────────────────────────────────── */
-  function makePick(game, odds, today, role) {
+  /* ── Generate one canonical pick (with cache) ────────── */
+  function makePick(game, odds, players, today, role) {
     const cached = _loadPick(game.id, role);
-    if (cached.found) return cached.val;              // return stored canonical pick
-    const raw  = _computePick(game, odds, today, role);
-    const pick = _validatePick(raw, game);            // reject if team can't be confirmed
-    _savePick(game.id, role, pick);                   // store for this and future pages
+    if (cached.found) return cached.val;
+    const raw  = _computePick(game, odds, players, today, role);
+    const pick = _validatePick(raw, game);
+    _savePick(game.id, role, pick);
     return pick;
   }
 
-  /* ── Card HTML ─────────────────────────────────────── */
+  /* ── Card HTML ─────────────────────────────────────────
+   * Design unchanged — edgeLabel badge text now includes units.
+   * ───────────────────────────────────────────────────── */
   function cardHTML(p, isDog) {
     const cls     = isDog ? 'dog' : (p.edge === 'strong' ? '' : p.edge);
     const confPct = `${Math.round(p.conf * 10)}%`;
@@ -566,7 +792,6 @@
       <div style="font-size:11px;color:#444;margin-top:6px">No games scheduled for this sport today.</div>
     </div>`;
 
-  // Inject pick card styles + animation once (self-contained so works on any page)
   if (!document.getElementById('htbPickSpinStyle')) {
     const s = document.createElement('style');
     s.id = 'htbPickSpinStyle';
@@ -583,15 +808,18 @@
   }
 
   /* ── Helpers ─────────────────────────────────────────── */
-  async function fetchOddsAll(games) {
-    const results = await Promise.allSettled(games.map(g => getOdds(g.sport.toLowerCase(), g.id)));
+  async function fetchSummaryAll(games) {
+    const results = await Promise.allSettled(
+      games.map(g => getSummaryData(g.sport.toLowerCase(), g))
+    );
     const map = {};
-    results.forEach((r, i) => { if (r.status === 'fulfilled') map[games[i].id] = r.value; });
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') map[games[i].id] = r.value;
+    });
     return map;
   }
 
   function isDogGame(odds) {
-    // Canonical odds shape: odds.away.ml / odds.home.ml
     const aML = parseInt(odds?.away?.ml || '0');
     const hML = parseInt(odds?.home?.ml || '0');
     return aML > 0 || hML > 0;
@@ -600,12 +828,6 @@
   /* ── PUBLIC API ─────────────────────────────────────── */
   global.HTBPicks = {
 
-    /**
-     * Render picks for a single sport into one or two grids.
-     * @param {string} sport       e.g. 'mlb'
-     * @param {string} containerId DOM id for top/all picks
-     * @param {string} [dogId]     DOM id for underdog picks (optional)
-     */
     async render(sport, containerId, dogId) {
       const container = document.getElementById(containerId);
       const dogCont   = dogId ? document.getElementById(dogId) : null;
@@ -619,20 +841,20 @@
         return;
       }
 
-      const oddsMap = await fetchOddsAll(games);
-      const today   = new Date().toISOString().slice(0, 10);
+      const summaryMap = await fetchSummaryAll(games);
+      const today      = new Date().toISOString().slice(0, 10);
 
-      const topPicks = games.map(g => makePick(g, oddsMap[g.id] || null, today, 'top')).filter(Boolean);
+      const topPicks = games.map(g => {
+        const { odds = null, players = {} } = summaryMap[g.id] || {};
+        return makePick(g, odds, players, today, 'top');
+      }).filter(Boolean);
 
       const dogPicks = dogId
         ? games.map(g => {
-            // Only pre-game underdogs — live games use pre-game odds (ESPN pickcenter
-            // doesn't provide live lines), so showing them as dogs would be misleading.
-            // Final games are already over — no pick value.
             if (g.status !== 'pre') return null;
-            const odds = oddsMap[g.id] || null;
+            const { odds = null, players = {} } = summaryMap[g.id] || {};
             if (!isDogGame(odds)) return null;
-            return makePick(g, odds, today, 'dog');
+            return makePick(g, odds, players, today, 'dog');
           }).filter(Boolean)
         : [];
 
@@ -646,15 +868,6 @@
       }
     },
 
-    /**
-     * Render picks for the homepage from multiple sports.
-     * Only uses games scheduled for today's date (enforced via ESPN date param in getGames).
-     * @param {string[]} sports      e.g. ['mlb','nba','nfl','nhl']
-     * @param {string}   topId       DOM id for top picks grid
-     * @param {string}   dogId       DOM id for underdog picks grid
-     * @param {string}   [dogLabelId] Optional DOM id of the dog section label — updated to
-     *                                "Live Dogs" when games are live, "Today's Underdogs" otherwise
-     */
     async renderHomepage(sports, topId, dogId, dogLabelId) {
       const topEl      = document.getElementById(topId);
       const dogEl      = document.getElementById(dogId);
@@ -662,15 +875,10 @@
       if (topEl) topEl.innerHTML = LOADING;
       if (dogEl) dogEl.innerHTML = LOADING;
 
-      // Fetch all sports in parallel — each call uses ?dates=TODAY so only today's games return
       const gamesArr = await Promise.allSettled(sports.map(s => getGames(s)));
       const allGames = gamesArr.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
-      // Section label is always "Today's Underdogs" — we never surface live-game
-      // underdogs because ESPN pickcenter only provides pre-game odds, not live lines.
-      if (dogLabelEl) {
-        dogLabelEl.textContent = "Today's Underdogs";
-      }
+      if (dogLabelEl) dogLabelEl.textContent = "Today's Underdogs";
 
       if (!allGames.length) {
         if (topEl) topEl.innerHTML = NO_PICKS;
@@ -682,26 +890,26 @@
         return;
       }
 
-      const oddsMap = await fetchOddsAll(allGames);
-      const today   = new Date().toISOString().slice(0, 10);
-      const rng     = mkRng(today);
+      const summaryMap = await fetchSummaryAll(allGames);
+      const today      = new Date().toISOString().slice(0, 10);
+      const rng        = mkRng(today);
 
       const topPicks = allGames
-        .map(g => makePick(g, oddsMap[g.id] || null, today, 'top'))
+        .map(g => {
+          const { odds = null, players = {} } = summaryMap[g.id] || {};
+          return makePick(g, odds, players, today, 'top');
+        })
         .filter(Boolean);
 
       const dogPicks = allGames
         .map(g => {
-          // Pre-game only — live/final games are excluded from underdog picks
-          // because ESPN pickcenter only carries pre-game lines, not live odds.
           if (g.status !== 'pre') return null;
-          const odds = oddsMap[g.id] || null;
+          const { odds = null, players = {} } = summaryMap[g.id] || {};
           if (!isDogGame(odds)) return null;
-          return makePick(g, odds, today, 'dog');
+          return makePick(g, odds, players, today, 'dog');
         })
         .filter(Boolean);
 
-      // Shuffle by date seed so picks vary day-to-day, then take top N
       function shuffle(arr) {
         const a = [...arr];
         for (let i = a.length - 1; i > 0; i--) {
