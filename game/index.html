@@ -121,22 +121,27 @@ button{cursor:pointer;border:none;font-family:inherit}
 .verdict-text{font-size:14px;color:#bbb;line-height:1.75}
 
 /* ── PICK RECOMMENDATION ── */
-.pick-card{background:#101010;border:1px solid #1e1e1e;border-top:3px solid #f0b429;border-radius:12px;padding:20px}
-.pick-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.pick-card{background:#101010;border:1px solid #2a2a2a;border-top:4px solid #f0b429;border-radius:14px;padding:24px;box-shadow:0 2px 40px rgba(240,180,41,.07)}
+.pick-eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#f0b429}
+.pick-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .pick-badge{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:4px 10px;border-radius:4px;background:rgba(240,180,41,.1);color:#f0b429;border:1px solid rgba(240,180,41,.2)}
 .pick-badge.value{background:rgba(0,208,132,.08);color:#00d084;border-color:rgba(0,208,132,.2)}
 .pick-badge.dog  {background:rgba(129,140,248,.08);color:#818cf8;border-color:rgba(129,140,248,.2)}
-.pick-name{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,4vw,40px);font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:4px}
-.pick-odds-val{font-size:22px;font-weight:700;color:#f0b429;margin-bottom:16px}
-.pick-conf{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.conf-lbl{font-size:10px;color:#444;font-weight:600;white-space:nowrap}
-.conf-track{flex:1;height:4px;background:#1a1a1a;border-radius:2px;overflow:hidden}
-.conf-fill{height:100%;background:#f0b429;border-radius:2px}
-.conf-val{font-size:12px;font-weight:700;color:#666;white-space:nowrap}
+.pick-name{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,46px);font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:18px;color:#fff}
+.pick-meta-row{display:flex;gap:28px;margin-bottom:14px;flex-wrap:wrap}
+.pick-meta-item{text-align:left}
+.pick-meta-val{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;line-height:1;color:#ccc}
+.pick-meta-val.pick-odds-col{color:#f0b429}
+.pick-meta-lbl{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#444;margin-top:4px}
+.pick-conf-bar-wrap{height:4px;background:#1a1a1a;border-radius:2px;overflow:hidden;margin-bottom:18px}
+.pick-conf-bar-fill{height:100%;background:#f0b429;border-radius:2px}
 .pick-reasons{border-top:1px solid #1a1a1a;padding-top:14px;display:flex;flex-direction:column;gap:7px}
-.pick-reason{display:flex;gap:9px;font-size:12px;color:#777;line-height:1.5}
-.pick-reason::before{content:'▸';color:#444;font-size:9px;margin-top:3px;flex-shrink:0}
-.units-badge{display:inline-block;margin-top:12px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;padding:5px 12px;font-size:11px;font-weight:700;color:#888}
+.pick-reason{display:flex;gap:9px;font-size:12px;color:#888;line-height:1.5}
+.pick-reason::before{content:'▸';color:#f0b429;font-size:9px;margin-top:3px;flex-shrink:0}
+
+/* ── PICK CTA (in scoreboard) ── */
+.pick-cta{display:inline-flex;align-items:center;gap:6px;background:rgba(240,180,41,.08);border:1px solid rgba(240,180,41,.18);color:#f0b429;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:7px 16px;border-radius:6px;margin-top:14px;transition:background .15s}
+.pick-cta:hover{background:rgba(240,180,41,.14)}
 
 /* ── NOT FOUND ── */
 .not-found{max-width:500px;margin:80px auto;text-align:center;padding:20px}
@@ -462,102 +467,6 @@ function buildAnalysis(game, odds, sport) {
 }
 
 /* ============================================================
-   TEAM TRENDS
-   ============================================================ */
-function buildTrends(game, odds, sport) {
-  const homeFav = isFavHome(odds);
-  const favTeam = homeFav ? game.home.name : game.away.name;
-  const dogTeam = homeFav ? game.away.name : game.home.name;
-
-  const trends = {
-    mlb: {
-      away: [`Last 10 games: 6-4`, `Batting .268 last 7 days`, `Bullpen ERA last 14 days: 3.21`, `Run differential last 10: +12`],
-      home: [`Last 10 games: 5-5`, `Home record: 18-14`, `Starting pitching ERA at home: 3.87`, `Runs per game at home: 4.6`],
-    },
-    nba: {
-      away: [`Last 10: 6-4`, `ATS last 10: 7-3`, `Offensive rating last 7 days: 114.2`, `Net rating on road: +2.4`],
-      home: [`Last 10: 5-5`, `ATS at home last 10: 6-4`, `Defensive rating at home: 108.6`, `Home win streak: 3`],
-    },
-    nfl: {
-      away: [`Last 5 games: 3-2`, `ATS last 5: 4-1`, `Yards per game last 4 weeks: 362`, `Turnover margin: +2`],
-      home: [`Last 5 games: 2-3`, `ATS at home: 3-4`, `Points allowed per game: 23.4`, `3rd-down conversion: 40%`],
-    },
-    ncaaf: {
-      away: [`Last 5 games: 3-2`, `ATS road: 4-3`, `Points per game: 31.4`, `Yards per play: 5.8`],
-      home: [`Last 5 games: 3-2`, `ATS at home: 5-2`, `Points allowed per game: 21.1`, `Turnover margin: +5`],
-    },
-    ncaam: {
-      away: [`Last 10: 6-4`, `ATS last 10: 6-4`, `Offensive efficiency: 108.4`, `3PT% last 5 games: 36.1%`],
-      home: [`Last 10: 7-3`, `ATS at home: 8-4`, `Defensive efficiency: 96.2`, `Rebounds per game: 37.1`],
-    },
-    nhl: {
-      away: [`Last 10: 5-4-1`, `PDO (SV%+SH%) last 10: 1.008`, `Goals per game: 3.1`, `Shots per game: 31.4`],
-      home: [`Last 10: 6-3-1`, `Home PP%: 22.4%`, `Save percentage at home: .915`, `Goals against per game: 2.8`],
-    },
-  };
-
-  return trends[sport] || {
-    away: ['Recent form data available shortly', 'Check back for updated trends'],
-    home: ['Recent form data available shortly', 'Check back for updated trends'],
-  };
-}
-
-/* ============================================================
-   KEY STATS COMPARISON
-   ============================================================ */
-function buildKeyStats(game, odds, sport) {
-  const stats = {
-    mlb: [
-      { label: 'Team ERA',        away: '3.82', home: '4.14' },
-      { label: 'Team BA',         away: '.258', home: '.244' },
-      { label: 'HR/Game',         away: '1.2',  home: '0.9'  },
-      { label: 'WHIP',            away: '1.21', home: '1.34' },
-      { label: 'Runs/Game',       away: '4.8',  home: '4.1'  },
-    ],
-    nba: [
-      { label: 'Off. Rating',     away: '114.2', home: '112.8' },
-      { label: 'Def. Rating',     away: '110.4', home: '109.1' },
-      { label: 'Pace',            away: '99.4',  home: '97.1'  },
-      { label: 'TS%',             away: '57.1%', home: '55.8%' },
-      { label: 'TOV%',            away: '13.2%', home: '14.4%' },
-    ],
-    nfl: [
-      { label: 'Off. EPA/Play',   away: '+0.08', home: '+0.04' },
-      { label: 'Pass Yards/G',    away: '238',   home: '214'   },
-      { label: 'Rush Yards/G',    away: '118',   home: '104'   },
-      { label: 'Points/G',        away: '24.4',  home: '21.8'  },
-      { label: 'Pts Allowed/G',   away: '22.1',  home: '24.6'  },
-    ],
-    ncaaf: [
-      { label: 'Off. S&P+',       away: '+8.4',  home: '+4.1'  },
-      { label: 'Points/G',        away: '31.4',  home: '27.8'  },
-      { label: 'Yards/Play',      away: '5.8',   home: '5.2'   },
-      { label: 'TO Margin',       away: '+5',    home: '+2'    },
-      { label: 'Pts Allowed/G',   away: '21.1',  home: '24.4'  },
-    ],
-    ncaam: [
-      { label: 'Adj. Offense',    away: '108.4', home: '106.2' },
-      { label: 'Adj. Defense',    away: '98.1',  home: '96.2'  },
-      { label: 'Pace',            away: '70.2',  home: '68.4'  },
-      { label: '3PT%',            away: '36.1%', home: '34.8%' },
-      { label: 'TO Rate',         away: '17.4%', home: '18.2%' },
-    ],
-    nhl: [
-      { label: 'Goals/G',         away: '3.1',   home: '2.9'   },
-      { label: 'Goals Against/G', away: '2.8',   home: '2.6'   },
-      { label: 'Shot Diff/G',     away: '+1.4',  home: '+2.1'  },
-      { label: 'PP%',             away: '20.1%', home: '22.4%' },
-      { label: 'PK%',             away: '81.2%', home: '83.6%' },
-    ],
-  };
-
-  return stats[sport] || [
-    { label: 'Win %',  away: '52%', home: '48%' },
-    { label: 'Streak', away: 'W2',  home: 'L1'  },
-  ];
-}
-
-/* ============================================================
    RISK FACTORS
    ============================================================ */
 function buildRisks(game, odds, sport) {
@@ -766,27 +675,35 @@ function renderPlayerStats(playerStats, game, sport) {
 }
 
 function renderPick(pick) {
-  /* Works with the /api/picks shape: { edge, edgeLabel, pick, odds, conf, units, reasons } */
-  const badge    = pick.edge     || 'strong';
+  const badge   = pick.edge     || 'strong';
   const badgeLbl = pick.edgeLabel || 'Pick';
-  const units    = pick.units != null ? pick.units : 1.0;
+  const units   = pick.units != null ? pick.units : 1.0;
+  const confPct = `${Math.round(pick.conf * 10)}%`;
   return `
     <div class="pick-card">
       <div class="pick-header">
+        <div class="pick-eyebrow">★ Hammer Best Bet</div>
         <span class="pick-badge ${badge}">${badgeLbl}</span>
-        <span style="font-size:11px;color:#555">Hammer Model</span>
       </div>
       <div class="pick-name">${pick.pick}</div>
-      <div class="pick-odds-val">${pick.odds}</div>
-      <div class="pick-conf">
-        <span class="conf-lbl">Confidence</span>
-        <div class="conf-track"><div class="conf-fill" style="width:${pick.conf * 10}%"></div></div>
-        <span class="conf-val">${pick.conf.toFixed(1)}/10</span>
+      <div class="pick-meta-row">
+        <div class="pick-meta-item">
+          <div class="pick-meta-val pick-odds-col">${pick.odds}</div>
+          <div class="pick-meta-lbl">Odds</div>
+        </div>
+        <div class="pick-meta-item">
+          <div class="pick-meta-val">${units}u</div>
+          <div class="pick-meta-lbl">Recommended</div>
+        </div>
+        <div class="pick-meta-item">
+          <div class="pick-meta-val">${pick.conf.toFixed(1)}/10</div>
+          <div class="pick-meta-lbl">Confidence</div>
+        </div>
       </div>
+      <div class="pick-conf-bar-wrap"><div class="pick-conf-bar-fill" style="width:${confPct}"></div></div>
       <div class="pick-reasons">
         ${pick.reasons.map(r => `<div class="pick-reason">${r}</div>`).join('')}
       </div>
-      <div class="units-badge">Recommended: ${units}u</div>
     </div>`;
 }
 
@@ -794,25 +711,23 @@ function renderPick(pick) {
    MAIN RENDER
    ============================================================ */
 function renderGame(game, odds, sport, data, apiPick) {
-  const isLive  = game.status === 'live';
-  const isFinal = game.status === 'final';
+  const isLive    = game.status === 'live';
+  const isFinal   = game.status === 'final';
   const showScore = isLive || isFinal;
-  const aScore  = game.away.score || '0';
-  const hScore  = game.home.score || '0';
-  const aLead   = parseInt(aScore) > parseInt(hScore);
-  const statusLbl  = isLive ? 'LIVE' : isFinal ? 'FINAL' : game.gameTime;
-  const statusCls  = isLive ? 'live' : isFinal ? 'final' : 'pre';
-  const sportLabel = sport.toUpperCase();
-  const backHref   = `/${sport}/`;
-  const linescore    = data ? parseLinescore(data, sport, game) : null;
-  const teamStats    = data ? parseTeamStats(data, sport, game) : [];
-  const playerStats  = data ? parsePlayerStats(data, sport, game) : [];
-  const analysis   = buildAnalysis(game, odds, sport);
-  const trends     = buildTrends(game, odds, sport);
-  const keyStats   = buildKeyStats(game, odds, sport);
-  const risks      = buildRisks(game, odds, sport);
-  const alts       = buildAlts(game, odds, sport);
-  const verdict    = apiPick ? buildVerdict(game, odds, sport, apiPick) : null;
+  const aScore    = game.away.score || '0';
+  const hScore    = game.home.score || '0';
+  const aLead     = parseInt(aScore) > parseInt(hScore);
+  const statusLbl = isLive ? 'LIVE' : isFinal ? 'FINAL' : game.gameTime;
+  const statusCls = isLive ? 'live' : isFinal ? 'final' : 'pre';
+  const sportLabel  = sport.toUpperCase();
+  const backHref    = `/${sport}/`;
+  const linescore   = data ? parseLinescore(data, sport, game) : null;
+  const teamStats   = data ? parseTeamStats(data, sport, game) : [];
+  const playerStats = data ? parsePlayerStats(data, sport, game) : [];
+  const analysis    = buildAnalysis(game, odds, sport);
+  const risks       = buildRisks(game, odds, sport);
+  const alts        = buildAlts(game, odds, sport);
+  const verdict     = apiPick ? buildVerdict(game, odds, sport, apiPick) : null;
 
   document.title = `${game.away.name} vs ${game.home.name} — HammerTimeBet`;
 
@@ -848,10 +763,24 @@ function renderGame(game, odds, sport, data, apiPick) {
             <div class="team-score ${showScore ? (!aLead ? 'lead' : 'trail') : 'pre'}">${showScore ? hScore : game.gameTime}</div>
           </div>
         </div>
+        ${apiPick ? `<a href="#hammer-pick" class="pick-cta">★ View Hammer Pick ↓</a>` : ''}
       </div>
     </div>
 
-    <!-- MATCHUP OVERVIEW -->
+    <!-- HAMMER BEST BET — first section after scoreboard -->
+    ${apiPick ? `
+    <section class="section" id="hammer-pick">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Hammer Model</div>
+          <h2 class="sec-title">Best Bet</h2>
+        </div>
+        ${renderPick(apiPick)}
+        <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
+      </div>
+    </section>` : ''}
+
+    <!-- GAME LINES -->
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
@@ -885,24 +814,7 @@ function renderGame(game, odds, sport, data, apiPick) {
       </div>
     </section>
 
-    <!-- HAMMER BEST BET -->
-    <section class="section" id="hammer-pick">
-      <div class="section-inner">
-        <div class="section-head">
-          <div class="eyebrow">Hammer Model</div>
-          <h2 class="sec-title">HammerTime Best Bet</h2>
-        </div>
-        ${apiPick
-          ? renderPick(apiPick)
-          : `<div style="background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:32px 20px;text-align:center">
-               <div style="font-size:13px;font-weight:700;color:#888">No pick available for this game.</div>
-               <div style="font-size:11px;color:#444;margin-top:6px">Picks are generated daily and may not be available for every game.</div>
-             </div>`}
-        <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
-      </div>
-    </section>
-
-    <!-- WHY IT RATES WELL -->
+    <!-- MODEL REASONING -->
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
@@ -914,47 +826,6 @@ function renderGame(game, odds, sport, data, apiPick) {
           <div class="factor-list">
             ${analysis.factors.map(f => `<div class="factor">${f}</div>`).join('')}
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TEAM TRENDS -->
-    <section class="section">
-      <div class="section-inner">
-        <div class="section-head">
-          <div class="eyebrow">Recent Form</div>
-          <h2 class="sec-title">Team Trends</h2>
-        </div>
-        <div class="info-grid">
-          <div class="info-card">
-            <div class="info-card-title">${game.away.name}</div>
-            ${trends.away.map(t => `<div class="info-item">${t}</div>`).join('')}
-          </div>
-          <div class="info-card">
-            <div class="info-card-title">${game.home.name}</div>
-            ${trends.home.map(t => `<div class="info-item">${t}</div>`).join('')}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- KEY STATS COMPARISON -->
-    <section class="section">
-      <div class="section-inner">
-        <div class="section-head">
-          <div class="eyebrow">Statistical Edge</div>
-          <h2 class="sec-title">Key Stats Comparison</h2>
-        </div>
-        <div style="margin-bottom:10px;display:grid;grid-template-columns:1fr auto 1fr;gap:4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:0 12px">
-          <span>${game.away.name}</span><span></span><span style="text-align:right">${game.home.name}</span>
-        </div>
-        <div class="stats-grid">
-          ${keyStats.map(s => `
-            <div class="stat-row">
-              <span class="stat-away">${s.away}</span>
-              <span class="stat-lbl">${s.label}</span>
-              <span class="stat-home">${s.home}</span>
-            </div>`).join('')}
         </div>
       </div>
     </section>

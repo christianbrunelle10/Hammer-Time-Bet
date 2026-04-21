@@ -7,16 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&display=swap" rel="stylesheet" />
 
-<!--
-  SCRIPT LOAD ORDER — all three use defer so they:
-    1. download in parallel (fast)
-    2. execute in this exact order after HTML is parsed
-    3. run before DOMContentLoaded fires (so HTBData is ready)
-
-  data.js       → defines window.HTBData (fetch functions + mock data)
-  live-games.js → registers <htb-live-games> component (uses HTBData)
-  nav.js        → registers <htb-nav> component
--->
 <script src="components/canonical.js"    defer></script>
 <script src="components/data.js"       defer></script>
 <script src="components/live-games.js" defer></script>
@@ -61,6 +51,16 @@ button{cursor:pointer;border:none;font-family:inherit}
 .btn-gold{background:var(--gold);color:#000}
 .btn-ghost{background:transparent;color:var(--w2);border:1px solid var(--b2)}
 
+/* ── STATS BAND ── */
+.stats-band{background:var(--s1);border-bottom:1px solid var(--b1);padding:18px 20px;display:none}
+.stats-band-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:center;flex-wrap:wrap}
+.sb-item{text-align:center;padding:10px 32px;border-right:1px solid var(--b1);flex:1;min-width:120px}
+.sb-item:last-child{border-right:none}
+.sb-val{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;line-height:1;color:var(--w2)}
+.sb-val.g{color:var(--green)}
+.sb-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-top:4px}
+@media(max-width:640px){.sb-item{padding:10px 16px}.sb-val{font-size:26px}}
+
 /* ── SECTIONS ── */
 .section{padding:48px 20px}
 .section-inner{max-width:1200px;margin:0 auto}
@@ -76,36 +76,28 @@ button{cursor:pointer;border:none;font-family:inherit}
 .picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .pick-card{background:var(--s1);border:1px solid var(--b1);border-top:3px solid var(--gold);border-radius:12px;padding:18px;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
 .pick-card:hover{transform:translateY(-3px);border-color:var(--b2);box-shadow:0 8px 24px rgba(240,180,41,.08)}
+.pick-card.value{border-top-color:var(--green)}
+.pick-card.value:hover{box-shadow:0 8px 24px rgba(0,208,132,.08)}
 .pick-card.dog{border-top-color:#818cf8}
 .pick-card.dog:hover{box-shadow:0 8px 24px rgba(129,140,248,.08)}
 .pc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.pc-sport{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--w3);background:var(--s3);border:1px solid var(--b1);padding:3px 9px;border-radius:100px}
-.pc-edge{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:4px}
-.pc-edge.strong{background:rgba(240,180,41,.1);color:var(--gold);border:1px solid rgba(240,180,41,.2)}
-.pc-edge.value {background:rgba(0,208,132,.08);color:var(--green);border:1px solid rgba(0,208,132,.2)}
-.pc-edge.dog   {background:rgba(129,140,248,.08);color:#818cf8;border:1px solid rgba(129,140,248,.2)}
 .pc-matchup{font-size:11px;color:var(--w3);margin-bottom:4px}
 .pc-pick{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:2px}
 .pc-odds{font-size:18px;font-weight:700;color:var(--gold);margin-bottom:12px}
-.pick-card.dog .pc-odds{color:#818cf8}
+.pick-card.value .pc-odds{color:var(--green)}
+.pick-card.dog   .pc-odds{color:#818cf8}
 .pc-conf{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.pc-conf-label{font-size:10px;color:var(--w4);font-weight:600;white-space:nowrap}
-.conf-track{flex:1;height:3px;background:var(--b1);border-radius:2px;overflow:hidden}
-.conf-fill{height:100%;background:var(--gold);border-radius:2px}
-.pick-card.dog .conf-fill{background:#818cf8}
-.pc-conf-val{font-size:11px;font-weight:700;color:var(--w3);white-space:nowrap}
-.pc-reasons{border-top:1px solid var(--b1);padding-top:12px;display:flex;flex-direction:column;gap:5px}
+.pc-sep{height:1px;background:var(--b1);margin-bottom:12px}
+.pc-reasons{display:flex;flex-direction:column;gap:5px}
 .pc-reason{font-size:12px;color:var(--w3);line-height:1.45;display:flex;gap:7px}
 .pc-reason::before{content:'▸';color:var(--w4);font-size:9px;margin-top:3px;flex-shrink:0}
 .pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--w4);margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
 .pick-card:hover .pc-hint{opacity:1}
 
-/* ── RECORDS BAR ── */
-.records-bar{display:none;gap:24px;flex-wrap:wrap;padding:12px 0 16px;border-bottom:1px solid var(--b1);margin-bottom:8px}
-.rec-stat{text-align:center}
-.rec-val{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;line-height:1}
-.rec-val.g{color:var(--green)}
-.rec-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--w4);margin-top:3px}
+/* ── PICKS SECTION DIVIDER ── */
+.picks-section-divider{display:flex;align-items:center;gap:12px;margin:24px 0 16px}
+.picks-section-divider span{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--w4);white-space:nowrap}
+.picks-section-divider::before,.picks-section-divider::after{content:'';flex:1;height:1px;background:var(--b1)}
 
 /* ── BOX SCORE MODAL ── */
 .bs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -164,7 +156,6 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
 </head>
 <body>
 
-<!-- nav.js registers <htb-nav> — active link auto-detected from path -->
 <htb-nav active="home"></htb-nav>
 
 <!-- ── HERO ──────────────────────────────────────────────── -->
@@ -173,46 +164,32 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   <h1>Data-Driven Picks.<br /><em>Built to Beat</em> the Line.</h1>
   <p>Live scores, sharp odds, and Hammer Model picks across MLB, NBA, NFL, NHL, NCAAF, NCAAM, Golf and more.</p>
   <div class="hero-btns">
-    <a href="#live-games" class="btn btn-gold">Live Games</a>
-    <a href="#picks"      class="btn btn-ghost">Today's Picks</a>
+    <a href="#picks"      class="btn btn-gold">Today's Picks</a>
+    <a href="#live-games" class="btn btn-ghost">Live Games</a>
   </div>
   <p class="hero-disclaimer">For entertainment purposes only. Not financial advice.</p>
 </section>
 
-<!-- ── LIVE GAMES ─────────────────────────────────────────── -->
-<!--
-  live-games.js registers <htb-live-games>.
-  It fetches all 6 sports from ESPN via HTBData (data.js),
-  falls back to mock data when ESPN returns nothing (off-season).
-  Golf renders a leaderboard card; all others render matchup cards.
-  Box score button fires htb:boxscore event — caught below.
-  Golf leaderboard button fires htb:golf event — caught below.
--->
-<section class="section" id="live-games">
-  <div class="section-inner">
-    <div class="section-head">
-      <div>
-        <div class="section-label">HammerTimeBet · Live Scores</div>
-        <h2 class="section-title">Featured Games Today</h2>
-      </div>
-      <a href="#" class="see-all">All Games →</a>
-    </div>
-    <htb-live-games sports="mlb,nba,nfl,ncaaf,ncaam,nhl,golf" refresh="30" max="4"></htb-live-games>
-  </div>
-</section>
+<!-- ── STATS BAND (season record) ─────────────────────────── -->
+<div class="stats-band" id="stats-band">
+  <div class="stats-band-inner" id="stats-band-inner"></div>
+</div>
 
-<!-- ── TOP PICKS ──────────────────────────────────────────── -->
+<!-- ── TODAY'S PICKS ──────────────────────────────────────── -->
 <section class="section" id="picks">
   <div class="section-inner">
     <div class="section-head">
       <div>
         <div class="section-label">Hammer Model</div>
-        <h2 class="section-title">Top Picks Today</h2>
+        <h2 class="section-title">Today's Picks</h2>
         <div id="picks-date" style="font-size:11px;color:var(--w4);margin-top:5px;letter-spacing:.04em"></div>
       </div>
       <a href="#" class="see-all">All Picks →</a>
     </div>
-    <div class="records-bar" id="records-bar"></div>
+    <!-- Featured top play of the day -->
+    <div id="featured-play"></div>
+    <!-- Remaining picks -->
+    <div id="picks-secondary-label"></div>
     <div class="picks-grid" id="top-picks-grid"></div>
   </div>
 </section>
@@ -227,6 +204,20 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
       </div>
     </div>
     <div class="picks-grid" id="dog-picks-grid"></div>
+  </div>
+</section>
+
+<!-- ── LIVE GAMES ─────────────────────────────────────────── -->
+<section class="section" id="live-games">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-label">HammerTimeBet · Live Scores</div>
+        <h2 class="section-title">Featured Games Today</h2>
+      </div>
+      <a href="#" class="see-all">All Games →</a>
+    </div>
+    <htb-live-games sports="mlb,nba,nfl,ncaaf,ncaam,nhl,golf" refresh="30" max="4"></htb-live-games>
   </div>
 </section>
 
@@ -258,27 +249,43 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
    DATE HELPERS
    ============================================================ */
 function todayISO() {
-  return new Date().toISOString().slice(0, 10); // UTC — matches what the daily script writes
+  return new Date().toISOString().slice(0, 10);
 }
 function formatDateLabel(iso) {
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(y, m-1, d).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 }
 
+/* ============================================================
+   STATS BAND — season record from /api/records
+   ============================================================ */
+function renderStatsBand(records) {
+  const band  = document.getElementById('stats-band');
+  const inner = document.getElementById('stats-band-inner');
+  if (!band || !inner || !records?.overall) return;
+  const o = records.overall;
+  inner.innerHTML = `
+    <div class="sb-item"><div class="sb-val g">${o.winRate}</div><div class="sb-lbl">Win Rate</div></div>
+    <div class="sb-item"><div class="sb-val">${o.record}</div><div class="sb-lbl">Season Record</div></div>
+    <div class="sb-item"><div class="sb-val g">${o.units}</div><div class="sb-lbl">Units Profit</div></div>
+    <div class="sb-item"><div class="sb-val">${o.clv}</div><div class="sb-lbl">Avg CLV</div></div>`;
+  band.style.display = 'block';
+}
 
 /* ============================================================
-   RECORDS BAR
+   PICKS SECONDARY LABEL — shown between featured and rest
    ============================================================ */
-function renderRecordsBar(records) {
-  const bar = document.getElementById('records-bar');
-  if (!bar || !records?.overall) return;
-  const o = records.overall;
-  bar.innerHTML = `
-    <div class="rec-stat"><div class="rec-val g">${o.winRate}</div><div class="rec-lbl">Win Rate</div></div>
-    <div class="rec-stat"><div class="rec-val">${o.record}</div><div class="rec-lbl">Record</div></div>
-    <div class="rec-stat"><div class="rec-val g">${o.units}</div><div class="rec-lbl">Units</div></div>
-    <div class="rec-stat"><div class="rec-val">${o.clv}</div><div class="rec-lbl">Avg CLV</div></div>`;
-  bar.style.display = 'flex';
+function renderPicksSecondaryLabel(hasFeatured, hasRest) {
+  const el = document.getElementById('picks-secondary-label');
+  if (!el) return;
+  if (hasFeatured && hasRest) {
+    el.innerHTML = `
+      <div class="picks-section-divider">
+        <span>More Picks Today</span>
+      </div>`;
+  } else {
+    el.innerHTML = '';
+  }
 }
 
 /* ============================================================
@@ -289,7 +296,7 @@ function renderFallback(gridId) {
   if (el) el.innerHTML = `
     <div style="grid-column:1/-1;background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:40px 20px;text-align:center">
       <div style="font-size:13px;font-weight:700;color:var(--w3)">Today's picks are being generated.</div>
-      <div style="font-size:11px;color:var(--w4);margin-top:6px">Check back soon.</div>
+      <div style="font-size:11px;color:var(--w4);margin-top:6px">Check back in a few minutes.</div>
     </div>`;
 }
 
@@ -316,11 +323,11 @@ function renderBoxScore(parsed, teams) {
       </div>`;
     return;
   }
-  const hLead      = parseInt(parsed.homeScore) >= parseInt(parsed.awayScore);
-  const lineHdrs   = parsed.lines.map(l => `<th>${l.label}</th>`).join('');
-  const awayLine   = parsed.lines.map(l => `<td>${l.awayVal}</td>`).join('');
-  const homeLine   = parsed.lines.map(l => `<td>${l.homeVal}</td>`).join('');
-  const statsHTML  = parsed.stats.map(s => `
+  const hLead     = parseInt(parsed.homeScore) >= parseInt(parsed.awayScore);
+  const lineHdrs  = parsed.lines.map(l => `<th>${l.label}</th>`).join('');
+  const awayLine  = parsed.lines.map(l => `<td>${l.awayVal}</td>`).join('');
+  const homeLine  = parsed.lines.map(l => `<td>${l.homeVal}</td>`).join('');
+  const statsHTML = parsed.stats.map(s => `
     <div class="bs-stat-row">
       <span class="bs-stat-val">${s.awayVal}</span>
       <span class="bs-stat-lbl">${s.label}</span>
@@ -339,7 +346,7 @@ function renderBoxScore(parsed, teams) {
       </div>
     </div>
     <div class="bs-status-line">${parsed.status}</div>
-    <div class="bs-section-lbl">${parsed.lineHeader} by ${parsed.lineHeader}</div>
+    <div class="bs-section-lbl">Score by ${parsed.lineHeader}</div>
     <table class="bs-table">
       <thead><tr><th>Team</th>${lineHdrs}<th>T</th></tr></thead>
       <tbody>
@@ -364,12 +371,10 @@ async function openBoxScore(gameId, sport, teams) {
   renderBoxScore(parsed, teams);
 }
 
-/* ── htb:boxscore — fired by <htb-live-games> box score buttons ── */
 document.addEventListener('htb:boxscore', e => {
   openBoxScore(e.detail.gameId, e.detail.sport, e.detail.teams);
 });
 
-/* ── htb:golf — fired by <htb-live-games> golf leaderboard button ── */
 document.addEventListener('htb:golf', e => {
   const { tournament, players } = e.detail;
   bsTitleEl.textContent = tournament.name || 'Golf Leaderboard';
@@ -398,21 +403,31 @@ document.addEventListener('htb:golf', e => {
 document.addEventListener('DOMContentLoaded', async () => {
   const today = todayISO();
 
-  // Date label under section heading
+  // Date label
   const picksDate = document.getElementById('picks-date');
   if (picksDate) picksDate.textContent = formatDateLabel(today);
 
-  // Season records bar
-  try {
-    const recResp = await fetch('/api/records');
-    const records = recResp.ok ? await recResp.json() : null;
-    renderRecordsBar(records);
-  } catch { /* non-critical */ }
+  // Season record — non-blocking, populates stats band
+  fetch('/api/records')
+    .then(r => r.ok ? r.json() : null)
+    .then(records => renderStatsBand(records))
+    .catch(() => {});
 
-  // Picks rendered live from real ESPN games across all sports
+  // Picks — featured play + regular grid + dogs
   if (typeof HTBPicks !== 'undefined') {
-    HTBPicks.renderHomepage(['mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaam'], 'top-picks-grid', 'dog-picks-grid', 'dog-section-label');
+    // After renderWithFeatured completes, add the divider label if both containers have content
+    await HTBPicks.renderWithFeatured(
+      ['mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaam'],
+      'featured-play',
+      'top-picks-grid',
+      'dog-picks-grid',
+      'dog-section-label'
+    );
+    const hasFeatured = !!document.querySelector('#featured-play .featured-pick-card');
+    const hasRest     = !!document.querySelector('#top-picks-grid .pick-card');
+    renderPicksSecondaryLabel(hasFeatured, hasRest);
   } else {
+    renderFallback('featured-play');
     renderFallback('top-picks-grid');
     renderFallback('dog-picks-grid');
   }
