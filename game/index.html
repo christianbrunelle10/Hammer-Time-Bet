@@ -615,32 +615,24 @@ function buildVerdict(game, odds, sport, pick) {
 }
 
 /* ============================================================
-   PICK GENERATOR
+   MATCH API PICK TO THIS GAME
+   Finds the pick from /api/picks that belongs to this game by
+   matching team names/abbreviations against the matchup field.
+   Returns null if no pick exists for this game today.
    ============================================================ */
-function buildPick(game, odds, sport) {
-  const homeFav = isFavHome(odds);
-  const fav     = homeFav ? game.home : game.away;
-  const dog     = homeFav ? game.away : game.home;
-  const favML   = homeFav ? odds?.ml?.home : odds?.ml?.away;
-  // awayML only needed for confidence computation below
-  const awayML  = parseInt((odds?.ml?.away || '').replace('+', ''), 10) || 0;
-  const homeML  = parseInt((odds?.ml?.home || '').replace('+', ''), 10) || 0;
-  const lineKey = sport === 'mlb' ? 'Run Line' : sport === 'nhl' ? 'Puck Line' : 'Spread';
-  const spread  = homeFav ? odds?.line?.home : odds?.line?.away;
-  const spreadNum = spread?.split(' ')[0] || '';
+function _matchPickToGame(picks, game) {
+  const allPicks = [...(picks.top || []), ...(picks.dog || [])];
+  if (!allPicks.length) return null;
 
-  // Use the favorite's ML for pick type and confidence — not always homeML
-  const favMLNum = parseInt((favML || '').replace('+', ''), 10) || 0;
-  const useLine  = spreadNum && Math.abs(favMLNum) < 160; // use spread when fav is not a heavy favorite
-  const pickName = useLine ? `${fav.name} ${spreadNum}` : `${fav.name} ML`;
-  const pickOdds = useLine ? spread?.match(/\(([^)]+)\)/)?.[1] || favML : favML;
-  const conf     = 7.2 + (Math.abs(favMLNum) > 130 ? 0.6 : 0.2);
-  const badge    = conf >= 8.0 ? 'strong' : (Math.abs(favMLNum) > 140 ? 'value' : 'strong');
-  const badgeLbl = badge === 'value' ? 'Value Play' : 'Strong Play';
+  const targets = [
+    game.away.name, game.away.abbr,
+    game.home.name, game.home.abbr,
+  ].map(s => (s || '').toLowerCase()).filter(s => s.length > 2);
 
-  const reasons = buildAnalysis(game, odds, sport).factors.slice(0, 4);
-
-  return { pick: pickName, odds: pickOdds || '—', conf, badge, badgeLbl, reasons };
+  return allPicks.find(p => {
+    const haystack = `${p.matchup || ''} ${p.pick || ''}`.toLowerCase();
+    return targets.some(t => haystack.includes(t));
+  }) || null;
 }
 
 /* ============================================================
@@ -774,10 +766,14 @@ function renderPlayerStats(playerStats, game, sport) {
 }
 
 function renderPick(pick) {
+  /* Works with the /api/picks shape: { edge, edgeLabel, pick, odds, conf, units, reasons } */
+  const badge    = pick.edge     || 'strong';
+  const badgeLbl = pick.edgeLabel || 'Pick';
+  const units    = pick.units != null ? pick.units : 1.0;
   return `
     <div class="pick-card">
       <div class="pick-header">
-        <span class="pick-badge ${pick.badge}">${pick.badgeLbl}</span>
+        <span class="pick-badge ${badge}">${badgeLbl}</span>
         <span style="font-size:11px;color:#555">Hammer Model</span>
       </div>
       <div class="pick-name">${pick.pick}</div>
@@ -790,14 +786,14 @@ function renderPick(pick) {
       <div class="pick-reasons">
         ${pick.reasons.map(r => `<div class="pick-reason">${r}</div>`).join('')}
       </div>
-      <div class="units-badge">Recommended: 2 units</div>
+      <div class="units-badge">Recommended: ${units}u</div>
     </div>`;
 }
 
 /* ============================================================
    MAIN RENDER
    ============================================================ */
-function renderGame(game, odds, sport, data) {
+function renderGame(game, odds, sport, data, apiPick) {
   const isLive  = game.status === 'live';
   const isFinal = game.status === 'final';
   const showScore = isLive || isFinal;
@@ -812,12 +808,11 @@ function renderGame(game, odds, sport, data) {
   const teamStats    = data ? parseTeamStats(data, sport, game) : [];
   const playerStats  = data ? parsePlayerStats(data, sport, game) : [];
   const analysis   = buildAnalysis(game, odds, sport);
-  const pick       = buildPick(game, odds, sport);
   const trends     = buildTrends(game, odds, sport);
   const keyStats   = buildKeyStats(game, odds, sport);
   const risks      = buildRisks(game, odds, sport);
   const alts       = buildAlts(game, odds, sport);
-  const verdict    = buildVerdict(game, odds, sport, pick);
+  const verdict    = apiPick ? buildVerdict(game, odds, sport, apiPick) : null;
 
   document.title = `${game.away.name} vs ${game.home.name} — HammerTimeBet`;
 
@@ -897,7 +892,12 @@ function renderGame(game, odds, sport, data) {
           <div class="eyebrow">Hammer Model</div>
           <h2 class="sec-title">HammerTime Best Bet</h2>
         </div>
-        ${renderPick(pick)}
+        ${apiPick
+          ? renderPick(apiPick)
+          : `<div style="background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:32px 20px;text-align:center">
+               <div style="font-size:13px;font-weight:700;color:#888">No pick available for this game.</div>
+               <div style="font-size:11px;color:#444;margin-top:6px">Picks are generated daily and may not be available for every game.</div>
+             </div>`}
         <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
       </div>
     </section>
@@ -986,6 +986,7 @@ function renderGame(game, odds, sport, data) {
     </section>
 
     <!-- FINAL VERDICT -->
+    ${verdict ? `
     <section class="section">
       <div class="section-inner">
         <div class="section-head">
@@ -997,7 +998,7 @@ function renderGame(game, odds, sport, data) {
         </div>
         <p style="margin-top:12px;font-size:11px;color:#444">For entertainment purposes only. Not financial advice.</p>
       </div>
-    </section>
+    </section>` : ''}
   `;
 }
 
@@ -1064,14 +1065,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const resp = await fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) });
-    if (!resp.ok) throw new Error(`ESPN returned ${resp.status}`);
-    const data = await resp.json();
+    /* Fetch ESPN game data and today's picks for this sport in parallel */
+    const [espnResp, picksResp] = await Promise.all([
+      fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) }),
+      fetch(`/api/picks?sport=${sport}`, { signal: AbortSignal.timeout(7000) }),
+    ]);
 
-    const game = parseESPNSummary(data, sport);
-    const odds = adaptOddsForDisplay(game);   // converts game.odds → display shape
+    if (!espnResp.ok) throw new Error(`ESPN returned ${espnResp.status}`);
+    const data  = await espnResp.json();
+    const picks = picksResp.ok ? await picksResp.json() : { top: [], dog: [] };
 
-    renderGame(game, odds, sport, data);
+    const game   = parseESPNSummary(data, sport);
+    const odds   = adaptOddsForDisplay(game);
+    const pick   = _matchPickToGame(picks, game); // null if no pick for this game
+
+    renderGame(game, odds, sport, data, pick);
   } catch (err) {
     showError(`Could not load game data for <strong>${sport.toUpperCase()} ${gameId}</strong>. The game may have ended or ESPN data is temporarily unavailable.<br><br><span style="font-size:11px;color:#444">${err.message}</span>`);
   }
