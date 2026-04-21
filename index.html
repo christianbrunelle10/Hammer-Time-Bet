@@ -37,40 +37,59 @@ a{color:inherit;text-decoration:none}
 button{cursor:pointer;border:none;font-family:inherit}
 
 /* ── HERO ── */
-.hero{padding:52px 20px 44px;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(240,180,41,.07) 0%,transparent 70%);border-bottom:1px solid var(--b1)}
-.hero-tag{display:inline-flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--b2);border-radius:100px;padding:5px 14px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:20px}
+.hero{padding:56px 20px 48px;text-align:center;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(240,180,41,.07) 0%,transparent 70%);border-bottom:1px solid var(--b1)}
+.hero-tag{display:inline-flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--b2);border-radius:100px;padding:5px 14px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:22px}
 .hero-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1.8s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-.hero h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(44px,7vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;margin-bottom:16px}
+.hero h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(44px,7vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;margin-bottom:14px}
 .hero h1 em{font-style:normal;color:var(--gold)}
-.hero p{font-size:15px;color:var(--w3);max-width:480px;margin:0 auto 28px}
-.hero-disclaimer{font-size:11px;color:var(--w4);margin-top:10px}
+.hero-sub{font-size:15px;color:var(--w3);max-width:500px;margin:0 auto 24px}
+
+/* ── HERO TRUST STATS ── */
+.hero-stats{display:none;align-items:stretch;justify-content:center;margin:0 auto 28px;border:1px solid var(--b1);border-radius:100px;background:var(--s2);width:fit-content;overflow:hidden}
+.hero-stat{padding:10px 22px;border-right:1px solid var(--b1);text-align:center}
+.hero-stat:last-child{border-right:none}
+.hero-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;line-height:1;color:var(--w2)}
+.hero-stat-val.g{color:var(--green)}
+.hero-stat-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-top:3px}
+@media(max-width:500px){.hero-stats{border-radius:14px;flex-wrap:wrap}.hero-stat{padding:10px 16px;border-right:none;border-bottom:1px solid var(--b1)}.hero-stat:last-child{border-bottom:none}.hero-stat-val{font-size:17px}}
+
+.hero-disclaimer{font-size:11px;color:var(--w4);margin-top:12px}
 .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .btn{padding:11px 24px;border-radius:var(--r);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;transition:opacity .15s,transform .15s;display:inline-block}
 .btn:hover{opacity:.85;transform:translateY(-1px)}
 .btn-gold{background:var(--gold);color:#000}
 .btn-ghost{background:transparent;color:var(--w2);border:1px solid var(--b2)}
 
-/* ── STATS BAND ── */
-.stats-band{background:var(--s1);border-bottom:1px solid var(--b1);padding:18px 20px;display:none}
-.stats-band-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:center;flex-wrap:wrap}
-.sb-item{text-align:center;padding:10px 32px;border-right:1px solid var(--b1);flex:1;min-width:120px}
-.sb-item:last-child{border-right:none}
-.sb-val{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;line-height:1;color:var(--w2)}
-.sb-val.g{color:var(--green)}
-.sb-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-top:4px}
-@media(max-width:640px){.sb-item{padding:10px 16px}.sb-val{font-size:26px}}
-
 /* ── SECTIONS ── */
 .section{padding:48px 20px}
 .section-inner{max-width:1200px;margin:0 auto}
 .section+.section{border-top:1px solid var(--b1)}
-.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap}
 .section-label{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:5px;display:flex;align-items:center;gap:7px}
 .section-label::before{content:'';display:block;width:16px;height:2px;background:var(--gold)}
 .section-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(26px,3.5vw,36px);font-weight:900;text-transform:uppercase;line-height:1}
+.section-sub{font-size:12px;color:var(--w4);margin-top:5px;letter-spacing:.02em}
 .see-all{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--w3);border:1px solid var(--b1);padding:7px 14px;border-radius:6px;transition:border-color .15s,color .15s;white-space:nowrap}
 .see-all:hover{border-color:var(--b2);color:var(--w1)}
+
+/* ── FEATURED GAMES SECTION ── */
+.featured-games-section{background:var(--s1)}
+
+/* ── STATS BAND ── */
+.stats-band{background:var(--s2);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);padding:20px;display:none}
+.stats-band-inner{max-width:1200px;margin:0 auto}
+.sb-label{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--w4);text-align:center;margin-bottom:16px}
+.sb-items{display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap}
+.sb-item{text-align:center;padding:10px 36px;border-right:1px solid var(--b1);flex:1;min-width:130px}
+.sb-item:last-child{border-right:none}
+.sb-val{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;line-height:1;color:var(--w2)}
+.sb-val.g{color:var(--green)}
+.sb-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-top:5px}
+@media(max-width:640px){.sb-item{padding:10px 16px;min-width:100px}.sb-val{font-size:28px}}
+
+/* ── TOP PLAY SECTION ── */
+.top-play-section{background:linear-gradient(160deg,rgba(240,180,41,.025) 0%,transparent 55%);border-top:1px solid rgba(240,180,41,.14) !important}
 
 /* ── PICK CARDS ── */
 .picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
@@ -93,11 +112,6 @@ button{cursor:pointer;border:none;font-family:inherit}
 .pc-reason::before{content:'▸';color:var(--w4);font-size:9px;margin-top:3px;flex-shrink:0}
 .pc-hint{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--w4);margin-top:12px;text-align:right;opacity:0;transition:opacity .2s}
 .pick-card:hover .pc-hint{opacity:1}
-
-/* ── PICKS SECTION DIVIDER ── */
-.picks-section-divider{display:flex;align-items:center;gap:12px;margin:24px 0 16px}
-.picks-section-divider span{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--w4);white-space:nowrap}
-.picks-section-divider::before,.picks-section-divider::after{content:'';flex:1;height:1px;background:var(--b1)}
 
 /* ── BOX SCORE MODAL ── */
 .bs-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -158,43 +172,72 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
 
 <htb-nav active="home"></htb-nav>
 
-<!-- ── HERO ──────────────────────────────────────────────── -->
+<!-- ── HERO ──────────────────────────────────────────────────── -->
 <section class="hero">
   <div class="hero-tag"><span class="hero-dot"></span>Hammer Model — Live</div>
-  <h1>Data-Driven Picks.<br /><em>Built to Beat</em> the Line.</h1>
-  <p>Live scores, sharp odds, and Hammer Model picks across MLB, NBA, NFL, NHL, NCAAF, NCAAM, Golf and more.</p>
+  <h1>The Hammer Model.<br /><em>Built to Beat</em> the Line.</h1>
+  <p class="hero-sub">Sharp picks, live odds, and full game analysis across MLB, NBA, NFL, NHL, NCAAF, NCAAM and more.</p>
+  <!-- Filled from /api/records when available -->
+  <div class="hero-stats" id="hero-stats"></div>
   <div class="hero-btns">
-    <a href="#picks"      class="btn btn-gold">Today's Picks</a>
-    <a href="#live-games" class="btn btn-ghost">Live Games</a>
+    <a href="#featured-games" class="btn btn-gold">Featured Games</a>
+    <a href="#picks"          class="btn btn-ghost">Today's Picks</a>
   </div>
   <p class="hero-disclaimer">For entertainment purposes only. Not financial advice.</p>
 </section>
 
-<!-- ── STATS BAND (season record) ─────────────────────────── -->
+<!-- ── FEATURED GAMES ─────────────────────────────────────────── -->
+<section class="section featured-games-section" id="featured-games">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-label">Live Analysis · Updated Every 30s</div>
+        <h2 class="section-title">Featured Games Today</h2>
+        <div class="section-sub" id="featured-games-date"></div>
+      </div>
+      <a href="#" class="see-all">All Games →</a>
+    </div>
+    <htb-live-games sports="mlb,nba,nfl,ncaaf,ncaam,nhl,golf" refresh="30" max="4"></htb-live-games>
+  </div>
+</section>
+
+<!-- ── SEASON RECORD BAND ─────────────────────────────────────── -->
 <div class="stats-band" id="stats-band">
-  <div class="stats-band-inner" id="stats-band-inner"></div>
+  <div class="stats-band-inner">
+    <div class="sb-label">Hammer Model — Season to Date</div>
+    <div class="sb-items" id="stats-band-inner"></div>
+  </div>
 </div>
 
-<!-- ── TODAY'S PICKS ──────────────────────────────────────── -->
+<!-- ── TOP PLAY OF THE DAY ────────────────────────────────────── -->
+<section class="section top-play-section" id="top-play">
+  <div class="section-inner">
+    <div class="section-head">
+      <div>
+        <div class="section-label">Hammer Model · Best Bet</div>
+        <h2 class="section-title">Top Play of the Day</h2>
+      </div>
+    </div>
+    <div id="top-play-card"></div>
+  </div>
+</section>
+
+<!-- ── TODAY'S PICKS ──────────────────────────────────────────── -->
 <section class="section" id="picks">
   <div class="section-inner">
     <div class="section-head">
       <div>
         <div class="section-label">Hammer Model</div>
         <h2 class="section-title">Today's Picks</h2>
-        <div id="picks-date" style="font-size:11px;color:var(--w4);margin-top:5px;letter-spacing:.04em"></div>
+        <div class="section-sub" id="picks-date"></div>
       </div>
       <a href="#" class="see-all">All Picks →</a>
     </div>
-    <!-- Featured top play of the day -->
-    <div id="featured-play"></div>
-    <!-- Remaining picks -->
-    <div id="picks-secondary-label"></div>
     <div class="picks-grid" id="top-picks-grid"></div>
   </div>
 </section>
 
-<!-- ── UNDERDOG PICKS ─────────────────────────────────────── -->
+<!-- ── UNDERDOG PICKS ─────────────────────────────────────────── -->
 <section class="section" id="underdogs">
   <div class="section-inner">
     <div class="section-head">
@@ -207,21 +250,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   </div>
 </section>
 
-<!-- ── LIVE GAMES ─────────────────────────────────────────── -->
-<section class="section" id="live-games">
-  <div class="section-inner">
-    <div class="section-head">
-      <div>
-        <div class="section-label">HammerTimeBet · Live Scores</div>
-        <h2 class="section-title">Featured Games Today</h2>
-      </div>
-      <a href="#" class="see-all">All Games →</a>
-    </div>
-    <htb-live-games sports="mlb,nba,nfl,ncaaf,ncaam,nhl,golf" refresh="30" max="4"></htb-live-games>
-  </div>
-</section>
-
-<!-- ── BOX SCORE MODAL ────────────────────────────────────── -->
+<!-- ── BOX SCORE MODAL ────────────────────────────────────────── -->
 <div class="bs-overlay" id="bs-overlay" role="dialog" aria-modal="true" aria-labelledby="bs-title-el">
   <div class="bs-panel">
     <div class="bs-head">
@@ -234,7 +263,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   </div>
 </div>
 
-<!-- ── FOOTER ─────────────────────────────────────────────── -->
+<!-- ── FOOTER ─────────────────────────────────────────────────── -->
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">Hammer<span>Time</span>Bet</div>
@@ -257,34 +286,32 @@ function formatDateLabel(iso) {
 }
 
 /* ============================================================
-   STATS BAND — season record from /api/records
+   RECORDS — populates hero stats row + season band
    ============================================================ */
-function renderStatsBand(records) {
+function renderRecords(records) {
+  if (!records?.overall) return;
+  const o = records.overall;
+
+  // Hero inline stats
+  const heroStats = document.getElementById('hero-stats');
+  if (heroStats) {
+    heroStats.innerHTML = `
+      <div class="hero-stat"><div class="hero-stat-val g">${o.winRate}</div><div class="hero-stat-lbl">Win Rate</div></div>
+      <div class="hero-stat"><div class="hero-stat-val">${o.record}</div><div class="hero-stat-lbl">Season Record</div></div>
+      <div class="hero-stat"><div class="hero-stat-val g">${o.units}</div><div class="hero-stat-lbl">Units Profit</div></div>`;
+    heroStats.style.display = 'flex';
+  }
+
+  // Season stats band
   const band  = document.getElementById('stats-band');
   const inner = document.getElementById('stats-band-inner');
-  if (!band || !inner || !records?.overall) return;
-  const o = records.overall;
-  inner.innerHTML = `
-    <div class="sb-item"><div class="sb-val g">${o.winRate}</div><div class="sb-lbl">Win Rate</div></div>
-    <div class="sb-item"><div class="sb-val">${o.record}</div><div class="sb-lbl">Season Record</div></div>
-    <div class="sb-item"><div class="sb-val g">${o.units}</div><div class="sb-lbl">Units Profit</div></div>
-    <div class="sb-item"><div class="sb-val">${o.clv}</div><div class="sb-lbl">Avg CLV</div></div>`;
-  band.style.display = 'block';
-}
-
-/* ============================================================
-   PICKS SECONDARY LABEL — shown between featured and rest
-   ============================================================ */
-function renderPicksSecondaryLabel(hasFeatured, hasRest) {
-  const el = document.getElementById('picks-secondary-label');
-  if (!el) return;
-  if (hasFeatured && hasRest) {
-    el.innerHTML = `
-      <div class="picks-section-divider">
-        <span>More Picks Today</span>
-      </div>`;
-  } else {
-    el.innerHTML = '';
+  if (band && inner) {
+    inner.innerHTML = `
+      <div class="sb-item"><div class="sb-val g">${o.winRate}</div><div class="sb-lbl">Win Rate</div></div>
+      <div class="sb-item"><div class="sb-val">${o.record}</div><div class="sb-lbl">Season Record</div></div>
+      <div class="sb-item"><div class="sb-val g">${o.units}</div><div class="sb-lbl">Units Profit</div></div>
+      <div class="sb-item"><div class="sb-val">${o.clv}</div><div class="sb-lbl">Avg CLV</div></div>`;
+    band.style.display = 'block';
   }
 }
 
@@ -402,32 +429,31 @@ document.addEventListener('htb:golf', e => {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   const today = todayISO();
+  const label = formatDateLabel(today);
 
-  // Date label
   const picksDate = document.getElementById('picks-date');
-  if (picksDate) picksDate.textContent = formatDateLabel(today);
+  if (picksDate) picksDate.textContent = label;
 
-  // Season record — non-blocking, populates stats band
+  const featuredDate = document.getElementById('featured-games-date');
+  if (featuredDate) featuredDate.textContent = label;
+
+  // Records — non-blocking, fills hero stats + season band
   fetch('/api/records')
     .then(r => r.ok ? r.json() : null)
-    .then(records => renderStatsBand(records))
+    .then(records => renderRecords(records))
     .catch(() => {});
 
-  // Picks — featured play + regular grid + dogs
+  // Picks — top play card + rest of picks + dogs
   if (typeof HTBPicks !== 'undefined') {
-    // After renderWithFeatured completes, add the divider label if both containers have content
     await HTBPicks.renderWithFeatured(
       ['mlb', 'nba', 'nfl', 'nhl', 'ncaaf', 'ncaam'],
-      'featured-play',
+      'top-play-card',
       'top-picks-grid',
       'dog-picks-grid',
       'dog-section-label'
     );
-    const hasFeatured = !!document.querySelector('#featured-play .featured-pick-card');
-    const hasRest     = !!document.querySelector('#top-picks-grid .pick-card');
-    renderPicksSecondaryLabel(hasFeatured, hasRest);
   } else {
-    renderFallback('featured-play');
+    renderFallback('top-play-card');
     renderFallback('top-picks-grid');
     renderFallback('dog-picks-grid');
   }
