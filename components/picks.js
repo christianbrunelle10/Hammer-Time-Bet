@@ -16,7 +16,7 @@
   const LOADING = `
     <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:48px 20px;color:#555;font-size:12px;letter-spacing:.04em">
       <div style="width:16px;height:16px;border:2px solid #2a2a2a;border-top-color:#f0b429;border-radius:50%;animation:htbPickSpin .65s linear infinite;flex-shrink:0"></div>
-      Generating picks…
+      Loading picks…
     </div>`;
 
   const FEATURED_LOADING = `
@@ -52,6 +52,12 @@
       <div style="font-size:11px;color:#444;margin-top:6px">Underdog picks appear when today's lines post closer to game time.</div>
     </div>`;
 
+  const NO_FEATURED = `
+    <div style="background:#101010;border:1px solid #1e1e1e;border-radius:14px;padding:40px 24px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:#555">Today's top play will post once lines are confirmed.</div>
+      <div style="font-size:11px;color:#444;margin-top:6px">Check back closer to game time.</div>
+    </div>`;
+
   /* ── Inject styles once ─────────────────────────────────────── */
   if (!document.getElementById('htbPickSpinStyle')) {
     const s = document.createElement('style');
@@ -76,7 +82,7 @@
         border-top: 4px solid #f0b429;
         border-radius: 14px;
         padding: 24px;
-        margin-bottom: 16px;
+        margin-bottom: 0;
         box-shadow: 0 2px 40px rgba(240,180,41,.07);
         transition: box-shadow .2s;
       }
@@ -100,7 +106,7 @@
         gap: 6px;
       }
       .fpc-badges { display: flex; align-items: center; gap: 6px; }
-      .fpc-matchup { font-size: 12px; color: #555; margin-bottom: 6px; letter-spacing: .02em; }
+      .fpc-matchup { font-size: 12px; color: #888; margin-bottom: 6px; letter-spacing: .02em; }
       .fpc-pick {
         font-family: 'Barlow Condensed', sans-serif;
         font-size: clamp(32px, 5vw, 42px);
@@ -263,8 +269,8 @@
       const data = await _fetchPicks(`/api/picks?sports=${sportsParam}`);
 
       if (!data) {
-        if (featuredEl) featuredEl.innerHTML = '';
-        if (topEl)      topEl.innerHTML      = NO_PICKS;
+        if (featuredEl) featuredEl.innerHTML = NO_FEATURED;
+        if (topEl)      topEl.innerHTML      = '';
         if (dogEl)      dogEl.innerHTML      = NO_DOGS;
         return;
       }
@@ -276,12 +282,13 @@
       console.log(`[HTB Picks] Homepage: ${top.length} top (${Object.entries(dist).map(([s,n])=>`${s}:${n}`).join(', ')}), ${dog.length} dog`);
 
       if (featuredEl) {
-        featuredEl.innerHTML = featured ? featuredCardHTML(featured) : '';
+        featuredEl.innerHTML = featured ? featuredCardHTML(featured) : NO_FEATURED;
       }
       if (topEl) {
+        // Empty string when only the featured pick exists; page JS will hide the section
         topEl.innerHTML = rest.length
           ? rest.map(p => cardHTML(p, false)).join('')
-          : (featured ? '' : NO_PICKS);
+          : '';
       }
       if (dogEl) {
         dogEl.innerHTML = dog.length ? dog.map(p => cardHTML(p, true)).join('') : NO_DOGS;

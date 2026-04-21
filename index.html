@@ -52,7 +52,7 @@ button{cursor:pointer;border:none;font-family:inherit}
 .hero-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;line-height:1;color:var(--w2)}
 .hero-stat-val.g{color:var(--green)}
 .hero-stat-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--w4);margin-top:3px}
-@media(max-width:500px){.hero-stats{border-radius:14px;flex-wrap:wrap}.hero-stat{padding:10px 16px;border-right:none;border-bottom:1px solid var(--b1)}.hero-stat:last-child{border-bottom:none}.hero-stat-val{font-size:17px}}
+@media(max-width:500px){.hero-stats{border-radius:14px;flex-wrap:wrap;width:calc(100% - 40px);max-width:320px}.hero-stat{padding:10px 16px;border-right:none;border-bottom:1px solid var(--b1);flex:1 1 100%}.hero-stat:last-child{border-bottom:none}.hero-stat-val{font-size:17px}}
 
 .hero-disclaimer{font-size:11px;color:var(--w4);margin-top:12px}
 .hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
@@ -180,8 +180,8 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
   <!-- Filled from /api/records when available -->
   <div class="hero-stats" id="hero-stats"></div>
   <div class="hero-btns">
-    <a href="#featured-games" class="btn btn-gold">Featured Games</a>
-    <a href="#picks"          class="btn btn-ghost">Today's Picks</a>
+    <a href="#picks"          class="btn btn-gold">Today's Picks</a>
+    <a href="#featured-games" class="btn btn-ghost">Featured Games</a>
   </div>
   <p class="hero-disclaimer">For entertainment purposes only. Not financial advice.</p>
 </section>
@@ -193,7 +193,6 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
       <div>
         <div class="section-label">Live Analysis · Updated Every 30s</div>
         <h2 class="section-title">Featured Games Today</h2>
-        <div class="section-sub" id="featured-games-date"></div>
       </div>
       <a href="#" class="see-all">All Games →</a>
     </div>
@@ -228,7 +227,7 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
     <div class="section-head">
       <div>
         <div class="section-label">Hammer Model</div>
-        <h2 class="section-title">Today's Picks</h2>
+        <h2 class="section-title">More Picks Today</h2>
         <div class="section-sub" id="picks-date"></div>
       </div>
       <a href="#" class="see-all">All Picks →</a>
@@ -429,13 +428,9 @@ document.addEventListener('htb:golf', e => {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   const today = todayISO();
-  const label = formatDateLabel(today);
 
   const picksDate = document.getElementById('picks-date');
-  if (picksDate) picksDate.textContent = label;
-
-  const featuredDate = document.getElementById('featured-games-date');
-  if (featuredDate) featuredDate.textContent = label;
+  if (picksDate) picksDate.textContent = formatDateLabel(today);
 
   // Records — non-blocking, fills hero stats + season band
   fetch('/api/records')
@@ -456,6 +451,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderFallback('top-play-card');
     renderFallback('top-picks-grid');
     renderFallback('dog-picks-grid');
+  }
+
+  // Hide "More Picks Today" section when grid has no cards
+  // (happens when only the featured pick exists — no need for an empty section)
+  const picksSection = document.getElementById('picks');
+  if (picksSection && !picksSection.querySelector('.pick-card')) {
+    picksSection.style.display = 'none';
   }
 });
 </script>
