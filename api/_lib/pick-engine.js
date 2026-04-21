@@ -47,56 +47,56 @@ const T = {
   MLB: {
     ml_fav: [
       [
-        '{favPitcher} takes the mound — {favPitcherERA} ERA with swing-and-miss stuff {dog} has struggled against',
-        '{fav} lineup batting .285+ with runners in scoring position over the last 14 games',
-        'Model line at {favML} — {fav} priced correctly or better at the current posted number',
-        '{dog} offense ranks bottom-10 in strikeout rate against this pitching style this month',
+        '{favPitcher} takes the mound — {favPitcherERA} ERA with swing-and-miss stuff {dog} has struggled to contain',
+        '{fav} lineup has been producing with runners on base — clutch hitting in key spots all week',
+        'Model line at {favML} — {fav} priced correctly or favorably at the current posted number',
+        '{dog} offense has been striking out at an elevated rate against this pitching style recently',
       ],
       [
-        '{dogPitcher} has allowed 4+ runs in 3 of last 5 starts — command issues are a persistent problem',
-        '{fav} home run rate top-6 in the league — power threat against this rotation style tonight',
-        '{fav} 8-of-last-11 at home — consistent quality wins against comparable competition',
-        '{fav} bullpen ERA of 3.18 over last 15 appearances — dominant in high-leverage situations',
+        '{dogPitcher} has shown command issues in recent outings — inconsistency is a real concern entering tonight',
+        '{fav} lineup has legitimate home run upside — power threat against this rotation style tonight',
+        '{fav} has been excellent at home this season — consistent winning against comparable competition',
+        '{fav} bullpen has been strong recently — quality late-inning coverage is a meaningful edge',
       ],
       [
-        '{favPitcher} facing a lineup batting .214 in last 10 road games — cold stretch for {dog}',
-        'Run differential edge: {fav} +15 over last 10 vs {dog} at -3 — real underlying talent gap',
+        '{favPitcher} facing a {dog} lineup that has been cold at the plate recently — timing is right',
+        'Run differential edge strongly favors {fav} in recent play — underlying metrics reflect a real gap',
         'Sharp money confirmed — line has moved toward {fav} since the open this morning',
-        '{fav} 9-3 when {favPitcher} starts this season — strong individual track record',
+        '{fav} has a strong track record with {favPitcher} on the mound — their history together is meaningful',
       ],
     ],
     ml_dog: [
       [
-        '{dogPitcher} posting {dogPitcherERA} ERA over last 5 starts — outperforming market expectation',
+        '{dogPitcher} has been quietly effective lately — recent form outperforming what the market is pricing in',
         '{dog} plus-odds represent genuine positive EV per model — line is overreacting to recent results',
-        '{fav} offense cold: batting .218 over last 9 games — this regression point creates value',
-        '{dog} 8-3 as an underdog this season — elite performance against market perception',
+        '{fav} offense has shown cracks in recent games — regression from market perception creates real value',
+        '{dog} has been a consistent underdog performer this season — plus-money has been profitable in this spot',
       ],
       [
-        '{dogPitcher} ({dogPitcherRec}) faces a lineup ranked bottom-5 in wRC+ against this pitch style',
-        'Market overreacting to {fav}\'s recent wins — underlying metrics favor {dog} more than line implies',
-        '{dog} bullpen holding opponents to sub-.220 BA in high-leverage spots this month',
+        '{dogPitcher} faces a lineup that has been cold against this pitch style — strong matchup tonight',
+        'Market overreacting to {fav}\'s recent wins — underlying metrics favor {dog} more than the line implies',
+        '{dog} bullpen has been holding opponents in check during high-leverage spots this month',
         'Best plus-money value on today\'s board — model confirms {dog} is underpriced at current number',
       ],
     ],
     runline: [
       [
-        '{favPitcher} has recorded 6+ IP in 4 straight starts — volume and quality needed for run line',
-        '{fav} winning by 2+ runs in 57% of {favPitcher} starts this season — run line has held up',
-        '{fav} bullpen converting save opportunities at 89% this month — elite late-inning protection',
-        '{dog} offense averaging just 3.1 runs per game over last 10 road games — limited ceiling',
+        '{favPitcher} projects as a quality depth start — when the offense gets length from the mound, run lines pay',
+        '{fav} covers the run line consistently with {favPitcher} on the hill — decisive wins track his starts',
+        '{fav} bullpen has been elite in high-leverage spots recently — late-inning leads are protected',
+        '{dog} offense has been quiet on the road lately — scoring output limited against quality arms',
       ],
       [
         'Run line at {line} — model projects {fav} winning margin of 2+ in 55% of simulations',
-        '{fav} has covered the run line in 7-of-last-10 as a home favorite — consistent result',
-        '{dogPitcher} walking batters at elevated rate — free baserunners lead to crooked numbers',
-        '{fav} lineup 5th in extra-base hits at home this season — generates multi-run innings',
+        '{fav} has a strong run-line track record as a home favorite in this spot — consistent result',
+        '{dogPitcher} walking batters at elevated rate — free baserunners lead to crooked innings',
+        '{fav} lineup generates extra-base hits at an above-average rate — multi-run inning upside is real',
       ],
       [
-        '{fav} wins by 2+ in 61% of {favPitcher} starts this season — depth of start is the key factor',
-        '{dog} scoring below 3 RPG in last 8 road games — offensive ceiling capped against quality arms',
-        '{fav} bullpen depth far superior — {dog} pen ERA above 4.40 in high-leverage appearances',
-        'Run line offers significantly better price than moneyline — value confirmed at current number',
+        '{fav} consistently wins by decisive margins when {favPitcher} is dealing — run line value follows',
+        '{dog} has been offensively limited on the road recently — scoring ceiling narrow against quality arms',
+        '{fav} bullpen is a real strength tonight — late-inning depth advantage is meaningful',
+        'Run line offers significantly better price than the moneyline — value confirmed at current number',
       ],
     ],
     over: [
@@ -126,10 +126,10 @@ const T = {
         '{dog} defense allowing 116+ PPG on the road this month — can\'t slow this {fav} offense',
       ],
       [
-        '{fav} 11-4 ATS in last 15 home games as a favorite — consistent covering record at home',
+        '{fav} covers consistently at home as a favorite — reliable ATS record in this spot',
         '{dog} missing key rotation pieces — depth gap becomes critical in the fourth quarter',
-        'Sharp money confirmed on {fav} — line moved 1.5 points in their direction since open',
-        '{favLeader} posting 28+ PPG over last 7 — impossible to gameplan against right now',
+        'Sharp money confirmed on {fav} — line has moved in their direction since the open',
+        '{favLeader} in the best offensive form of the season — impossible to gameplan against right now',
       ],
       [
         '{fav} defense ranks top-4 in points allowed per 100 possessions — elite two-way unit',
@@ -146,9 +146,9 @@ const T = {
         'Model win probability for {dog}: 43% — current line implies too low a chance',
       ],
       [
-        '{dog} 17-5 SU at home this season — home court performance doesn\'t match the market price',
+        '{dog} has been excellent at home this season — home court performance doesn\'t match the market price',
         'Fast pace benefits {dog} — transition opportunities multiply in this matchup style',
-        '{dogLeader} averaging 26+ PPG over last 10 — best offensive threat on the floor tonight',
+        '{dogLeader} the most dangerous offensive player in this matchup — can carry a team on the right night',
         'Best plus-money value on tonight\'s board — model confirms positive EV at current number',
       ],
     ],
@@ -321,7 +321,7 @@ const T = {
   NCAAM: {
     ml_fav: [
       [
-        '{favLeader} averaging 22+ PPG and creating matchup problems throughout {dog}\'s entire rotation',
+        '{favLeader} the engine of this offense — creating matchup problems throughout {dog}\'s entire rotation',
         '{fav} net rating top-20 nationally — elite efficiency at both ends of the floor this season',
         '{dog} defense allowing 73+ PPG on the road this month — exploitable on the perimeter',
         '{fav} covering 67% at home as a favorite this season — home court edge is real in college',
@@ -335,7 +335,7 @@ const T = {
     ],
     ml_dog: [
       [
-        '{dogLeader} capable of carrying this team — 25+ PPG scorer against comparable opponents',
+        '{dogLeader} capable of a monster performance — a proven high-volume scorer who can carry a team',
         '{dog} covering 60% as home underdogs this season — home court value significant in college',
         'Home floor advantage in college basketball among the highest variance factors in sports',
         'Plus odds offer strong positive EV — model has {dog} win probability at 40%+ tonight',
@@ -552,8 +552,8 @@ function computePick(game, odds, players, today, role) {
       .replace(/\{pts\}/g,           String(Math.abs(parseFloat(lineVal) || 3).toFixed(1)))
       .replace(/\{favPitcher\}/g,    favPitcher    || 'their projected starter')
       .replace(/\{dogPitcher\}/g,    dogPitcher    || 'their projected starter')
-      .replace(/\{favPitcherERA\}/g, favPitcherERA || 'strong')
-      .replace(/\{dogPitcherERA\}/g, dogPitcherERA || 'inflated')
+      .replace(/\{favPitcherERA\}/g, favPitcherERA || 'solid')
+      .replace(/\{dogPitcherERA\}/g, dogPitcherERA || 'elevated')
       .replace(/\{favPitcherRec\}/g, favPitcherRec || '')
       .replace(/\{dogPitcherRec\}/g, dogPitcherRec || '')
       .replace(/\{favGoalie\}/g,     favGoalie     || 'their starting goaltender')

@@ -126,29 +126,51 @@ function _scoreHomepick(pick, game) {
 
 function _curateHomepicks(pairs, max) {
   if (!pairs.length || max <= 0) return [];
-  if (pairs.length <= max) return pairs;
+  if (pairs.length <= max) return [...pairs];
 
-  const sportsPresent   = new Set(pairs.map(p => p.game.sport)).size;
-  const basePerSportCap = sportsPresent <= 1
-    ? max
-    : Math.max(1, Math.ceil(max / sportsPresent) + 1);
+  const PER_SPORT_MAX = 2; // hard cap per sport on the homepage
 
-  const sorted    = [...pairs].sort((a, b) => _scoreHomepick(b.pick, b.game) - _scoreHomepick(a.pick, a.game));
-  const counts    = {};
-  const selected  = [];
-  const spillover = [];
+  const sorted = [...pairs].sort((a, b) => _scoreHomepick(b.pick, b.game) - _scoreHomepick(a.pick, a.game));
 
+  const counts  = {};
+  const selected = [];
+  const held     = []; // eligible but over cap
+
+  // Pass 1: one best pick per sport — guarantees every active sport is represented
   for (const pair of sorted) {
-    const sp  = pair.game.sport;
-    const n   = counts[sp] || 0;
-    const cap = (sp === 'mlb' && sportsPresent > 1) ? Math.min(basePerSportCap, 2) : basePerSportCap;
-    if (n < cap) { selected.push(pair); counts[sp] = n + 1; }
-    else spillover.push(pair);
+    const sp = pair.game.sport;
+    if (!counts[sp]) {
+      selected.push(pair);
+      counts[sp] = 1;
+    }
     if (selected.length >= max) break;
   }
 
+  // Pass 2: fill remaining slots up to PER_SPORT_MAX per sport, best score first
+  if (selected.length < max) {
+    const selectedSet = new Set(selected);
+    for (const pair of sorted) {
+      if (selected.length >= max) break;
+      if (selectedSet.has(pair)) continue;
+      const sp = pair.game.sport;
+      const n  = counts[sp] || 0;
+      if (n < PER_SPORT_MAX) {
+        selected.push(pair);
+        counts[sp] = n + 1;
+        selectedSet.add(pair);
+      } else {
+        held.push(pair);
+      }
+    }
+  }
+
+  // Pass 3: if still not full (all sports at max), allow overflow from held pool
   let i = 0;
-  while (selected.length < max && i < spillover.length) selected.push(spillover[i++]);
+  while (selected.length < max && i < held.length) selected.push(held[i++]);
+
+  const resultDist = selected.reduce((m, p) => { m[p.game.sport] = (m[p.game.sport] || 0) + 1; return m; }, {});
+  console.log(`[picks-gen] curate: selected ${selected.length}/${pairs.length} → ${JSON.stringify(resultDist)}`);
+
   return selected.slice(0, max);
 }
 
@@ -215,6 +237,15 @@ async function generateAllPicks(sports, today) {
     }
   }
 
+  // Per-sport breakdown for diagnosing missing sports
+  const sportSummary = {};
+  for (const sport of sports) sportSummary[sport] = { games: (bySport[sport] || []).length, top: 0, dog: 0 };
+  for (const { game } of allTop) if (sportSummary[game.sport]) sportSummary[game.sport].top++;
+  for (const { game } of allDog) if (sportSummary[game.sport]) sportSummary[game.sport].dog++;
+  for (const [sp, s] of Object.entries(sportSummary)) {
+    const why = s.games === 0 ? ' (no games today)' : s.top === 0 ? ' (no qualifying picks — odds or EV filter)' : '';
+    console.log(`[picks-gen] ${sp}: ${s.games} games → ${s.top} top + ${s.dog} dog picks${why}`);
+  }
   console.log(`[picks-gen] done — ${allTop.length} top + ${allDog.length} dog picks (${Date.now() - t0}ms total)`);
   return { allTop, allDog };
 }
