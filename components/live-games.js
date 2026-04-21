@@ -776,10 +776,10 @@ function _selectFeatured(pairs, max) {
   if (max <= 0 || pairs.length <= max) return pairs;
 
   const sportsPresent = new Set(pairs.map(p => p.game.sport)).size;
-  // Per-sport cap: aim for at least one slot per sport, relaxed when few sports are active
-  const perSportCap = sportsPresent <= 2
-    ? max                                           // only 1-2 sports → no cap needed
-    : Math.max(1, Math.ceil(max / sportsPresent) + 1); // e.g. 4 slots / 3 sports → cap 3
+  // Per-sport cap: always enforce when 2+ sports have games, only relax for single-sport days
+  const perSportCap = sportsPresent <= 1
+    ? max                                           // only 1 sport → no cap needed
+    : Math.max(1, Math.ceil(max / sportsPresent) + 1); // e.g. 4 slots / 2 sports → cap 3
 
   const sorted   = [...pairs].sort((a, b) => _scoreGame(b.game) - _scoreGame(a.game));
   const counts   = {};
@@ -837,43 +837,30 @@ class HTBLiveGames extends HTMLElement {
   async _load() {
     const teamSports = this._sports.filter(s => s !== 'golf');
     const hasGolf    = this._sports.includes('golf');
+    const isSingle   = this._sports.length === 1 && !hasGolf;
+    const solo       = isSingle ? this._sports[0] : null;
 
-    // Determine if this is a single-sport view (one sport, no golf)
-    const isSingle = this._sports.length === 1 && !hasGolf;
-    const solo     = isSingle ? this._sports[0] : null;
-
-    // ── Single-sport: check offseason first — no fetch needed ──
+    // ── Single-sport offseason check — no fetch needed ──
     if (solo && !_isInSeason(solo)) {
       this._setSectionTitle(HTB_SPORT_TITLES[solo]?.offseason);
-      this.innerHTML = `
-        <div class="htb-empty">
-          This sport is currently in the offseason. Check back when the season starts.
-        </div>`;
+      this.innerHTML = `<div class="htb-empty">This sport is currently in the offseason. Check back when the season starts.</div>`;
       return;
     }
 
-    // ── Multi-sport or in-season single: only fetch in-season sports ──
     const activeSports = teamSports.filter(s => _isInSeason(s));
 
-    const [teamResults, golfData] = await Promise.all([
-      Promise.all(activeSports.map(async sport => {
-        const [games, proxyOdds] = await Promise.all([_fetchScores(sport), _fetchProxyOdds(sport)]);
-        const espnOddsMap = proxyOdds.length === 0 ? await _fetchESPNOdds(sport, games) : {};
-        _oddsSource = proxyOdds.length > 0 ? 'proxy' : Object.keys(espnOddsMap).length > 0 ? 'espn' : 'none';
-        return games.map(game => ({
-          game,
-          odds: _matchOdds(game, proxyOdds) || espnOddsMap[game.id] || null,
-        }));
-      })),
+    // ── Fetch from /api/live (server handles ESPN + odds) ──
+    const [apiResult, golfData] = await Promise.all([
+      activeSports.length ? this._fetchLiveAPI(activeSports) : Promise.resolve([]),
       hasGolf ? _fetchGolf() : Promise.resolve(null),
     ]);
 
     if (golfData) this._golfData = golfData;
 
-    // Apply curated diversity selection before rendering cards.
-    // Golf always gets its own slot; team game count is (max - golfSlot).
-    // On sport-specific pages (max=0) this is a no-op — all games show.
-    let teamPairs = teamResults.flat();
+    // Convert API response to {game, odds} pairs for card rendering
+    let teamPairs = (apiResult || []).map(g => ({ game: g, odds: g.odds || null }));
+
+    // Apply curated diversity selection for homepage (max > 0)
     if (this._max > 0 && teamPairs.length > 0) {
       const golfSlot = golfData ? 1 : 0;
       teamPairs = _selectFeatured(teamPairs, Math.max(0, this._max - golfSlot));
@@ -881,34 +868,48 @@ class HTBLiveGames extends HTMLElement {
 
     const teamCards = teamPairs.map(({ game, odds }) => _gameCard(game, odds));
     const golfCards = golfData ? [_golfCard(golfData)] : [];
-    let all         = [...teamCards, ...golfCards];
+    const all       = [...teamCards, ...golfCards];
 
-    // ── No games returned ──
     if (!all.length) {
       if (solo) this._setSectionTitle(HTB_SPORT_TITLES[solo]?.active);
       this.innerHTML = `<div class="htb-empty">No games available today. Check back soon.</div>`;
       return;
     }
 
-    // ── Games found ──
     if (solo) this._setSectionTitle(HTB_SPORT_TITLES[solo]?.active);
-    // max already enforced by _selectFeatured above — no further slice needed
 
-    const ts     = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const oddsTs = _oddsUpdatedAt
-      ? new Date(_oddsUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      : null;
-    const oddsLabel = _oddsSource === 'proxy'
-      ? ` · Live Odds ${oddsTs || ts}`
-      : _oddsSource === 'espn'
-      ? ` · Odds via ESPN`
-      : ` · Odds unavailable`;
+    const ts       = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const hasOdds  = teamPairs.some(p => p.odds);
+    const oddsLabel = hasOdds ? ' · Live Odds' : ' · Odds unavailable';
 
     this.innerHTML = `
       <div class="htb-lg-grid">${all.join('')}</div>
       <div class="htb-timestamp">Scores ${ts}${oddsLabel} · Auto-refreshes every ${this._refresh}s</div>`;
 
     this._wireButtons();
+  }
+
+  async _fetchLiveAPI(sports) {
+    const param = sports.map(s => encodeURIComponent(s)).join(',');
+    try {
+      const r = await fetch(`/api/live?sports=${param}`, { signal: AbortSignal.timeout(12000) });
+      if (!r.ok) throw new Error(`/api/live ${r.status}`);
+      const { games = [] } = await r.json();
+      return games;
+    } catch (err) {
+      console.warn('[HTB Live] API fetch failed, falling back to ESPN direct:', err.message);
+      return this._fetchDirectFallback(sports);
+    }
+  }
+
+  // Fallback: fetch ESPN directly if /api/live is unavailable (e.g. local dev without Vercel CLI)
+  async _fetchDirectFallback(sports) {
+    const results = await Promise.all(sports.map(async sport => {
+      const games       = await _fetchScores(sport);
+      const espnOddsMap = await _fetchESPNOdds(sport, games);
+      return games.map(game => ({ ...game, odds: espnOddsMap[game.id] || null }));
+    }));
+    return results.flat();
   }
 
   _wireButtons() {

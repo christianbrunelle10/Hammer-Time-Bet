@@ -265,41 +265,6 @@ function formatDateLabel(iso) {
   return new Date(y, m-1, d).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
 }
 
-/* ============================================================
-   JSON LOADERS
-   Picks:   edit data/picks.json and commit to update daily.
-   Records: edit data/records.json and commit to update.
-   ============================================================ */
-async function loadJSON(path) {
-  try {
-    const r = await fetch(path, { cache: 'no-store' });
-    return r.ok ? r.json() : null;
-  } catch { return null; }
-}
-
-/* ============================================================
-   PICK CARD RENDERER
-   ============================================================ */
-function pickCardHTML(pick, isDog) {
-  const confPct = `${pick.conf * 10}%`;
-  return `
-    <div class="pick-card ${isDog ? 'dog' : ''}">
-      <div class="pc-top">
-        <span class="pc-sport">${pick.sport}</span>
-        <span class="pc-edge ${pick.edge}">${pick.edgeLabel}</span>
-      </div>
-      <div class="pc-matchup">${pick.matchup}</div>
-      <div class="pc-pick">${pick.pick}</div>
-      <div class="pc-odds">${pick.odds}</div>
-      <div class="pc-conf">
-        <span class="pc-conf-label">Confidence</span>
-        <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
-        <span class="pc-conf-val">${pick.conf}/10</span>
-      </div>
-      <div class="pc-reasons">${pick.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-      <div class="pc-hint">View Full Analysis →</div>
-    </div>`;
-}
 
 /* ============================================================
    RECORDS BAR
@@ -429,8 +394,6 @@ document.addEventListener('htb:golf', e => {
 
 /* ============================================================
    INIT
-   Records bar loaded from data/records.json.
-   Picks rendered live from real ESPN games via HTBPicks.
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   const today = todayISO();
@@ -439,9 +402,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const picksDate = document.getElementById('picks-date');
   if (picksDate) picksDate.textContent = formatDateLabel(today);
 
-  // Season records bar — still loaded from data/records.json
-  const records = await loadJSON('data/records.json');
-  renderRecordsBar(records);
+  // Season records bar
+  try {
+    const recResp = await fetch('/api/records');
+    const records = recResp.ok ? await recResp.json() : null;
+    renderRecordsBar(records);
+  } catch { /* non-critical */ }
 
   // Picks rendered live from real ESPN games across all sports
   if (typeof HTBPicks !== 'undefined') {
