@@ -60,6 +60,7 @@ module.exports = async function handler(req, res) {
 
   /* ── 2. Find any sports not yet in Redis ────────────────────── */
   const missSports = sports.filter((_, i) => !cached[i]);
+  sports.forEach((s, i) => console.log(`[/api/picks] ${s} → ${cached[i] ? 'cache hit' : 'miss'}`));
 
   /* ── 3. Generate + cache any missing sports ──────────────────── */
   if (missSports.length) {

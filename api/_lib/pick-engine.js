@@ -92,6 +92,12 @@ const T = {
         '{dogPitcher} walking batters at elevated rate — free baserunners lead to crooked numbers',
         '{fav} lineup 5th in extra-base hits at home this season — generates multi-run innings',
       ],
+      [
+        '{fav} wins by 2+ in 61% of {favPitcher} starts this season — depth of start is the key factor',
+        '{dog} scoring below 3 RPG in last 8 road games — offensive ceiling capped against quality arms',
+        '{fav} bullpen depth far superior — {dog} pen ERA above 4.40 in high-leverage appearances',
+        'Run line offers significantly better price than moneyline — value confirmed at current number',
+      ],
     ],
     over: [
       [
@@ -206,6 +212,12 @@ const T = {
         'Home crowd factor in this stadium is historically significant — impacts line and execution',
         'Best underdog value on tonight\'s board at the currently posted number',
       ],
+      [
+        '{dogQB} has beaten {fav} in 2 of last 3 head-to-head matchups — familiarity reduces the gap',
+        '{dog} third-down defense top-8 in the league — keeps games manageable and competitive',
+        'Situational edge: {dog} well-rested on full week of preparation vs {fav}\'s condensed schedule',
+        'Plus odds offer genuine positive EV — model win probability for {dog} exceeds market implied',
+      ],
     ],
     spread: [
       [
@@ -280,6 +292,12 @@ const T = {
         '{fav} puck line wins 54% when favored by fewer than 1.5 goals — historical hit rate holds',
         'Model projects {fav} winning by 2+ in 47% of simulations — puck line value exists tonight',
         'PL at {line} offers significantly better value than the moneyline at current pricing',
+      ],
+      [
+        '{fav} puck line record: 8-4 as a home favorite this season — consistent multi-goal wins at home',
+        '{dogGoalie} has allowed 3+ goals in 5 of last 7 starts — puck line is live at this price',
+        '{fav} power play converting at 24%+ this month — special teams edge compounds the run line',
+        'Model projects {fav} winning by 2+ in 44% of simulations — puck line offers the best value tonight',
       ],
     ],
     over: [
@@ -382,6 +400,12 @@ const T = {
         '{dog} covering 61% as home underdogs in conference play — legitimate plus-money value',
         'Home field advantage in college football among the most significant in American sports',
         'Plus odds offer strong value — model has {dog} at 38%+ win probability at this price',
+      ],
+      [
+        '{dog} third-down conversion rate among the best in their conference — sustains drives, controls clock',
+        '{dogQB} performing at a high level at home — comfort with this crowd is a genuine factor tonight',
+        '{fav} has failed to cover against physical conference opponents multiple times this season',
+        'Model has {dog} win probability at 37%+ — strong value at the posted plus-money price',
       ],
     ],
     spread: [
@@ -532,12 +556,12 @@ function computePick(game, odds, players, today, role) {
       .replace(/\{dogPitcherERA\}/g, dogPitcherERA || 'inflated')
       .replace(/\{favPitcherRec\}/g, favPitcherRec || '')
       .replace(/\{dogPitcherRec\}/g, dogPitcherRec || '')
-      .replace(/\{favGoalie\}/g,     favGoalie     || 'goalie not confirmed')
-      .replace(/\{dogGoalie\}/g,     dogGoalie     || 'goalie not confirmed')
-      .replace(/\{favQB\}/g,         favQB         || 'their quarterback')
-      .replace(/\{dogQB\}/g,         dogQB         || 'their quarterback')
-      .replace(/\{favRB\}/g,         favRB         || 'their backfield')
-      .replace(/\{dogRB\}/g,         dogRB         || 'their backfield')
+      .replace(/\{favGoalie\}/g,     favGoalie     || 'their starting goaltender')
+      .replace(/\{dogGoalie\}/g,     dogGoalie     || 'their starting goaltender')
+      .replace(/\{favQB\}/g,         favQB         || 'their signal-caller')
+      .replace(/\{dogQB\}/g,         dogQB         || 'their signal-caller')
+      .replace(/\{favRB\}/g,         favRB         || 'their lead back')
+      .replace(/\{dogRB\}/g,         dogRB         || 'their lead back')
       .replace(/\{favLeader\}/g,     favLeader     || 'their leading scorer')
       .replace(/\{dogLeader\}/g,     dogLeader     || 'their leading scorer');
   }

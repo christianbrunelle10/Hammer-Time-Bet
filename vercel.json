@@ -1,11 +1,11 @@
 {
   "functions": {
-    "api/games.js":      { "memory": 128, "maxDuration": 15 },
     "api/live.js":       { "memory": 256, "maxDuration": 20 },
     "api/picks.js":      { "memory": 256, "maxDuration": 30 },
     "api/odds.js":       { "memory": 128, "maxDuration": 10 },
     "api/daily-cron.js": { "memory": 512, "maxDuration": 60 },
-    "api/records.js":    { "memory": 128, "maxDuration": 10 }
+    "api/records.js":    { "memory": 128, "maxDuration": 10 },
+    "api/refresh.js":    { "memory": 512, "maxDuration": 60 }
   },
   "crons": [
     {

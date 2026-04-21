@@ -81,8 +81,9 @@ async function _updateRecords(today) {
 
 /** Generate picks for one sport and write to Redis. */
 async function _processSport(sport, today) {
+  const t0              = Date.now();
   const { allTop, allDog } = await generateAllPicks([sport], today);
-  const generatedAt = new Date().toISOString();
+  const generatedAt     = new Date().toISOString();
 
   await redis.set(
     `picks:${sport}:${today}`,
@@ -90,6 +91,8 @@ async function _processSport(sport, today) {
     { ex: TTL },
   );
 
+  const elapsed = Date.now() - t0;
+  console.log(`[/api/daily-cron] ${sport} → ${allTop.length} top + ${allDog.length} dog (${elapsed}ms)`);
   return { sport, top: allTop.length, dog: allDog.length };
 }
 
@@ -103,6 +106,7 @@ module.exports = async function handler(req, res) {
   }
 
   const today = _todayISO();
+  const t0    = Date.now();
   console.log(`[/api/daily-cron] Starting for ${today}`);
 
   /* Run all sports in parallel + update records */
@@ -124,7 +128,7 @@ module.exports = async function handler(req, res) {
     }
   });
 
-  console.log(`[/api/daily-cron] Done for ${today}`, summary);
+  console.log(`[/api/daily-cron] Done for ${today} in ${Date.now() - t0}ms`, summary);
 
   return res.status(200).json({
     date:    today,

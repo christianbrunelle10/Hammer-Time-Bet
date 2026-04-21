@@ -37,12 +37,21 @@ function _todayISO() { return new Date().toISOString().slice(0, 10); }
 async function _fetchGames(sport) {
   const url = SB[sport];
   if (!url) return [];
+  const t0 = Date.now();
   try {
     const r = await fetch(`${url}?dates=${_todayParam()}`, { signal: AbortSignal.timeout(7000) });
-    if (!r.ok) return [];
+    if (!r.ok) {
+      console.warn(`[picks-gen] ${sport} scoreboard HTTP ${r.status} (${Date.now() - t0}ms)`);
+      return [];
+    }
     const { events = [] } = await r.json();
-    return events.map(ev => fromESPNEvent(ev, sport)).filter(Boolean);
-  } catch { return []; }
+    const games = events.map(ev => fromESPNEvent(ev, sport)).filter(Boolean);
+    console.log(`[picks-gen] ${sport} scoreboard → ${games.length} games (${Date.now() - t0}ms)`);
+    return games;
+  } catch (e) {
+    console.error(`[picks-gen] ${sport} scoreboard error: ${e?.message} (${Date.now() - t0}ms)`);
+    return [];
+  }
 }
 
 async function _fetchSummary(sport, game) {
@@ -50,13 +59,19 @@ async function _fetchSummary(sport, game) {
   if (!fn) return { odds: null, players: {} };
   try {
     const r = await fetch(fn(game.id), { signal: AbortSignal.timeout(7000) });
-    if (!r.ok) return { odds: null, players: {} };
+    if (!r.ok) {
+      console.warn(`[picks-gen] ${sport} summary ${game.id} HTTP ${r.status}`);
+      return { odds: null, players: {} };
+    }
     const data    = await r.json();
     const pc      = (data.pickcenter || [])[0];
     const odds    = pc ? parsePickcenter(pc) : null;
     const players = extractPlayers(data, sport, game);
     return { odds, players };
-  } catch { return { odds: null, players: {} }; }
+  } catch (e) {
+    console.warn(`[picks-gen] ${sport} summary ${game.id} error: ${e?.message}`);
+    return { odds: null, players: {} };
+  }
 }
 
 /* ── Homepage curation: 7-signal scoring formula ────────────── */
@@ -151,15 +166,24 @@ function _curateHomepicks(pairs, max) {
  * @returns {Promise<{ allTop: Array<{pick,game}>, allDog: Array<{pick,game}> }>}
  */
 async function generateAllPicks(sports, today) {
+  const t0       = Date.now();
   const allGames = (await Promise.all(sports.map(_fetchGames))).flat();
+  console.log(`[picks-gen] ${sports.join(',')} → ${allGames.length} total games (${Date.now() - t0}ms fetched)`);
 
   const summaryResults = await Promise.allSettled(
     allGames.map(g => _fetchSummary(g.sport, g))
   );
   const summaryMap = {};
+  let oddsMisses = 0;
   summaryResults.forEach((r, i) => {
-    if (r.status === 'fulfilled') summaryMap[allGames[i].id] = r.value;
+    if (r.status === 'fulfilled') {
+      summaryMap[allGames[i].id] = r.value;
+      if (!r.value.odds) oddsMisses++;
+    } else {
+      console.warn(`[picks-gen] summary rejected for ${allGames[i].id}: ${r.reason?.message}`);
+    }
   });
+  if (oddsMisses > 0) console.log(`[picks-gen] ${oddsMisses}/${allGames.length} games have no odds data`);
 
   /* Group by sport so topPickIds is scoped correctly per sport */
   const bySport = {};
@@ -191,6 +215,7 @@ async function generateAllPicks(sports, today) {
     }
   }
 
+  console.log(`[picks-gen] done — ${allTop.length} top + ${allDog.length} dog picks (${Date.now() - t0}ms total)`);
   return { allTop, allDog };
 }
 
