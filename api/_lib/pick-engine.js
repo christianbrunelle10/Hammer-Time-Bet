@@ -49,70 +49,70 @@ const T = {
       [
         '{favPitcher} takes the mound — {favPitcherERA} ERA with swing-and-miss stuff {dog} has struggled to contain',
         '{fav} lineup has been producing with runners on base — clutch hitting in key spots all week',
-        'Model line at {favML} — {fav} priced correctly or favorably at the current posted number',
+        'Sharp money is on {fav} — line movement since the open reflects professional action on this side',
         '{dog} offense has been striking out at an elevated rate against this pitching style recently',
       ],
       [
-        '{dogPitcher} has shown command issues in recent outings — inconsistency is a real concern entering tonight',
-        '{fav} lineup has legitimate home run upside — power threat against this rotation style tonight',
-        '{fav} has been excellent at home this season — consistent winning against comparable competition',
-        '{fav} bullpen has been strong recently — quality late-inning coverage is a meaningful edge',
+        '{dogPitcher} has shown command issues in recent outings — inconsistency is a concern entering tonight',
+        '{fav} lineup has legitimate power upside — home run threat against this rotation style tonight',
+        '{fav} bullpen has been strong lately — quality late-inning coverage is a real edge in this matchup',
+        'Situational spot strongly favors {fav} — rest and preparation advantage going into tonight',
       ],
       [
-        '{favPitcher} facing a {dog} lineup that has been cold at the plate recently — timing is right',
-        'Run differential edge strongly favors {fav} in recent play — underlying metrics reflect a real gap',
-        'Sharp money confirmed — line has moved toward {fav} since the open this morning',
-        '{fav} has a strong track record with {favPitcher} on the mound — their history together is meaningful',
+        '{favPitcher} facing a {dog} lineup that has been cold at the plate — timing is right for this pick',
+        'Run differential edge favors {fav} in recent play — underlying performance reflects a real gap',
+        'Sharp money confirmed — line has moved toward {fav} since this opened this morning',
+        '{fav} has a strong track record with {favPitcher} on the hill — this combination wins at a high rate',
       ],
     ],
     ml_dog: [
       [
         '{dogPitcher} has been quietly effective lately — recent form outperforming what the market is pricing in',
-        '{dog} plus-odds represent genuine positive EV per model — line is overreacting to recent results',
-        '{fav} offense has shown cracks in recent games — regression from market perception creates real value',
-        '{dog} has been a consistent underdog performer this season — plus-money has been profitable in this spot',
+        '{dog} plus-odds represent genuine positive EV — line is overreacting to recent results on both sides',
+        '{fav} offense has shown cracks in recent games — regression from perception creates real value here',
+        '{dog} has been a reliable underdog performer this season — plus-money has been profitable in this spot',
       ],
       [
         '{dogPitcher} faces a lineup that has been cold against this pitch style — strong matchup tonight',
-        'Market overreacting to {fav}\'s recent wins — underlying metrics favor {dog} more than the line implies',
+        'Market is overvaluing {fav}\'s recent wins — {dog} is underpriced at the current number',
         '{dog} bullpen has been holding opponents in check during high-leverage spots this month',
-        'Best plus-money value on today\'s board — model confirms {dog} is underpriced at current number',
+        'Best plus-money spot on today\'s board — value confirmed on {dog} at the current price',
       ],
     ],
     runline: [
       [
-        '{favPitcher} projects as a quality depth start — when the offense gets length from the mound, run lines pay',
-        '{fav} covers the run line consistently with {favPitcher} on the hill — decisive wins track his starts',
-        '{fav} bullpen has been elite in high-leverage spots recently — late-inning leads are protected',
-        '{dog} offense has been quiet on the road lately — scoring output limited against quality arms',
+        '{favPitcher} on the mound — when {fav} gets length from the starter, decisive wins follow',
+        '{fav} offense generates extra-base hits at an above-average clip — multi-run inning upside is real',
+        '{fav} bullpen has been elite in high-leverage spots recently — late leads are protected',
+        '{dog} offense has been limited on the road — scoring output narrow against quality starting pitching',
       ],
       [
-        'Run line at {line} — model projects {fav} winning margin of 2+ in 55% of simulations',
-        '{fav} has a strong run-line track record as a home favorite in this spot — consistent result',
-        '{dogPitcher} walking batters at elevated rate — free baserunners lead to crooked innings',
-        '{fav} lineup generates extra-base hits at an above-average rate — multi-run inning upside is real',
+        '{fav} wins by decisive margins when {favPitcher} is dealing — run line value follows the performance',
+        '{dogPitcher} walking batters at an elevated clip — free baserunners lead to crooked innings for {fav}',
+        '{fav} lineup generates crooked numbers early — run line pays when the offense gets going in the first few frames',
+        'Run line offers better price than the moneyline here — the value is clearly on the spread tonight',
       ],
       [
-        '{fav} consistently wins by decisive margins when {favPitcher} is dealing — run line value follows',
-        '{dog} has been offensively limited on the road recently — scoring ceiling narrow against quality arms',
-        '{fav} bullpen is a real strength tonight — late-inning depth advantage is meaningful',
-        'Run line offers significantly better price than the moneyline — value confirmed at current number',
+        '{fav} consistently wins big with {favPitcher} on the hill — run line coverage tracks his starts',
+        '{dog} has been offensively limited recently — scoring ceiling is narrow against arms of this quality',
+        '{fav} bullpen depth is the difference here — {dog} can\'t rally if the lead is protected late',
+        'Run line presents the best number on today\'s board — take the spread over the straight moneyline',
       ],
     ],
     over: [
       [
-        '{dogPitcher} ERA of {dogPitcherERA} has been inflated recently — both starters hittable tonight',
-        '{dog} lineup ranked top-8 in runs scored per game at home — not rolling over for {favPitcher}',
-        'Both bullpens showing fatigue from heavy recent workloads — late-inning scoring is likely',
-        'Model total: {total}+ — over has positive EV at the current posted number',
+        '{dogPitcher} ERA of {dogPitcherERA} has been inflated recently — both starters are hittable tonight',
+        '{dog} lineup has real run-scoring upside — not rolling over quietly against {favPitcher}',
+        'Both bullpens have been taxed this week — late-inning relief is not at full strength tonight',
+        'The offenses both have upside in this matchup — lean to the over at the current posted total',
       ],
     ],
     under: [
       [
-        '{favPitcher} dominant form — {favPitcherERA} ERA with elite ground ball rate suppresses offense',
-        '{dogPitcher} dialed in lately — {dogPitcherERA} ERA over last 4 starts limiting run output',
-        'Both lineups cold: combined batting .218 over last 10 games — suppressed offensive output',
-        'Model projects {total} or fewer — under has clear positive EV at tonight\'s posted number',
+        '{favPitcher} in dominant form — {favPitcherERA} ERA with elite ground ball tendencies suppressing offense',
+        '{dogPitcher} has been dialed in lately — {dogPitcherERA} ERA over recent starts limits run output',
+        'Both offenses have been inconsistent at the plate lately — scoring pace is trending under in these matchups',
+        'Under is the sharp side tonight — line value confirmed at the current posted total',
       ],
     ],
   },
@@ -120,66 +120,66 @@ const T = {
   NBA: {
     ml_fav: [
       [
-        '{favLeader} leading {fav} — posting elite efficiency numbers and creating matchup problems',
-        '{fav} net rating is +7.8 over last 10 games — real two-way dominance in recent play',
-        'Offensive scheme advantage strongly favors {fav} — pace and spacing exploitable tonight',
-        '{dog} defense allowing 116+ PPG on the road this month — can\'t slow this {fav} offense',
+        '{favLeader} leading {fav} with elite efficiency — creating matchup problems {dog}\'s defense cannot solve',
+        '{fav} has been one of the best two-way teams in the league recently — dominance on both ends sustained',
+        'Offensive scheme advantage strongly favors {fav} — pace and spacing are exploitable against {dog} tonight',
+        '{dog} road defense has been a real vulnerability this month — struggling to slow offenses like this one',
       ],
       [
-        '{fav} covers consistently at home as a favorite — reliable ATS record in this spot',
-        '{dog} missing key rotation pieces — depth gap becomes critical in the fourth quarter',
-        'Sharp money confirmed on {fav} — line has moved in their direction since the open',
+        '{fav} has been dominant at home as a favorite — reliable winner in this spot throughout the season',
+        '{dog} missing key rotation pieces — depth gap becomes critical in the fourth quarter tonight',
+        'Sharp money confirmed on {fav} — line has moved in their direction since the open this morning',
         '{favLeader} in the best offensive form of the season — impossible to gameplan against right now',
       ],
       [
-        '{fav} defense ranks top-4 in points allowed per 100 possessions — elite two-way unit',
-        'Matchup problem: {dog}\'s primary ball-handler struggles against {fav}\'s switch-heavy scheme',
-        '{fav} covering 67% at home as a favorite this season — home court edge is meaningful',
-        'Model projects {fav} winning by 9+ in this specific matchup — strong directional edge',
+        '{fav} defense ranks among the elite in points allowed — capable two-way unit creating real problems',
+        'Matchup edge: {dog}\'s primary ball-handler struggles against {fav}\'s switch-heavy scheme tonight',
+        '{fav} home court performance has been exceptional this season — advantage is real and measurable',
+        'Line has {fav} priced fairly or favorably — strong case for the win at the current number',
       ],
     ],
     ml_dog: [
       [
-        '{dogLeader} capable of a 30+ point performance — creates matchup problems {fav} can\'t solve',
-        '{dog} covering 61% as home underdogs this season — legitimate value at the plus-money price',
-        'Rest advantage tonight: {dog} on 2-day rest at home vs {fav} on shorter turnaround',
-        'Model win probability for {dog}: 43% — current line implies too low a chance',
+        '{dogLeader} capable of a standout performance — a proven scorer who can carry a team on the right night',
+        '{dog} at home has been covering at a strong rate — real value at the plus-money price tonight',
+        'Rest advantage: {dog} on extra rest at home vs {fav} on a shorter turnaround tonight',
+        'Market is overpricing {fav} in this spot — {dog}\'s win probability is higher than the line implies',
       ],
       [
         '{dog} has been excellent at home this season — home court performance doesn\'t match the market price',
-        'Fast pace benefits {dog} — transition opportunities multiply in this matchup style',
-        '{dogLeader} the most dangerous offensive player in this matchup — can carry a team on the right night',
-        'Best plus-money value on tonight\'s board — model confirms positive EV at current number',
+        'Fast pace benefits {dog} — transition opportunities multiply in this specific matchup style',
+        '{dogLeader} the most dangerous offensive player in this game — can take over on any given possession',
+        'Best plus-money value on tonight\'s board — positive EV confirmed on {dog} at current number',
       ],
     ],
     spread: [
       [
-        '{fav} net rating edge of +7.1 — talent gap is real and sustainable in this matchup',
-        '{favLeader} creating at an elite rate — mismatches multiply through the entire lineup',
-        'Pace model strongly favors {fav} — possession advantage translates to scoring advantage',
-        '{fav} ATS as a favorite: 14-6 this season — consistently covering, market hasn\'t adjusted',
+        '{fav} has a meaningful talent edge in this matchup — depth and execution advantage throughout 48 minutes',
+        '{favLeader} creating at an elite rate — mismatches cascade through {dog}\'s entire lineup tonight',
+        'Pace model strongly favors {fav} — possession advantage translates directly to scoring advantage',
+        'Line has held steady on {fav} all week — sharp money has shown conviction at this price',
       ],
       [
-        '{fav} offensive efficiency top-6 in the league — scheme dominance expected throughout',
-        '{dog} missing rotation players — bench depth shrinks considerably against this opponent',
-        'Model line at {line} — getting value at the currently posted number',
-        '{fav} 9-2 ATS in road games as a favorite under 5 points — road favorites covering well',
+        '{fav} offensive efficiency has been at an elite level recently — scheme dominance expected throughout',
+        '{dog} missing rotation players — bench depth shrinks considerably against this caliber of opponent',
+        '{fav} is the value side at this spread — getting a fair or better number on the stronger team',
+        'Matchup advantage holds: {dog}\'s frontcourt cannot handle this {fav} offense tonight',
       ],
     ],
     over: [
       [
-        '{favLeader} and {dogLeader} both capable of 30+ — individual battle pushes the total',
-        'Both teams rank top-8 in offensive pace — this game should be a high-tempo shootout',
-        'Neither defense averaging well against this opponent\'s style — scoring ceiling is high',
-        'Model total: {total}+ — over has clear positive EV at tonight\'s posted number',
+        '{favLeader} and {dogLeader} both capable of 30+ — individual battle will push this total up',
+        'Both teams rank near the top in offensive pace — this game should play out as a high-tempo shootout',
+        'Neither defense has been playing well against this opponent\'s style — scoring ceiling is elevated',
+        'Both offenses are hot right now — the total is set too low given what these teams have been doing',
       ],
     ],
     under: [
       [
-        'Both defenses rank top-8 in points allowed this month — elite defensive units clashing',
-        'Slow pace expected — both teams bottom-6 in possessions per game in similar matchups',
-        'Model projects {total} combined — under has positive EV at the currently posted number',
-        'Historical matchup: last 5 meetings averaged under this total — precedent holds tonight',
+        'Both defenses have been excellent recently — elite defensive units clashing in this matchup tonight',
+        'Slow pace expected — both teams have been operating at a deliberate tempo in similar matchups',
+        'Coaching matchup favors a low-scoring halfcourt game — both staffs prioritize defense in big spots',
+        'Under is the sharp play here — total is set high relative to the defensive quality on both sides',
       ],
     ],
   },
@@ -187,66 +187,66 @@ const T = {
   NFL: {
     ml_fav: [
       [
-        '{favQB} operating at peak efficiency — top-4 in EPA per dropback over the last 4 weeks',
-        '{fav} offensive DVOA ranks top-5 this season — dominant in both run and pass game',
-        '{favRB} averaging 5.2 YPC recently — ground game creates play-action and scheme advantage',
-        'Line has moved toward {fav} since the open — sharp money confirming model projection',
+        '{favQB} operating at peak efficiency — sharp decision-making and consistent production all month',
+        '{fav} offensive line has been dominant in the run game — creating scheme advantages throughout',
+        '{favRB} has been a weapon in the ground game lately — play-action opens up when the run is working',
+        'Line movement toward {fav} since the open — professional money confirming this side tonight',
       ],
       [
-        '{dogQB} struggling under pressure — elevated sack rate over last 3 games creating turnovers',
-        '{fav} defense top-6 in EPA allowed per play — capable of making {dog} one-dimensional',
-        '{fav} 11-4 ATS in similar spots this season — model and market both aligned on {fav}',
-        'Model projects {fav} winning by 7+ in 58% of simulations — strong directional edge',
+        '{dogQB} struggling under pressure — taking sacks and forcing throws in key moments recently',
+        '{fav} defense has been playing at a high level — capable of making {dog} one-dimensional tonight',
+        '{fav} is the better team in this matchup — execution and depth advantage is real and significant',
+        'Situational spot strongly favors {fav} — rest, preparation, and scheme all pointing the same direction',
       ],
     ],
     ml_dog: [
       [
-        '{dogQB} at home has a strong underdog record this season — dangerous at a plus number',
-        '{dog} defense top-8 in yards allowed — capable of keeping this game within the number',
-        'Short week for {fav} — {dog} had a full week of preparation for this specific matchup',
-        'Plus odds represent genuine positive EV — model has {dog} win probability higher than implied',
+        '{dogQB} at home has performed well as an underdog this season — dangerous at plus money tonight',
+        '{dog} defense has been stout enough to keep this game competitive — not an easy night for {fav}',
+        '{fav} on a short week here — {dog} had the full preparation window to game plan this matchup',
+        'Plus odds represent real value — {dog} win probability meaningfully higher than the line implies',
       ],
       [
-        '{dog} 18-6 ATS at home as an underdog — elite performance against the number in this spot',
-        '{dogRB} averaging 5.8 YPC when {dog} offensive line is healthy — ground game option exists',
-        'Home crowd factor in this stadium is historically significant — impacts line and execution',
-        'Best underdog value on tonight\'s board at the currently posted number',
+        '{dog} at home is a dangerous underdog — the home crowd factor in this stadium is not to be dismissed',
+        '{dogRB} provides the ground game option that keeps {dog} competitive and controls the clock',
+        '{fav} has struggled to cover in physical, low-margin games this season — this has that look',
+        'Best underdog spot on today\'s board — value confirmed at the current plus-money number',
       ],
       [
-        '{dogQB} has beaten {fav} in 2 of last 3 head-to-head matchups — familiarity reduces the gap',
-        '{dog} third-down defense top-8 in the league — keeps games manageable and competitive',
-        'Situational edge: {dog} well-rested on full week of preparation vs {fav}\'s condensed schedule',
-        'Plus odds offer genuine positive EV — model win probability for {dog} exceeds market implied',
+        '{dogQB} has outperformed expectations against {fav} in recent meetings — familiarity narrows the gap',
+        '{dog} third-down defense has been excellent — keeps drives short and games competitive late',
+        'Situational edge: {dog} well-rested and fully prepared vs {fav}\'s condensed schedule this week',
+        'Plus odds offer genuine positive EV in this specific matchup — take the number on {dog}',
       ],
     ],
     spread: [
       [
-        '{fav} DVOA edge of +13.8 — real talent and scheme gap against {dog}\'s current roster',
-        '{favQB} vs {dog} pass defense — {dog} ranks bottom-10 in passing yards allowed per game',
-        'OL matchup heavily favors {fav} rushing attack — {favRB} should have room to operate',
-        'Model line at {line} — strong value at the currently posted number tonight',
+        '{fav} has a meaningful talent and scheme edge — execution advantage creates sustained field position control',
+        '{favQB} vs {dog} pass defense — {dog} has been consistently vulnerable in the passing game this season',
+        'OL advantage favors {fav} in the run game — {favRB} should operate with room behind a dominant line',
+        'Model and market line are aligned — strong value confirmed at the currently posted number tonight',
       ],
       [
-        '{fav} turnover margin: +9 on season — field position advantage is consistent and meaningful',
-        '{dog} red zone offense struggling — bottom-10 in touchdown conversion rate this season',
-        'Model projects {fav} winning by {pts}+ — underpriced at the current posted number',
-        '{fav} ATS 9-4 in games where they hold a DVOA edge over 10 points this season',
+        '{fav} turnover margin has been positive all season — field position advantage is consistent and real',
+        '{dog} red zone offense has been inefficient — settling for field goals when {fav} scores touchdowns',
+        '{fav} depth and execution is the edge in this spot — better team winning by the margin is realistic',
+        'Line is set correctly or favorably for {fav} — no reason to fade the better side at this price',
       ],
     ],
     over: [
       [
-        '{favQB} and {dogQB} both in rhythm recently — combined 600+ passing yards likely tonight',
-        'Both offenses top-10 in scoring efficiency — pace will be high from the opening drive',
-        'No significant secondary injuries reported — both QBs attacking full-strength defenses',
-        'Model projects {total}+ — over has clear value at tonight\'s posted number',
+        '{favQB} and {dogQB} both in rhythm recently — combined passing attack should generate big numbers',
+        'Both offenses have been scoring at a high clip — pace will be aggressive from the opening drive',
+        'Neither secondary is at full strength — both QBs will be attacking favorable matchups all night',
+        'Total is set in a range where the offenses have upside — the over is the right side at this number',
       ],
     ],
     under: [
       [
-        'Both defenses top-8 in points allowed — elite units on both sides of this matchup',
-        '{favQB} facing a secondary that ranks top-5 in pass breakups — not an easy night',
-        'Weather forecast may limit explosive plays — conservative game management expected',
-        'Model projects {total} or fewer — under has positive EV at the posted number',
+        'Both defenses have been outstanding recently — elite units on both sides of this matchup tonight',
+        '{favQB} facing a secondary that has been playing at its best — difficult environment to operate in',
+        'Weather or game-flow factors may slow the pace — conservative game management expected from both staffs',
+        'Under is the smart play here — defensive quality on both sides exceeds what this total is priced at',
       ],
     ],
   },
@@ -254,66 +254,66 @@ const T = {
   NHL: {
     ml_fav: [
       [
-        '{favGoalie} in net for {fav} — posting elite save percentage numbers over the last 10 starts',
-        '{fav} Corsi% of 56.8 at home — dominant possession team creating sustained pressure all night',
-        '{fav} power play ranked top-4 in the NHL this month — specialized unit creating advantage',
-        '{dog} allowing 3.2 GAA over last 7 games — goaltending has been the clear vulnerability',
+        '{favGoalie} in net for {fav} — posting elite numbers recently with consistent command of the crease',
+        '{fav} generating sustained pressure at home — possession and zone time advantage all night long',
+        '{fav} power play has been dangerous lately — the specialized unit creates scoring chances in bursts',
+        '{dog} has had goaltending vulnerabilities recently — {fav} offense has the firepower to exploit them',
       ],
       [
-        '{fav} shooting percentage 12.4% — elite conversion rate generating above-expected goals',
-        '{dogGoalie} posting below-average SV% over last 10 starts — {fav} offense can exploit this',
-        '{fav} zone starts 58% offensive — territorial dominance throughout sixty minutes of play',
-        'Sharp money confirmed on {fav} — line has moved toward them since the open this morning',
+        '{dogGoalie} has been showing signs of inconsistency — {fav} offense can expose that tonight',
+        '{fav} zone control and shot volume at home is a real edge — territorial dominance through 60 minutes',
+        'Sharp action confirmed on {fav} — line has tightened in their direction since the open this morning',
+        '{favGoalie} has been sharp in this building — solid crease play makes {fav} hard to beat at home',
       ],
       [
-        '{favGoalie} has held this opponent to 2 or fewer goals in 3 of last 4 head-to-head meetings',
-        '{dog} on the second game of a back-to-back — fatigue factor is meaningful in the third period',
-        '{fav} home ice record: top-5 in the league this season — consistently protected at home',
-        'Model projects {fav} winning 63% of simulations — real edge in this specific matchup',
+        '{favGoalie} has been outstanding against this specific opponent — historically a strong matchup for {fav}',
+        '{dog} on the second game of a back-to-back — fatigue is a real factor in the third period tonight',
+        '{fav} home ice record has been excellent this season — consistently protected their building all year',
+        '{fav} is priced correctly or undervalued here — line reflects a real edge going into tonight',
       ],
     ],
     ml_dog: [
       [
-        '{dogGoalie} posting .921 SV% over last 10 starts — elite run of goaltending form right now',
-        '{dog} elite home ice record this season — arena environment creates real pressure on visitors',
-        'Plus odds on {dog} represent genuine positive EV — model win probability higher than implied',
-        '{dog} 8-2 SU at home as an underdog this season — outstanding record in this specific spot',
+        '{dogGoalie} has been playing at a high level lately — in-form goaltending makes any team dangerous',
+        '{dog} home ice record has been excellent — this building creates real problems for visiting teams',
+        'Plus odds on {dog} represent genuine positive EV — market overreacting to recent {fav} results',
+        '{dog} has the goaltending and team structure to pull off a home upset at this price tonight',
       ],
       [
-        '{favGoalie} allowing 3+ goals in 4 of last 6 road starts — clear road vulnerability exists',
-        '{fav} road record significantly weaker than home record — consistent dropoff away from home',
-        '{dog} power play clicking at 26% rate over last 10 games — dangerous special teams unit',
-        'Best plus-money value on tonight\'s board — confirmed by model projection at this price',
+        '{favGoalie} has shown vulnerability on the road this season — clear performance dropoff away from home',
+        '{fav} road record is not as strong as their home record — consistent dropoff creating real value here',
+        '{dog} power play has been clicking lately — dangerous special teams unit that can change this game',
+        'Best plus-money value on tonight\'s board — {dog} is underpriced given their home form this season',
       ],
     ],
     puckline: [
       [
-        '{favGoalie} dominant form allows {fav} to protect leads comfortably through sixty minutes',
-        '{fav} puck line wins 54% when favored by fewer than 1.5 goals — historical hit rate holds',
-        'Model projects {fav} winning by 2+ in 47% of simulations — puck line value exists tonight',
-        'PL at {line} offers significantly better value than the moneyline at current pricing',
+        '{favGoalie} dominant form allows {fav} to protect leads comfortably through 60 minutes of play',
+        '{fav} has been winning by multi-goal margins at home — puck line is live when the offense is rolling',
+        'PL at {line} offers significantly better price than the moneyline — value is on the spread tonight',
+        '{fav} wins decisively when the goaltending is on — tonight it should be on with {favGoalie} starting',
       ],
       [
-        '{fav} puck line record: 8-4 as a home favorite this season — consistent multi-goal wins at home',
-        '{dogGoalie} has allowed 3+ goals in 5 of last 7 starts — puck line is live at this price',
-        '{fav} power play converting at 24%+ this month — special teams edge compounds the run line',
-        'Model projects {fav} winning by 2+ in 44% of simulations — puck line offers the best value tonight',
+        '{fav} puck line track record as a home favorite has been strong — multi-goal wins at home this season',
+        '{dogGoalie} has been allowing goals in bunches recently — puck line exposure is real at this price',
+        '{fav} power play converting at a strong rate this month — special teams edge compounds the run line',
+        'Puck line is the best value in this game — better number than the straight moneyline on {fav}',
       ],
     ],
     over: [
       [
-        '{dogGoalie} allowing 3+ goals in 5 of last 7 starts — vulnerability in the crease tonight',
-        'Both power play units firing over 24% — penalty-heavy game expected from the drop of the puck',
-        'Combined 9 goals in last 3 meetings between these two teams — offensive series history',
-        'Model total: {total}+ — solid overlay at current posted number tonight',
+        '{dogGoalie} has been giving up goals consistently lately — vulnerability in the crease creates over value',
+        'Both power play units have been active and dangerous — penalty-heavy game is expected tonight',
+        'These two teams have been playing high-scoring games in recent meetings — offensive history holds',
+        'Total feels set low for the offensive talent in this matchup — lean over at the current posted number',
       ],
     ],
     under: [
       [
-        '{favGoalie} and {dogGoalie} both posting .922+ SV% over last 10 — elite goaltending matchup',
-        'Both teams in tight playoff position — defensive structure is locked in and disciplined',
-        'Last 5 meetings averaged under {total} goals — historical precedent strongly supports the under',
-        'Model projects {total} or fewer combined goals — under has positive EV at current price',
+        '{favGoalie} and {dogGoalie} are both playing well — elite goaltending matchup sets up a tight game',
+        'Both teams in a tight standings spot — defensive structure is locked in and disciplined tonight',
+        'Historical matchup between these two has trended toward defensive battles — under fits the pattern',
+        'Under is the sharper play tonight — goaltending quality on both sides exceeds what the total implies',
       ],
     ],
   },
@@ -321,60 +321,60 @@ const T = {
   NCAAM: {
     ml_fav: [
       [
-        '{favLeader} the engine of this offense — creating matchup problems throughout {dog}\'s entire rotation',
-        '{fav} net rating top-20 nationally — elite efficiency at both ends of the floor this season',
-        '{dog} defense allowing 73+ PPG on the road this month — exploitable on the perimeter',
-        '{fav} covering 67% at home as a favorite this season — home court edge is real in college',
+        '{favLeader} is the engine of this offense — creating matchup problems throughout {dog}\'s rotation',
+        '{fav} efficiency has been elite at both ends — real depth and execution advantage in this matchup',
+        '{dog} road defense has been exploitable on the perimeter — {fav} spacing and ball movement will find gaps',
+        '{fav} at home as a favorite has been dominant — home court advantage is real and proven this season',
       ],
       [
-        '{fav} averaging 82+ PPG over last 7 games — hot offensive stretch entering tonight\'s matchup',
-        '{dogLeader} is their only consistent threat — {fav} can gameplan and contain one scorer',
-        '{fav} 11-4 ATS in last 15 home spots — consistent and reliable covering throughout',
-        'Pace advantage belongs to {fav} — superior depth creates fatigue factor in the second half',
+        '{fav} has been on a hot offensive stretch lately — scoring consistently and getting the right looks',
+        '{dogLeader} is their only consistent offensive option — {fav} can gameplan and contain one scorer',
+        '{fav} depth advantage is significant here — rotation length creates fatigue in the second half',
+        'Pace advantage belongs to {fav} — superior depth and conditioning are meaningful through 40 minutes',
       ],
     ],
     ml_dog: [
       [
-        '{dogLeader} capable of a monster performance — a proven high-volume scorer who can carry a team',
-        '{dog} covering 60% as home underdogs this season — home court value significant in college',
-        'Home floor advantage in college basketball among the highest variance factors in sports',
-        'Plus odds offer strong positive EV — model has {dog} win probability at 40%+ tonight',
+        '{dogLeader} capable of a monster performance — a proven volume scorer who can carry this team tonight',
+        '{dog} at home as an underdog has been covering well — home court value is significant in college',
+        'Home floor advantage in college basketball is among the highest-variance factors in the sport',
+        'Plus odds offer strong value here — {dog}\'s win probability is well above what the line implies',
       ],
       [
-        '{dog} guard play elite — top-12 in assists in the conference, creating easy looks inside',
-        'Fast pace benefits {dog} in this matchup — transition opportunities multiply at home',
-        '{dog} covering 58% as underdogs under 6 points — consistent ATS performance in close spots',
-        'Best plus-money value on tonight\'s board — confirmed by model projection at this number',
+        '{dog} guard play has been sharp — creating easy looks inside and controlling the pace of the game',
+        'Fast pace benefits {dog} in this matchup — transition opportunities multiply in their building tonight',
+        '{dog} is a live underdog with the right personnel to stay in this game — the plus money has value',
+        'Best plus-money value on today\'s board — take {dog} at the current number tonight',
       ],
     ],
     spread: [
       [
-        '{fav} efficiency edge of +7.4 per-100 possessions — real talent and depth gap in this matchup',
-        '{favLeader} posting 24+ PPG and creating impossible-to-guard situations in the halfcourt',
-        '{fav} ATS as a favorite: 13-5 this season — consistently covering throughout conference play',
-        'Model line at {line} — getting genuine value at the currently posted price tonight',
+        '{fav} has a meaningful efficiency edge — real talent and depth gap in this specific matchup tonight',
+        '{favLeader} is posting elite numbers and creating matchup problems {dog} has no answer for',
+        'Line reflects a real advantage for {fav} — take the spread over the straight moneyline in this spot',
+        'Both lines pointing the same direction — strong conviction on {fav} covering at this number',
       ],
       [
-        '{fav} offensive efficiency top-18 nationally — scheme and talent advantage throughout 40 minutes',
-        '{dog} missing rotation players — depth shrinks considerably against this caliber of opponent',
-        'Model line at {line} — value confirmed at posted number by model simulations',
-        '{fav} 8-3 ATS as favorites under 8 points in conference play this season — strong trend',
+        '{fav} offensive efficiency has been at a high level nationally — scheme and talent advantage sustained',
+        '{dog} missing rotation players — depth shrinks considerably against this caliber of opponent tonight',
+        'Getting {fav} at this spread is genuine value — better team covering is the most likely outcome',
+        '{fav} has been excellent as a favorite at home this season — covering rate reflects real quality',
       ],
     ],
     over: [
       [
-        '{favLeader} and {dogLeader} both capable of 25+ — individual battle pushes the total up',
-        'Both teams rank top-45 in offensive pace nationally — expect a high-tempo contest tonight',
-        'Both defenses allow 71+ PPG at home — limited defensive stoppers active in this matchup',
-        'Model projects {total}+ combined — over has clear positive value at tonight\'s number',
+        '{favLeader} and {dogLeader} are both capable of 25+ — individual battle between stars pushes the total',
+        'Both teams have been playing at a fast tempo — expect a high-scoring, up-and-down contest tonight',
+        'Neither defense has the personnel to slow down the other\'s best offensive players in this matchup',
+        'Total is set in a range where the offenses have upside — the over has value at tonight\'s number',
       ],
     ],
     under: [
       [
-        'Both defenses rank top-35 in points allowed nationally — elite defensive units clashing',
-        'Slow tempo teams — bottom-25 in possessions per game in recent conference play',
-        'Model projects {total} combined — under has clear positive EV at tonight\'s posted number',
-        'Conference defensive showcase — both coaches prioritize limiting pace above all else',
+        'Both defenses have been outstanding nationally — elite defensive units clashing in this game tonight',
+        'Slow tempo expected — both teams play at a deliberate pace that limits possessions and scoring',
+        'Coaching matchup will define the game — both staffs prioritize defensive stops above all else',
+        'Under is the right play — defensive quality on both sides makes this total look too high tonight',
       ],
     ],
   },
@@ -382,60 +382,60 @@ const T = {
   NCAAF: {
     ml_fav: [
       [
-        '{favQB} operating efficiently — top-20 nationally in EPA per dropback this season',
-        '{fav} offensive efficiency ranks top-18 nationally — real scheme and execution edge tonight',
-        '{favRB} averaging 5.9 YPC — dominant ground game creates play-action advantage throughout',
-        '{fav} covering 68% at home as a favorite — home crowd and preparation advantage is real',
+        '{favQB} has been operating efficiently — sharp decision-making and consistent production this season',
+        '{fav} offensive efficiency has been at a high level nationally — real scheme and execution edge tonight',
+        '{favRB} has been dominant in the ground game — play-action advantage opens up when the run is working',
+        '{fav} at home as a favorite has been a reliable winner — covering at a strong rate this season',
       ],
       [
-        '{dogQB} facing a {fav} defense allowing just 18 PPG — significant pressure expected all game',
-        '{dog} defense allows 31+ PPG — {fav} offense will find plenty of scoring opportunities',
-        'Sharp books opened {fav} at this number — no meaningful movement suggesting {dog} value',
-        'Model projects {fav} winning by double digits in 54% of simulations — strong directional edge',
+        '{dogQB} facing a {fav} defense that has been suffocating this season — significant pressure expected',
+        '{dog} defense has been allowing big numbers — {fav} offense will find scoring opportunities all night',
+        'Sharp books have been steady on {fav} all week — no meaningful movement suggesting {dog} value exists',
+        '{fav} is the clearly better team in this matchup — execution and depth advantage is real and significant',
       ],
     ],
     ml_dog: [
       [
-        '{dogQB} at home has strong underdog record this season — dangerous with home crowd backing',
-        '{dog} covering 61% as home underdogs in conference play — legitimate plus-money value',
-        'Home field advantage in college football among the most significant in American sports',
-        'Plus odds offer strong value — model has {dog} at 38%+ win probability at this price',
+        '{dogQB} at home has been performing at a high level — dangerous with this crowd behind them tonight',
+        '{dog} at home as an underdog in conference play — real value at the plus-money price tonight',
+        'Home field advantage in college football is among the most powerful forces in American sports',
+        'Plus odds offer strong value — {dog}\'s win probability is higher than the current number implies',
       ],
       [
-        '{dog} third-down conversion rate among the best in their conference — sustains drives, controls clock',
-        '{dogQB} performing at a high level at home — comfort with this crowd is a genuine factor tonight',
+        '{dog} third-down conversion rate has been strong in conference play — sustains drives and controls clock',
+        '{dogQB} is comfortable in this environment and has been performing well — don\'t dismiss the home edge',
         '{fav} has failed to cover against physical conference opponents multiple times this season',
-        'Model has {dog} win probability at 37%+ — strong value at the posted plus-money price',
+        '{dog}\'s win probability is meaningfully higher than the line implies — take the plus money tonight',
       ],
     ],
     spread: [
       [
-        '{fav} YPP advantage is +1.9 — dominant scheme efficiency creates sustained field position edge',
-        '{favQB} vs {dog} pass defense — {dog} allowing 8.4 YPA this season, consistently exploitable',
-        'Turnover margin strongly favors {fav} — +9 on season means field position advantage is real',
-        'Model projects {fav} winning by {pts}+ — underpriced at the currently posted number',
+        '{fav} has a clear scheme and execution edge — sustained field position control throughout the game',
+        '{favQB} vs {dog} pass defense — {dog} has been consistently exploitable in the passing game this season',
+        'Turnover margin has strongly favored {fav} this season — field position edge is consistent and real',
+        'Market and model are aligned — strong value confirmed on {fav} at the currently posted spread',
       ],
       [
-        '{fav} ATS 9-3 in similar home/road spots this season — market rewards their consistent scheme',
-        '{favRB} averaging 5.4 YPC — ground game controls clock and limits {dog}\'s possessions',
-        '{dog} red zone defense ranks bottom-15 — {fav} converts touchdown chances at a high rate',
-        'Model line at {line} — value confirmed at the posted number tonight',
+        '{fav} at home as a favorite has been covering consistently — market rewards their scheme and execution',
+        '{favRB} in the ground game controls clock and limits {dog}\'s possessions — a foundational edge',
+        '{dog} red zone defense has been vulnerable — {fav} converts scoring chances at a high rate',
+        '{fav} at this spread is the right side — take the better team at a fair number tonight',
       ],
     ],
     over: [
       [
-        '{favQB} and {dogQB} both operating through the air — pass-heavy game style expected tonight',
-        'Both defenses allow 30+ PPG — high ceiling for combined scoring in this specific matchup',
-        'Model projects {total}+ combined — over has clear positive value at tonight\'s posted number',
-        'Last 4 meetings averaged over {total} combined — historical precedent supports the over',
+        '{favQB} and {dogQB} are both willing to throw — pass-heavy game style expected from the opening drive',
+        'Both defenses have been allowing big numbers this season — high scoring ceiling in this specific matchup',
+        'These two offenses have the personnel to go over this total — the number is achievable tonight',
+        'Total feels reachable given the offensive talent and defensive vulnerabilities on both sides tonight',
       ],
     ],
     under: [
       [
-        'Defensive battle expected — both teams top-28 nationally in points allowed this season',
-        '{favQB} facing a secondary that has held opponents under 200 passing yards multiple times',
-        'Slow tempo teams — fewer possessions means fewer scoring chances for both offenses',
-        'Model total: {total} — under has positive EV at the currently posted number tonight',
+        'Defensive battle expected — both units have been excellent and trending toward a low-scoring game',
+        '{favQB} facing a secondary that has been playing shutdown ball — difficult passing environment tonight',
+        'Slow tempo teams — fewer possessions means fewer scoring chances for both offenses in 60 minutes',
+        'Under is the smart play here — defensive quality exceeds what this total is priced at tonight',
       ],
     ],
   },
@@ -541,6 +541,9 @@ function computePick(game, odds, players, today, role) {
   const favLeader     = (favIsHome ? players?.homeLeader     : players?.awayLeader)     || null;
   const dogLeader     = (favIsHome ? players?.awayLeader     : players?.homeLeader)     || null;
 
+  // Correct possessive for names ending in 's' (e.g. "Yankees'" not "Yankees's")
+  const _poss = name => name.endsWith('s') ? `${name}'` : `${name}'s`;
+
   function fmt(str) {
     const lineVal = favIsHome ? (odds?.home?.spread || dfltLine) : (odds?.away?.spread || dfltLine);
     return str
@@ -550,20 +553,20 @@ function computePick(game, odds, players, today, role) {
       .replace(/\{line\}/g,          lineVal)
       .replace(/\{total\}/g,         odds?.total || dfltTotal)
       .replace(/\{pts\}/g,           String(Math.abs(parseFloat(lineVal) || 3).toFixed(1)))
-      .replace(/\{favPitcher\}/g,    favPitcher    || 'their projected starter')
-      .replace(/\{dogPitcher\}/g,    dogPitcher    || 'their projected starter')
+      .replace(/\{favPitcher\}/g,    favPitcher    || `${_poss(fav)} starter`)
+      .replace(/\{dogPitcher\}/g,    dogPitcher    || `${_poss(dog)} starter`)
       .replace(/\{favPitcherERA\}/g, favPitcherERA || 'solid')
       .replace(/\{dogPitcherERA\}/g, dogPitcherERA || 'elevated')
       .replace(/\{favPitcherRec\}/g, favPitcherRec || '')
       .replace(/\{dogPitcherRec\}/g, dogPitcherRec || '')
-      .replace(/\{favGoalie\}/g,     favGoalie     || 'their starting goaltender')
-      .replace(/\{dogGoalie\}/g,     dogGoalie     || 'their starting goaltender')
-      .replace(/\{favQB\}/g,         favQB         || 'their signal-caller')
-      .replace(/\{dogQB\}/g,         dogQB         || 'their signal-caller')
-      .replace(/\{favRB\}/g,         favRB         || 'their lead back')
-      .replace(/\{dogRB\}/g,         dogRB         || 'their lead back')
-      .replace(/\{favLeader\}/g,     favLeader     || 'their leading scorer')
-      .replace(/\{dogLeader\}/g,     dogLeader     || 'their leading scorer');
+      .replace(/\{favGoalie\}/g,     favGoalie     || `${_poss(fav)} goalie`)
+      .replace(/\{dogGoalie\}/g,     dogGoalie     || `${_poss(dog)} goalie`)
+      .replace(/\{favQB\}/g,         favQB         || `${_poss(fav)} QB`)
+      .replace(/\{dogQB\}/g,         dogQB         || `${_poss(dog)} QB`)
+      .replace(/\{favRB\}/g,         favRB         || `${_poss(fav)} backfield`)
+      .replace(/\{dogRB\}/g,         dogRB         || `${_poss(dog)} backfield`)
+      .replace(/\{favLeader\}/g,     favLeader     || `${_poss(fav)} scorer`)
+      .replace(/\{dogLeader\}/g,     dogLeader     || `${_poss(dog)} scorer`);
   }
 
   const favMLNum    = parseInt(String(favML).replace('+', ''), 10);
