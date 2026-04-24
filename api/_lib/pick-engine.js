@@ -1,12 +1,14 @@
 /**
  * HammerTimeBet — Pick Engine (Node.js / CommonJS)
  *
- * Reason generation is data-anchored: every sentence tries to use a real
- * player name, real stat, or real matchup context from ESPN data.
- * Generic market copy is only used as a last resort when no player data exists.
+ * Reason generation rules:
+ *   dataScore counts named players used in reasons (pitcher, goalie, QB, leader).
+ *   dataQuality: 'high'  (2+ named players) → 3-4 reasons shown
+ *                'medium' (1 named player)   → 2-3 reasons shown
+ *                'low'    (0 named players)  → 1 honest sentence, homepage-ineligible
  *
- * Each builder returns { reasons: string[4], dataQuality: 'high'|'medium'|'low' }
- * dataQuality is stored on the pick and used by homepage curation scoring.
+ * Low-quality picks are excluded from the homepage pool by _curateHomepicks.
+ * They still appear on sport pages so each game has at least a basic card.
  */
 'use strict';
 
@@ -18,7 +20,7 @@ function mkRng(seed) {
   s = (s >>> 0) || 1;
   return () => { s ^= s << 13; s ^= s >> 17; s ^= s << 5; return (s >>> 0) / 0x100000000; };
 }
-function _pick(arr, r) { return arr[Math.floor(r() * arr.length)]; }
+function rPick(arr, r) { return arr[Math.floor(r() * arr.length)]; }
 function randConf(min, max, r) { return parseFloat((r() * (max - min) + min).toFixed(1)); }
 
 /* ── Odds/EV constants ─────────────────────────────────────────── */
@@ -45,13 +47,9 @@ function _computeUnits(conf, edge, favML) {
   return 0.5;
 }
 
-/* ── Possessive helper ──────────────────────────────────────────── */
-function _poss(name) {
-  return name.endsWith('s') ? `${name}'` : `${name}'s`;
-}
-
-/* ── ERA quality helper ─────────────────────────────────────────── */
-function _eraGrade(era) {
+/* ── Helpers ─────────────────────────────────────────────────────── */
+const _poss  = name => name.endsWith('s') ? `${name}'` : `${name}'s`;
+const _eraGrade = era => {
   const n = parseFloat(era);
   if (isNaN(n) || !era) return null;
   if (n < 3.00) return 'elite';
@@ -59,820 +57,623 @@ function _eraGrade(era) {
   if (n < 4.50) return 'average';
   if (n < 5.50) return 'elevated';
   return 'poor';
-}
+};
 
 /* ═══════════════════════════════════════════════════════════════════
-   SPORT REASON BUILDERS
-   Each returns { reasons: string[], dataQuality: 'high'|'medium'|'low' }
-   pType: 0=ML, 1=spread/runline/puckline, 2=over, 3=under
-   role: 'top' | 'dog'
+   REASON BUILDERS
+   Return { reasons: string[], dataQuality: 'high'|'medium'|'low' }
+
+   Rules:
+     dataScore === 0 → reasons.length = 1  (low)
+     dataScore === 1 → reasons.length = 2  (medium)
+     dataScore >= 2  → reasons.length = 4  (high)
 ═══════════════════════════════════════════════════════════════════ */
 
+/* ── MLB ─────────────────────────────────────────────────────────── */
 function _mlbReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r) {
-  const {
-    favPitcher, dogPitcher,
-    favPitcherERA, dogPitcherERA,
-    favPitcherRec, dogPitcherRec,
-    favPitcherK,
-  } = p;
+  const { favPitcher, dogPitcher, favPitcherERA, dogPitcherERA,
+          favPitcherRec, dogPitcherRec, favPitcherK } = p;
 
-  const reasons = [];
+  const total  = odds?.total || '8.0';
+  const spread = favIsHome ? (odds?.home?.spread || '-1.5') : (odds?.away?.spread || '-1.5');
+  const real   = [];
   let dataScore = 0;
-  const total   = odds?.total || '8.0';
-  const spread  = favIsHome ? (odds?.home?.spread || '-1.5') : (odds?.away?.spread || '-1.5');
 
-  /* Over ─────────────────────────────────────────────────────────── */
-  if (pType === 2) {
-    const r1 = [];
-    if (dogPitcher && dogPitcherERA) {
-      dataScore++;
-      const grade = _eraGrade(dogPitcherERA);
-      if (grade === 'elevated' || grade === 'poor') {
-        r1.push(`${dogPitcher} (${dogPitcherERA} ERA) has been giving up runs at an elevated clip — ${fav} figures to do damage against him tonight`);
-      } else {
-        r1.push(`${dogPitcher} (${dogPitcherERA} ERA) is not a lockdown starter — ${fav} offense has enough pop to push this total`);
-      }
-    }
-    if (favPitcher && favPitcherERA) {
-      dataScore++;
-      const grade = _eraGrade(favPitcherERA);
-      if (grade === 'elevated' || grade === 'poor') {
-        r1.push(`${favPitcher} (${favPitcherERA} ERA) has been hittable — ${dog} lineup has the upside to keep scoring against him`);
-      }
-    }
-    if (!r1.length) r1.push(`Both starters have been hittable in recent outings — the run-scoring environment favors the over tonight`);
-    reasons.push(_pick(r1, r));
-    reasons.push(`${dog} has been scoring consistently and ${fav} offense has been productive — both sides have legitimate run-scoring upside`);
-    reasons.push(`Neither bullpen is in a position to put up zeros if a lead develops — late-inning scoring is a real possibility`);
-    reasons.push(`The ${total} total is in range for both offenses given the pitching matchup tonight — lean to the over`);
-    return { reasons, dataQuality: dataScore >= 1 ? 'medium' : 'low' };
-  }
-
-  /* Under ─────────────────────────────────────────────────────────── */
-  if (pType === 3) {
-    const r1 = [];
-    if (favPitcher && favPitcherERA) {
-      dataScore++;
-      const grade = _eraGrade(favPitcherERA);
-      const obs = grade === 'elite' ? ' — at that ERA level, he\'s as good as anyone in baseball right now'
-                : grade === 'solid' ? ' — consistent enough to keep ${dog} from putting up a big number'
-                : '';
-      r1.push(`${favPitcher} (${favPitcherERA} ERA) is the anchor here${obs.replace('${dog}', dog)}`);
-    }
-    if (dogPitcher && dogPitcherERA) {
-      dataScore++;
-      const grade = _eraGrade(dogPitcherERA);
-      if (grade === 'elite' || grade === 'solid') {
-        r1.push(`${dogPitcher} (${dogPitcherERA} ERA) is pitching at a high level — two quality starters set up a low-scoring game`);
-      }
-    }
-    if (!r1.length) r1.push(`Strong pitching matchup tonight — both starters have the stuff to keep the scoring in check`);
-    reasons.push(_pick(r1, r));
-    if (favPitcher && dogPitcher) {
-      reasons.push(`The ${favPitcher} vs ${dogPitcher} matchup is a pitcher's duel setup — run prevention is the story on both sides`);
-    } else {
-      reasons.push(`Both offenses have been inconsistent at the plate recently — scoring pace is tracking below this total`);
-    }
-    reasons.push(`Both bullpens have the depth to protect late leads — the under is the play when neither team has a clear offense edge`);
-    reasons.push(`Under ${total} — the pitching quality on display tonight is the clearest edge on this board`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'medium' : 'low' };
-  }
-
-  /* Run line ──────────────────────────────────────────────────────── */
-  if (pType === 1) {
-    const r1 = [];
-    if (favPitcher) {
-      dataScore++;
-      const era = favPitcherERA ? ` (${favPitcherERA} ERA)` : '';
-      const rec = favPitcherRec ? `, ${favPitcherRec} on the season` : '';
-      r1.push(`${favPitcher}${era}${rec} on the hill — the depth to go 6+ innings is how ${fav} creates the margin for the run line`);
-      r1.push(`When ${favPitcher}${era} is going deep into games, ${fav} tends to win by multiple runs — run line is live`);
-    } else {
-      r1.push(`${fav} holds the mound advantage — quality starts from this rotation lead to decisive winning margins`);
-    }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
-    if (dogPitcher) {
-      dataScore++;
-      const era = dogPitcherERA ? ` (${dogPitcherERA} ERA)` : '';
-      r2.push(`${dogPitcher}${era} has been prone to giving up crooked numbers — free baserunners pile up into multi-run innings for ${fav}`);
-      r2.push(`${dog} counters with ${dogPitcher}${era} — a starter who has been unable to strand runners, which opens the door for ${fav} to cover`);
-    } else {
-      r2.push(`${_poss(dog)} rotation is the clear weakness in this matchup — ${fav} lineup is capable of putting up a multi-run number`);
-    }
-    reasons.push(_pick(r2, r));
-    reasons.push(`${_poss(fav)} bullpen has the depth to protect a lead deep into the game — the run line stays alive into the final innings`);
-    reasons.push(`Run line at ${spread} offers better price than the straight moneyline — the pitching edge supports this margin`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
-  }
-
-  /* ML Dog ─────────────────────────────────────────────────────────── */
+  /* ── Collect player-anchored sentences ── */
   if (role === 'dog') {
-    const r1 = [];
     if (dogPitcher) {
       dataScore++;
       const era = dogPitcherERA ? ` (${dogPitcherERA} ERA)` : '';
       const rec = dogPitcherRec ? `, ${dogPitcherRec}` : '';
       const grade = _eraGrade(dogPitcherERA);
-      const obs = (grade === 'elite' || grade === 'solid')
-        ? ' — that level of performance makes this team dangerous regardless of the price'
+      const qualifier = (grade === 'elite' || grade === 'solid')
+        ? ' — that kind of performance makes any team dangerous on the mound'
         : '';
-      r1.push(`${dogPitcher}${era}${rec} takes the mound for ${dog}${obs} — a starter in this form makes the plus money worth considering`);
-      r1.push(`${dog} sends ${dogPitcher}${era} to the hill${rec} — the market is undervaluing what this pitcher brings to tonight's matchup`);
-    } else {
-      r1.push(`${dog} has the pitching situation to keep this game competitive — the plus money at ${dogML} represents real value`);
+      real.push(`${dogPitcher}${era}${rec} starts for ${dog}${qualifier}`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
     if (favPitcher) {
       dataScore++;
       const era = favPitcherERA ? ` (${favPitcherERA} ERA)` : '';
-      r2.push(`${favPitcher}${era} is the clear ace in this matchup — but ${dog} has seen this type of arm before and the lineup is capable of keeping it close`);
-      r2.push(`${fav} counters with ${favPitcher}${era}, but the gap between these rotations at ${dogML} more than compensates for the difference`);
-    } else {
-      r2.push(`${fav} holds the rotation edge, but the plus-money price on ${dog} more than covers the pitching gap`);
+      real.push(`${favPitcher}${era} goes for ${fav} — ${dog} has seen similar arms this season and kept games close at plus money`);
     }
-    reasons.push(_pick(r2, r));
-    reasons.push(favIsHome
-      ? `${dog} on the road has been more competitive than the market accounts for — the away record holds up in spots like this`
-      : `${dog} at home is where you want them as an underdog — the crowd and comfort factor are real in this building`
-    );
-    reasons.push(`At ${dogML}, ${dog} offers positive EV — this type of upset only needs to happen in roughly 1-in-3 of these spots to be profitable`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
-  }
-
-  /* ML Fav ─────────────────────────────────────────────────────────── */
-  const r1 = [];
-  if (favPitcher) {
-    dataScore++;
-    const era = favPitcherERA ? ` (${favPitcherERA} ERA)` : '';
-    const rec = favPitcherRec ? `, ${favPitcherRec} this season` : '';
-    const kNote = favPitcherK ? ` with ${favPitcherK} strikeouts on the year` : '';
-    const grade = _eraGrade(favPitcherERA);
-    const qualifier = grade === 'elite' ? ' — as good a mound advantage as you will find on today\'s board'
-                    : grade === 'solid' ? ' — the pitching edge is clear before first pitch'
-                    : '';
-    r1.push(`${favPitcher}${era}${rec}${kNote} takes the ball for ${fav}${qualifier}`);
-    r1.push(`${fav} hands the ball to ${favPitcher}${era}${rec} — ${dog} is going to have to solve a real problem at the top of this rotation`);
   } else {
-    r1.push(`${fav} holds the mound advantage in this matchup — the pitching situation is the clearest edge entering tonight`);
+    if (favPitcher) {
+      dataScore++;
+      const era  = favPitcherERA ? ` (${favPitcherERA} ERA)` : '';
+      const rec  = favPitcherRec ? `, ${favPitcherRec}` : '';
+      const kStr = favPitcherK   ? ` — ${favPitcherK} strikeouts on the year` : '';
+      if (pType === 1) {
+        real.push(`${favPitcher}${era}${rec} on the hill — quality starts from this pitcher create the multi-run margins that cover the run line`);
+      } else if (pType === 3) {
+        const grade = _eraGrade(favPitcherERA);
+        const qual  = (grade === 'elite' || grade === 'solid') ? ', one of the better ERA marks in the league' : '';
+        real.push(`${favPitcher}${era}${qual}${rec} starts tonight — that level of pitching keeps the scoring in check`);
+      } else {
+        real.push(`${favPitcher}${era}${rec}${kStr} takes the ball for ${fav}`);
+      }
+    }
+    if (dogPitcher) {
+      dataScore++;
+      const era   = dogPitcherERA ? ` (${dogPitcherERA} ERA)` : '';
+      const grade = _eraGrade(dogPitcherERA);
+      if (pType === 2) {
+        const overObs = (grade === 'elevated' || grade === 'poor')
+          ? ` — he has been giving up runs and ${fav} should get to him tonight`
+          : ` — enough upside on both sides to clear ${total}`;
+        real.push(`${dogPitcher}${era} counters for ${dog}${overObs}`);
+      } else {
+        const obs = (grade === 'elevated' || grade === 'poor')
+          ? ` — ${fav} lineup is well-positioned to exploit that elevated ERA`
+          : '';
+        real.push(`${dogPitcher}${era} counters for ${dog}${obs}`);
+      }
+    }
   }
-  reasons.push(_pick(r1, r));
 
-  const r2 = [];
-  if (dogPitcher) {
-    dataScore++;
-    const era = dogPitcherERA ? ` (${dogPitcherERA} ERA)` : '';
-    const grade = _eraGrade(dogPitcherERA);
-    const obs = grade === 'elevated' ? ` — that ERA tells the story of a starter ${fav} lineup can exploit`
-              : grade === 'poor'     ? ` — command problems have created real opportunities for opposing offenses`
-              : ` — ${fav} lineup is set up to do damage against this style of starter`;
-    r2.push(`${dogPitcher}${era} counters for ${dog}${obs}`);
-    r2.push(`The ${dog} rotation sends ${dogPitcher}${era} to the mound — matchup edge goes to ${fav} in the pitching department`);
-  } else {
-    r2.push(`${_poss(dog)} rotation is a weakness in this spot — ${fav} lineup should find runs early in the game`);
-  }
-  reasons.push(_pick(r2, r));
+  /* ── Fill sentences (team-specific, no named player) ── */
+  const fill = (() => {
+    if (role === 'dog') return [
+      `${dog} at ${dogML} — the rotation gives them a legitimate path to an upset tonight`,
+      `At ${dogML}, ${dog} offers real value — rotation mismatches often produce tighter scores than the market expects`,
+      `${fav} has not been automatic recently — ${dog} lineup is capable of keeping this game close`,
+    ];
+    if (pType === 1) return [
+      `${_poss(fav)} bullpen has the depth to protect a lead into the final innings — the run line stays live`,
+      `Run line at ${spread} is the better price over the straight moneyline — take the spread here`,
+      `${dog} offense has been limited against quality starters — the multi-run margin is on the table`,
+    ];
+    if (pType === 2) return [
+      `Both bullpens have been heavily used this week — late-inning scoring is a real factor tonight`,
+      `The ${total} total is in range for what these offenses have been doing recently`,
+      `Neither team has the shutdown depth to prevent scoring once the lead changes hands`,
+    ];
+    if (pType === 3) return [
+      `Both offenses have been inconsistent at the plate — the scoring pace is tracking under this total`,
+      `Under ${total} — the pitching matchup on both sides supports the low-score play tonight`,
+      `${_poss(fav)} lineup has been cold — ${dog} pitching is capable of keeping the run total in check`,
+    ];
+    return [
+      favIsHome
+        ? `${fav} at home with the pitching edge — this is their most consistent setup of the season`
+        : `${fav} on the road with an arm of this caliber — road favorites with strong starters cover consistently`,
+      `${_poss(fav)} lineup has been productive in run-scoring situations — the offense backs up the pitching advantage`,
+      `${dog} has been struggling offensively — ${fav} is the right side of this matchup at the current price`,
+    ];
+  })();
 
-  reasons.push(favIsHome
-    ? `${fav} at home with their best starter — the crowd and comfort factor compounds the pitching edge`
-    : `${fav} on the road with ${favPitcher || 'an ace-caliber arm'} — this is the type of spot where road favorites deliver`
-  );
-  reasons.push(`${_poss(fav)} lineup has been producing with runners on base — the offense can back up the pitching advantage tonight`);
-  return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+  return _assemble(real, fill, dataScore);
 }
 
 /* ── NBA ─────────────────────────────────────────────────────────── */
 function _nbaReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r) {
   const { favLeader, dogLeader, favLeaderPts, dogLeaderPts } = p;
-  const reasons   = [];
-  let dataScore   = 0;
-  const total     = odds?.total || '220.5';
-  const spread    = favIsHome ? (odds?.home?.spread || '-5.0') : (odds?.away?.spread || '-5.0');
+  const total  = odds?.total || '220.5';
+  const spread = favIsHome ? (odds?.home?.spread || '-5.0') : (odds?.away?.spread || '-5.0');
+  const lStr   = (name, pts) => pts ? `${name} (${pts} PPG)` : name;
+  const real   = [];
+  let dataScore = 0;
 
-  const leaderStr = (name, pts) => pts ? `${name} (${pts} PPG)` : name;
-
-  /* Over ─────────────────────────────────────────────────────────── */
   if (pType === 2) {
-    const r1 = [];
     if (favLeader && dogLeader) {
       dataScore += 2;
-      r1.push(`${leaderStr(favLeader, favLeaderPts)} and ${leaderStr(dogLeader, dogLeaderPts)} are both capable of putting up 30 — the individual battle alone pushes this total`);
+      real.push(`${lStr(favLeader, favLeaderPts)} and ${lStr(dogLeader, dogLeaderPts)} are both capable of 30+ — the individual battle pushes this total`);
     } else if (favLeader) {
       dataScore++;
-      r1.push(`${leaderStr(favLeader, favLeaderPts)} is the engine of this offense — the scoring burden falls on him and the total reflects that upside`);
-    } else {
-      r1.push(`Both offenses have been playing at a high tempo — the scoring ceiling is elevated in this specific matchup`);
+      real.push(`${lStr(favLeader, favLeaderPts)} is the offensive engine — the volume this player requires to carry ${fav} pushes the total`);
+    } else if (dogLeader) {
+      dataScore++;
+      real.push(`${lStr(dogLeader, dogLeaderPts)} keeps ${dog} in high-scoring games — the offensive profile here supports the over`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(`Both teams rank near the top in pace — this game should run at a high tempo from the opening tip`);
-    reasons.push(`Neither defense has been effective against this opponent\'s offensive style — the scoring ceiling is real`);
-    reasons.push(`Over ${total} — both offenses have the talent and tempo to clear this number if the game stays competitive late`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both teams rank near the top in offensive pace — this game plays out as a high-tempo scoring game`,
+      `Neither defense has shown the ability to consistently slow this opponent's top scorer`,
+      `Over ${total} — the offensive talent in this matchup makes this number clearable`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Under ─────────────────────────────────────────────────────────── */
   if (pType === 3) {
-    reasons.push(favLeader
-      ? `${_poss(fav)} offense runs through ${favLeader} — when both defenses are locked in, perimeter scoring gets suppressed`
-      : `Both defenses have been playing at an elite level — the scoring pace is tracking well below this total`
-    );
-    reasons.push(`Slow halfcourt pace expected — both coaching staffs prioritize defensive stops in this type of matchup`);
-    reasons.push(`Late-game possession management from both benches should keep the final number clean — under is the play`);
-    reasons.push(`Under ${total} — the defensive quality on both sides of this game is the clearest bet on the board tonight`);
-    return { reasons, dataQuality: favLeader ? 'medium' : 'low' };
-  }
-
-  /* Spread ─────────────────────────────────────────────────────────── */
-  if (pType === 1) {
-    const r1 = [];
     if (favLeader) {
       dataScore++;
-      r1.push(`${leaderStr(favLeader, favLeaderPts)} is creating matchup problems ${dog} has no answer for — the talent gap shows up in the box score`);
-      r1.push(`${favLeader} has been the most efficient player in this matchup — the advantage compounds through the entire ${fav} lineup`);
-    } else {
-      r1.push(`${fav} has a real talent and depth edge in this game — that gap shows up as a margin in the final score`);
+      real.push(`${fav} runs through ${lStr(favLeader, favLeaderPts)} — when both defenses lock in and take away the primary scorer, the pace drops below this total`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
-    if (dogLeader) {
-      dataScore++;
-      r2.push(`${dog} runs through ${leaderStr(dogLeader, dogLeaderPts)} — if ${fav} can contain the primary scoring option, the offense has no fallback`);
-    } else {
-      r2.push(`${dog} lacks the depth to match ${fav} possession for possession — the bench gap is the margin in this game`);
-    }
-    reasons.push(_pick(r2, r));
-    reasons.push(favIsHome
-      ? `${fav} at home as a favorite has been excellent — the crowd and preparation advantage are real factors tonight`
-      : `${fav} on the road has been covering at a high rate — the talent advantage travels`
-    );
-    reasons.push(`${fav} ${spread} — the better team covering by this margin is the realistic and most likely outcome tonight`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both defenses have been playing at an elite level — the scoring pace is tracking well under this number`,
+      `Coaching on both sides prioritizes defensive stops — halfcourt game expected throughout`,
+      `Under ${total} — the defensive quality in this matchup is the clearest edge on the board tonight`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Dog ─────────────────────────────────────────────────────────── */
   if (role === 'dog') {
-    const r1 = [];
     if (dogLeader) {
       dataScore++;
-      r1.push(`${leaderStr(dogLeader, dogLeaderPts)} is capable of taking over this game — a scorer of this caliber makes ${dog} dangerous at any number`);
-      r1.push(`${dogLeader} has been the most dangerous player in this matchup — ${fav} has had no consistent answer for him`);
-    } else {
-      r1.push(`${dog} at home has been a difficult out this season — the home court advantage is real and worth the plus-money risk`);
+      real.push(`${lStr(dogLeader, dogLeaderPts)} is capable of taking over this game — a scorer at this level makes ${dog} dangerous at any price`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
     if (favLeader) {
       dataScore++;
-      r2.push(`${fav} runs through ${leaderStr(favLeader, favLeaderPts)}, but ${dog} has shown it can disrupt primary ball-handlers and force the rest of the lineup to create`);
-    } else {
-      r2.push(`${fav} is the better team but the ${dogML} number implies a wider gap than the actual talent difference justifies`);
+      real.push(`${fav} runs through ${lStr(favLeader, favLeaderPts)}, but ${dog} has shown it can disrupt primary options and force the rest of the lineup to create`);
     }
-    reasons.push(_pick(r2, r));
-    reasons.push(favIsHome
-      ? `${dog} on the road has been more competitive than the market reflects — the road record is a real counter to the price`
-      : `${dog} at home with this lineup is where you want them as an underdog — do not dismiss the home floor advantage`
-    );
-    reasons.push(`At ${dogML}, ${dog} only needs to win this type of game occasionally to show long-term profit — the EV is on the right side`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      favIsHome
+        ? `${dog} on the road has been more competitive than the market reflects — the road record makes this price too generous`
+        : `${dog} at home is where you want them as an underdog — do not dismiss the home floor advantage in this building`,
+      `At ${dogML}, ${dog} offers real plus-money value — this type of game is decided by a handful of possessions`,
+      `${fav} has not been dominant away from their building — ${dog} is positioned to keep this game close`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Fav ─────────────────────────────────────────────────────────── */
-  const r1 = [];
+  if (pType === 1) {
+    if (favLeader) {
+      dataScore++;
+      real.push(`${lStr(favLeader, favLeaderPts)} has been creating matchup problems ${dog} has no consistent answer for — the talent gap shows up in the margin`);
+    }
+    if (dogLeader) {
+      dataScore++;
+      real.push(`${dog} runs through ${lStr(dogLeader, dogLeaderPts)} — if ${fav} takes him away, the offense has no reliable fallback plan`);
+    }
+    const fill = [
+      favIsHome
+        ? `${fav} at home as a favorite has been covering consistently — the crowd and preparation compound the talent edge`
+        : `${fav} on the road holds the talent advantage — the depth and scheme edge travels`,
+      `${fav} ${spread} — the better team executing the cleaner game plan covering by this margin is the most likely outcome`,
+      `${dog} does not have the depth to match ${fav} possession for possession — the bench gap creates the margin`,
+    ];
+    return _assemble(real, fill, dataScore);
+  }
+
+  /* ML Fav */
   if (favLeader) {
     dataScore++;
-    r1.push(`${leaderStr(favLeader, favLeaderPts)} is the engine of this offense — creating matchup problems ${dog} has no consistent answer for`);
-    r1.push(`${favLeader} has been at his best in high-leverage spots — ${fav} is the team you want when a scorer is playing at this level`);
-  } else {
-    r1.push(`${fav} has been one of the best two-way teams in the league recently — the talent edge is clear at both ends`);
+    real.push(`${lStr(favLeader, favLeaderPts)} is the engine of ${_poss(fav)} offense — creating matchup problems ${dog} has no consistent answer for`);
   }
-  reasons.push(_pick(r1, r));
-
-  const r2 = [];
   if (dogLeader) {
     dataScore++;
-    r2.push(`${dog} runs through ${leaderStr(dogLeader, dogLeaderPts)} — if ${fav} contains the primary option, the offense has no fallback plan`);
-    r2.push(`${dogLeader} is ${_poss(dog)} best chance to keep this close, but ${fav} has the defensive versatility to make his night difficult`);
-  } else {
-    r2.push(`${dog} lacks the offensive firepower to match ${fav} at their current level — the depth gap is real and exploitable tonight`);
+    real.push(`${dog} runs through ${lStr(dogLeader, dogLeaderPts)} — if ${fav} takes him away, the ${dog} offense has no fallback scoring option`);
   }
-  reasons.push(_pick(r2, r));
-
-  reasons.push(favIsHome
-    ? `${fav} at home has been dominant — the crowd and routine advantage have been meaningful factors throughout the season`
-    : `${fav} on the road with this roster is still the better team — the talent advantage doesn\'t disappear away from home`
-  );
-  reasons.push(`${fav} at ${favML} — a number that reflects the real gap between these two rosters in current form`);
-  return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+  const fill = [
+    favIsHome
+      ? `${fav} at home has been dominant — the crowd and routine advantage have been meaningful throughout this season`
+      : `${fav} on the road with this roster is still the better team — the talent edge does not disappear away from home`,
+    `${fav} at ${favML} — the number accurately reflects the gap between these two rosters in current form`,
+    `${dog} lacks the offensive firepower to stay with ${fav} for a full 48 minutes at this level`,
+  ];
+  return _assemble(real, fill, dataScore);
 }
 
 /* ── NHL ─────────────────────────────────────────────────────────── */
 function _nhlReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r) {
   const { favGoalie, dogGoalie } = p;
-  const reasons = [];
+  const total  = odds?.total || '5.5';
+  const spread = favIsHome ? (odds?.home?.spread || '-1.5') : (odds?.away?.spread || '-1.5');
+  const real   = [];
   let dataScore = 0;
-  const total   = odds?.total || '5.5';
-  const spread  = favIsHome ? (odds?.home?.spread || '-1.5') : (odds?.away?.spread || '-1.5');
 
-  /* Over ─────────────────────────────────────────────────────────── */
   if (pType === 2) {
-    const r1 = [];
     if (dogGoalie) {
       dataScore++;
-      r1.push(`${dogGoalie} has been giving up goals consistently — the vulnerability in the ${dog} crease is the reason to lean to the over`);
+      real.push(`${dogGoalie} has been under pressure recently — the vulnerability in ${_poss(dog)} crease is the key reason to lean to the over`);
     }
-    if (favGoalie && !r1.length) r1.push(`Both goalies have been tested heavily this week — neither crease is locked down entering tonight`);
-    if (!r1.length) r1.push(`High-tempo matchup between two offenses that have been clicking — the over is the natural play`);
-    reasons.push(_pick(r1, r));
-    reasons.push(`Both power play units have been active and dangerous lately — a penalty-heavy game pushes the goal total up`);
-    reasons.push(`These two teams have been playing high-scoring games in recent head-to-head matchups — offensive history supports the over`);
-    reasons.push(`Over ${total} — the goaltending matchup and pace both point toward more scoring than the posted number suggests`);
-    return { reasons, dataQuality: dataScore >= 1 ? 'medium' : 'low' };
+    if (favGoalie && !real.length) {
+      dataScore++;
+      real.push(`Both goalies have been tested heavily this week — neither crease is locked down entering tonight`);
+    }
+    const fill = [
+      `Both power play units have been active and converting — a penalty-heavy game pushes the goal total up`,
+      `These two teams have been involved in high-scoring games in recent meetings — the offensive trend holds`,
+      `Over ${total} — goaltending and pace both point toward more scoring than the posted number suggests`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Under ─────────────────────────────────────────────────────────── */
   if (pType === 3) {
-    const r1 = [];
     if (favGoalie && dogGoalie) {
       dataScore += 2;
-      r1.push(`${favGoalie} and ${dogGoalie} are both playing at a high level right now — elite goaltending on both sides sets up a tight, low-scoring game`);
+      real.push(`${favGoalie} and ${dogGoalie} are both playing at a high level — elite goaltending on both sides sets up a tight, low-scoring game`);
     } else if (favGoalie) {
       dataScore++;
-      r1.push(`${favGoalie} has been the best player on the ice for ${fav} this week — that level of goaltending suppresses the total`);
-    } else {
-      r1.push(`Both goalies are playing well — the defensive structure from both benches is keeping games tight and low-scoring`);
+      real.push(`${favGoalie} has been ${_poss(fav)} best performer in the crease — that level of goaltending suppresses the total`);
+    } else if (dogGoalie) {
+      dataScore++;
+      real.push(`${dogGoalie} has been sharp for ${dog} — two goalies playing well on both sides limits the combined total`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(`Both teams in a tight standings position — defensive structure is locked in and disciplined in high-stakes games`);
-    reasons.push(`Historical matchup between these two has trended toward defensive battles — the pattern holds tonight`);
-    reasons.push(`Under ${total} — the goaltending quality on display makes this total look high for what this game is likely to produce`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both teams in a tight standings battle — defensive structure is locked in and disciplined in high-stakes games`,
+      `Historical matchup between these two has trended toward defensive battles — the pattern holds tonight`,
+      `Under ${total} — the goaltending quality in this game makes this total look high for what it will actually produce`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Puck line ─────────────────────────────────────────────────────── */
   if (pType === 1) {
-    const r1 = [];
     if (favGoalie) {
       dataScore++;
-      r1.push(`${favGoalie} in net for ${fav} — the crease has been the foundation of their multi-goal wins, and the puck line follows his starts`);
-      r1.push(`When ${favGoalie} is at his best, ${fav} has the ability to control games from start to finish — puck line is live`);
-    } else {
-      r1.push(`${fav} wins by multi-goal margins when the offense is running — puck line coverage tracks their dominant performances`);
+      real.push(`${favGoalie} in the crease gives ${fav} the foundation to win decisively — quality goaltending in multi-goal wins keeps the puck line live`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
     if (dogGoalie) {
       dataScore++;
-      r2.push(`${dogGoalie} has been allowing goals in bunches recently — the puck line exposure is real when you\'re facing a ${fav} offense in this form`);
-    } else {
-      r2.push(`${dog} has been unable to keep games within one goal consistently — puck line is the right side at the better price`);
+      real.push(`${dogGoalie} has been allowing goals in bunches recently — the puck line exposure is real when facing a ${fav} offense in this form`);
     }
-    reasons.push(_pick(r2, r));
-    reasons.push(`${_poss(fav)} power play has been converting at a strong rate — special teams edge compounds the run line advantage`);
-    reasons.push(`Puck line at ${spread} offers a meaningfully better price than the straight moneyline — take the spread tonight`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `${_poss(fav)} power play has been converting at a strong rate — special teams edge amplifies the run line`,
+      `Puck line at ${spread} offers a meaningfully better price than the straight moneyline — take the spread tonight`,
+      `${dog} has been unable to keep games within one goal consistently — puck line is the right side at this price`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Dog ─────────────────────────────────────────────────────────── */
   if (role === 'dog') {
-    const r1 = [];
     if (dogGoalie) {
       dataScore++;
-      r1.push(`${dogGoalie} is playing at a high level right now — in-form goaltending makes any team dangerous in a one-goal sport like this`);
-      r1.push(`${dog} starts ${dogGoalie} — the market is not fully pricing in how well he has been playing, which is where the value comes from`);
-    } else {
-      r1.push(`${dog} at home has been an excellent underdog this season — this building creates real pressure on visiting teams`);
+      real.push(`${dogGoalie} has been playing at a high level for ${dog} — in-form goaltending makes any team dangerous in a one-goal sport`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
     if (favGoalie) {
       dataScore++;
-      r2.push(`${favGoalie} has shown road vulnerability this season — ${dog} is in position to exploit that trend at home tonight`);
-    } else {
-      r2.push(`${fav}\'s road performance has been inconsistent — the plus money on ${dog} reflects a real gap in the away-game résumé`);
+      real.push(`${favGoalie} has shown road vulnerability this season — ${dog} is positioned to exploit that dropoff at home tonight`);
     }
-    reasons.push(_pick(r2, r));
-    reasons.push(favIsHome
-      ? `${dog} on the road in a goaltending-driven sport — if their crease is locked in, they can steal this game at the right price`
-      : `${dog} at home in this building — the crowd factor in hockey is amplified, especially in a tight series`
-    );
-    reasons.push(`At ${dogML}, ${dog} is the best plus-money spot on tonight\'s board — the goaltending situation makes this price too generous`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      favIsHome
+        ? `${dog} at home in hockey — the crowd and building are real factors in a tight game, especially at plus money`
+        : `${dog} on the road with hot goaltending is a live underdog — goaltending-driven upsets happen at this price`,
+      `At ${dogML}, ${dog} is the best plus-money spot on tonight\'s board — the crease situation makes this price too generous`,
+      `${_poss(fav)} road form has been inconsistent — ${dog} home ice is where this price makes sense`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Fav ─────────────────────────────────────────────────────────── */
-  const r1 = [];
+  /* ML Fav */
   if (favGoalie) {
     dataScore++;
-    r1.push(`${favGoalie} in net for ${fav} — posting consistent, elite numbers in the crease and giving this team a real foundation to win from`);
-    r1.push(`${fav} rides ${favGoalie} tonight — a goalie playing at this level is the single biggest edge in a one-goal sport`);
-  } else {
-    r1.push(`${fav} holds the goaltending advantage in this matchup — the crease is where games are decided in hockey`);
+    real.push(`${favGoalie} in net for ${fav} — a goalie playing at this level is the single biggest edge in a one-goal sport`);
   }
-  reasons.push(_pick(r1, r));
-
-  const r2 = [];
   if (dogGoalie) {
     dataScore++;
-    r2.push(`${dogGoalie} has shown inconsistency recently — ${fav} offense has the firepower to find the net against a goalie in this form`);
-    r2.push(`${dog} starts ${dogGoalie}, but the form line on him suggests vulnerability — ${fav} offense is positioned to exploit it`);
-  } else {
-    r2.push(`${_poss(dog)} goaltending has been the weak link — ${fav} offense is in position to generate the chances and convert them`);
+    real.push(`${dogGoalie} has shown inconsistency recently — ${fav} offense is positioned to find the net against a goalie in this form`);
   }
-  reasons.push(_pick(r2, r));
-
-  reasons.push(favIsHome
-    ? `${fav} protecting home ice — the crowd and familiarity factor are real in hockey, especially in a tight matchup like this`
-    : `${fav} on the road with ${favGoalie || 'a quality goalie'} — road wins in hockey start between the pipes`
-  );
-  reasons.push(`${fav} at ${favML} — the goaltending edge is clear, and that\'s where the money is in hockey`);
-  return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+  const fill = [
+    favIsHome
+      ? `${fav} protecting home ice — the crowd and familiarity are real factors in hockey, especially in tight matchups`
+      : `${fav} on the road with the goaltending edge — in hockey, that\'s where the money is`,
+    `${fav} at ${favML} — the goaltending situation is the clearest edge in this game`,
+    `${_poss(dog)} crease has been the weak link — ${fav} offense generates enough chances to exploit it`,
+  ];
+  return _assemble(real, fill, dataScore);
 }
 
 /* ── NFL ─────────────────────────────────────────────────────────── */
 function _nflReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r) {
   const { favQB, dogQB, favRB, dogRB } = p;
-  const reasons = [];
+  const total  = odds?.total || '47.5';
+  const spread = favIsHome ? (odds?.home?.spread || '-3.0') : (odds?.away?.spread || '-3.0');
+  const real   = [];
   let dataScore = 0;
-  const total   = odds?.total || '47.5';
-  const spread  = favIsHome ? (odds?.home?.spread || '-3.0') : (odds?.away?.spread || '-3.0');
 
-  /* Over ─────────────────────────────────────────────────────────── */
   if (pType === 2) {
-    const r1 = [];
     if (favQB && dogQB) {
       dataScore += 2;
-      r1.push(`${favQB} and ${dogQB} are both in rhythm — two quarterbacks playing at this level makes the ${total} total very reachable`);
+      real.push(`${favQB} and ${dogQB} are both in rhythm — two quarterbacks operating at this level makes the ${total} total very reachable`);
     } else if (favQB) {
       dataScore++;
-      r1.push(`${favQB} has been operating at peak efficiency — the offense is going to put up points and push the total`);
-    } else {
-      r1.push(`Both offenses have been scoring at a high clip — this total is in range for what these teams have been doing`);
+      real.push(`${favQB} has been operating at peak efficiency — the offense is going to put up points and push this total`);
+    } else if (dogQB) {
+      dataScore++;
+      real.push(`${dogQB} has been finding the end zone consistently — the total is in range for what these two offenses have been doing`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(`Both teams rank near the top in offensive efficiency — high-tempo play expected from the opening drive`);
-    reasons.push(`Neither secondary is at full strength — both QBs are going to find favorable matchups and exploit them`);
-    reasons.push(`Over ${total} — the combined offensive production from both sides makes this number clearable tonight`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both offenses have been scoring at a high clip — pace will be aggressive from the opening drive`,
+      `Neither secondary is at full strength — both QBs will find favorable matchups to attack`,
+      `Over ${total} — the combined offensive production from both sides makes this number clearable`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Under ─────────────────────────────────────────────────────────── */
   if (pType === 3) {
-    const r1 = [];
     if (favQB) {
       dataScore++;
-      r1.push(`${favQB} is facing one of the better defensive units he will see this year — expect a controlled, lower-tempo game`);
-    } else {
-      r1.push(`Both defenses have been outstanding recently — elite units on both sides set up a lower-scoring game`);
+      real.push(`${favQB} is facing one of the better defenses he will see this year — expect a lower-tempo, controlled game`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(dogQB
-      ? `${dogQB} faces a defense that has been playing at an elite level — this is not a comfortable passing environment`
-      : `Both offenses have struggled to sustain drives against quality defenses — this matchup has the makings of a grinder`
-    );
-    reasons.push(`Weather or game-flow factors may slow the pace — conservative game management expected from both coaching staffs`);
-    reasons.push(`Under ${total} — the defensive quality on both sides exceeds what this total is priced at`);
-    return { reasons, dataQuality: dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      dogQB
+        ? `${dogQB} faces a defense that has been playing at its best — not a comfortable passing environment`
+        : `Both offenses have struggled to sustain drives against quality defenses — this game has the look of a grinder`,
+      `Weather or scheme factors may slow the pace — conservative game management from both coaching staffs`,
+      `Under ${total} — the defensive quality on both sides exceeds what this total is priced at`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Spread ─────────────────────────────────────────────────────────── */
-  if (pType === 1) {
-    const r1 = [];
-    if (favQB) {
-      dataScore++;
-      r1.push(`${favQB} operating at peak efficiency — the offense is clicking in all three phases and that shows up in the margin`);
-      r1.push(`${fav} goes through ${favQB} — a quarterback playing at this level takes the ball and covers the spread`);
-    } else {
-      r1.push(`${fav} has a real scheme and execution edge — that kind of dominance creates sustained field position and covers the spread`);
-    }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
-    if (dogQB) {
-      dataScore++;
-      r2.push(`${dogQB} is facing a ${fav} defense that is playing at its best — he will be under pressure and forced into mistakes`);
-      r2.push(`${dog} runs through ${dogQB}, but ${fav} has the defensive scheme to take him out of his comfort zone`);
-    } else {
-      r2.push(`${dog} does not have the quarterback play to keep up with ${fav} on a neutral field — the spread reflects a real gap`);
-    }
-    reasons.push(_pick(r2, r));
-    reasons.push(favRB
-      ? `${favRB} in the ground game controls the clock and opens up play-action — the run game is the foundation of ${_poss(fav)} scheme tonight`
-      : `${_poss(fav)} ground game is an underrated edge here — run blocking advantage translates directly to the spread`
-    );
-    reasons.push(`${fav} ${spread} — the better team, executing the cleaner game plan, covering by this margin is the most realistic outcome`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
-  }
-
-  /* ML Dog ─────────────────────────────────────────────────────────── */
   if (role === 'dog') {
-    const r1 = [];
     if (dogQB) {
       dataScore++;
-      r1.push(`${dogQB} at home has been performing at a high level — do not dismiss a quarterback with this experience at plus money`);
-      r1.push(`${dog} goes through ${dogQB} — in this building, he has shown the ability to manage the game and keep the score close`);
-    } else {
-      r1.push(`${dog} at home is a dangerous underdog — the home crowd factor in this stadium is not to be dismissed`);
+      real.push(`${dogQB} at home has been performing at a high level — a quarterback with this experience is dangerous at plus money`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
     if (favQB) {
       dataScore++;
-      r2.push(`${favQB} has to handle a hostile road environment — that is a real factor when the ${dogML} implies more certainty than the game will deliver`);
-    } else {
-      r2.push(`${fav} on the road faces a prepared ${dog} team — road conditions erase part of the talent gap`);
+      real.push(`${favQB} has to handle a hostile road environment — that is a real factor when the price implies more certainty than the game will deliver`);
     }
-    reasons.push(_pick(r2, r));
-    reasons.push(dogRB
-      ? `${dogRB} provides the ground game option that keeps ${dog} competitive and controls the clock — field position matters at this level`
-      : `${dog} has the ground game to keep this competitive and drain the clock — a low-scoring game is where the upset happens`
-    );
-    reasons.push(`At ${dogML}, ${dog} is the most interesting plus-money spot on today\'s board — this type of game is decided by single plays`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      dogRB
+        ? `${dogRB} provides the ground game option that keeps ${dog} competitive and controls the clock`
+        : `${dog} has the run game to keep this game close and drain the clock — low-scoring games are where upsets live`,
+      `At ${dogML}, ${dog} is the right plus-money spot — this type of game is decided by a handful of plays`,
+      `${fav} has not been dominant on the road — ${dog} home field narrows the gap considerably`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Fav ─────────────────────────────────────────────────────────── */
-  const r1 = [];
+  if (pType === 1) {
+    if (favQB) {
+      dataScore++;
+      real.push(`${favQB} has been executing with precision — a quarterback at this level in this scheme creates the margin that covers the spread`);
+    }
+    if (dogQB) {
+      dataScore++;
+      real.push(`${dogQB} is facing a ${fav} defense that has been playing shutdown football — expect consistent pressure and difficult moments`);
+    }
+    const fill = [
+      favRB
+        ? `${favRB} in the ground game controls the tempo and opens play-action — the run game is the foundation of ${_poss(fav)} scheme`
+        : `${_poss(fav)} ground game creates the play-action advantage that defines their offensive identity`,
+      `${fav} ${spread} — the better team, executing the cleaner game plan, covering by this margin is the most likely outcome`,
+      `${_poss(dog)} red zone offense has been inefficient — settling for field goals while ${fav} scores touchdowns`,
+    ];
+    return _assemble(real, fill, dataScore);
+  }
+
+  /* ML Fav */
   if (favQB) {
     dataScore++;
-    r1.push(`${favQB} is operating at peak efficiency — the offense is in sync and he is making the right decisions in high-pressure moments`);
-    r1.push(`${fav} goes through ${favQB} — a quarterback at this level makes the team a difficult out at any price`);
-  } else {
-    r1.push(`${fav} has the better quarterback and scheme in this matchup — execution and depth advantage is clear`);
+    real.push(`${favQB} is operating at peak efficiency — making sharp decisions and producing in high-leverage moments`);
   }
-  reasons.push(_pick(r1, r));
-
-  const r2 = [];
   if (dogQB) {
     dataScore++;
-    r2.push(`${dogQB} has been under pressure and making costly errors in recent games — ${fav} defense is exactly the type to force those situations`);
-    r2.push(`${dog} relies on ${dogQB} to create, but ${fav} has the defensive personnel to disrupt the timing and force him into bad decisions`);
-  } else {
-    r2.push(`${dog} does not have the quarterback play to sustain drives against ${_poss(fav)} defense — the field position game tips strongly to ${fav}`);
+    real.push(`${dogQB} has been under pressure and forcing throws in key moments — ${fav} defense is exactly the type to create those situations`);
   }
-  reasons.push(_pick(r2, r));
-
-  reasons.push(favRB
-    ? `${favRB} in the ground game opens up play-action and controls the tempo — ${fav} wins the time-of-possession battle and limits ${_poss(dog)} opportunities`
-    : `${_poss(fav)} ground game creates the play-action advantage that this offense needs to run their scheme effectively`
-  );
-  reasons.push(favIsHome
-    ? `${fav} at home with the better quarterback — the preparation and crowd advantage is real at this level`
-    : `${fav} on the road is still the better team — the talent gap doesn\'t flip when they leave their building`
-  );
-  return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+  const fill = [
+    favRB
+      ? `${favRB} in the ground game opens up play-action and controls the tempo — ${fav} wins the possession battle`
+      : `${_poss(fav)} ground game creates the play-action edge that this offense depends on to execute`,
+    favIsHome
+      ? `${fav} at home with the better quarterback — the preparation and crowd advantage is real at this level`
+      : `${fav} on the road is still the better team — the talent gap does not disappear when they travel`,
+    `${dog} does not have the quarterback play to sustain drives against ${_poss(fav)} defense tonight`,
+  ];
+  return _assemble(real, fill, dataScore);
 }
 
 /* ── NCAAM ────────────────────────────────────────────────────────── */
 function _ncaamReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r) {
   const { favLeader, dogLeader, favLeaderPts, dogLeaderPts } = p;
-  const reasons = [];
+  const total  = odds?.total || '145.5';
+  const spread = favIsHome ? (odds?.home?.spread || '-4.5') : (odds?.away?.spread || '-4.5');
+  const lStr   = (name, pts) => pts ? `${name} (${pts} PPG)` : name;
+  const real   = [];
   let dataScore = 0;
-  const total   = odds?.total || '145.5';
-  const spread  = favIsHome ? (odds?.home?.spread || '-4.5') : (odds?.away?.spread || '-4.5');
 
-  const leaderStr = (name, pts) => pts ? `${name} (${pts} PPG)` : name;
-
-  /* Over ─────────────────────────────────────────────────────────── */
   if (pType === 2) {
-    const r1 = [];
     if (favLeader && dogLeader) {
       dataScore += 2;
-      r1.push(`${leaderStr(favLeader, favLeaderPts)} and ${leaderStr(dogLeader, dogLeaderPts)} are both capable of 25+ — the individual star battle alone pushes this total`);
+      real.push(`${lStr(favLeader, favLeaderPts)} and ${lStr(dogLeader, dogLeaderPts)} are both capable of 25+ — the individual star battle pushes this total`);
     } else if (favLeader) {
       dataScore++;
-      r1.push(`${leaderStr(favLeader, favLeaderPts)} is the offensive engine — the volume required for this team to win pushes the total`);
-    } else {
-      r1.push(`Both teams have been playing at a high tempo — expect a high-scoring, up-and-down game tonight`);
+      real.push(`${lStr(favLeader, favLeaderPts)} is the offensive engine — the volume this player needs to carry ${fav} pushes the total`);
+    } else if (dogLeader) {
+      dataScore++;
+      real.push(`${lStr(dogLeader, dogLeaderPts)} keeps ${dog} in high-scoring games — the offensive profile supports the over`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(`Both teams rank near the top nationally in offensive pace — this matchup has the ingredients for a shootout`);
-    reasons.push(`Neither defense has the personnel to slow down the opponent\'s primary offensive players tonight`);
-    reasons.push(`Over ${total} — the offensive talent in this game and the defensive limitations on both sides make this number clearable`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both teams rank near the top nationally in offensive pace — this matchup has the ingredients for a shootout`,
+      `Neither defense can consistently slow down the opponent's primary scorer in this matchup`,
+      `Over ${total} — the offensive talent and defensive limitations on both sides make this number clearable`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Under ─────────────────────────────────────────────────────────── */
   if (pType === 3) {
-    reasons.push(favLeader
-      ? `${fav} runs through ${favLeader} — when both defenses lock in and take away the star, the scoring pace drops below this number`
-      : `Both defenses have been outstanding nationally — elite defensive units clashing in this game keep the total in check`
-    );
-    reasons.push(`Slow tempo expected — both programs play at a deliberate pace that limits possessions and scoring`);
-    reasons.push(`Both coaches prioritize defensive stops above offensive pace — this game has the makings of a grinder`);
-    reasons.push(`Under ${total} — the defensive quality on both sides makes this total look too high for what this game will produce`);
-    return { reasons, dataQuality: favLeader ? 'medium' : 'low' };
-  }
-
-  /* Spread ─────────────────────────────────────────────────────────── */
-  if (pType === 1) {
-    const r1 = [];
     if (favLeader) {
       dataScore++;
-      r1.push(`${leaderStr(favLeader, favLeaderPts)} is posting elite numbers and creating matchup problems ${dog} has no consistent answer for`);
-      r1.push(`${favLeader} has been the best player in this matchup all season — the talent gap translates directly to the margin`);
-    } else {
-      r1.push(`${fav} has a real efficiency and depth edge in this game — the talent gap shows up in the final margin`);
+      real.push(`${fav} runs through ${lStr(favLeader, favLeaderPts)} — when both defenses lock in and take away the primary scorer, the pace falls below this number`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
-    if (dogLeader) {
-      dataScore++;
-      r2.push(`${dog} relies on ${leaderStr(dogLeader, dogLeaderPts)} to generate offense — if ${fav} takes him away, the attack has nowhere to go`);
-    } else {
-      r2.push(`${dog} lacks the offensive firepower to keep up with ${fav} at their current level — the spread reflects a real gap`);
-    }
-    reasons.push(_pick(r2, r));
-    reasons.push(favIsHome
-      ? `${fav} at home as a favorite in college basketball — the crowd and atmosphere advantage is among the most powerful in sports`
-      : `${fav} on the road still holds the talent edge — this program covers as a road favorite at a consistent rate`
-    );
-    reasons.push(`${fav} ${spread} — the better team, playing at a high level, covering by this margin is the most likely outcome tonight`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both defenses have been among the best nationally — the scoring pace is tracking well under this total`,
+      `Both coaches prioritize defensive stops over offensive pace — this game has the look of a grinder`,
+      `Under ${total} — the defensive quality on both sides makes this total look too high for what the game will produce`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Dog ─────────────────────────────────────────────────────────── */
   if (role === 'dog') {
-    const r1 = [];
     if (dogLeader) {
       dataScore++;
-      r1.push(`${leaderStr(dogLeader, dogLeaderPts)} is capable of a monster performance — a proven high-volume scorer can carry a team on the right night`);
-      r1.push(`${dogLeader} is the reason ${dog} is dangerous at plus money — he can take over and make the market look wrong`);
-    } else {
-      r1.push(`${dog} at home as an underdog is one of the highest-variance spots in college basketball — the crowd can swing this game`);
+      real.push(`${lStr(dogLeader, dogLeaderPts)} is capable of a monster performance — a proven volume scorer can carry this team at plus money`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(favLeader
-      ? `${fav} runs through ${leaderStr(favLeader, favLeaderPts)} — if ${dog} can disrupt the primary option, the offense loses its rhythm`
-      : `${fav} is the better team but the ${dogML} price implies more certainty than a college basketball game actually delivers`
-    );
-    reasons.push(`Home floor advantage in college basketball is one of the most significant edges in American sports — this building matters`);
-    reasons.push(`At ${dogML}, ${dog} is the right plus-money spot — the upset probability is well above what the market is implying`);
-    if (dogLeader) dataScore++;
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    if (favLeader) {
+      dataScore++;
+      real.push(`${fav} runs through ${lStr(favLeader, favLeaderPts)}, but ${dog} has the defensive structure to disrupt the primary option and force the offense to recreate`);
+    }
+    const fill = [
+      `Home floor advantage in college basketball is among the highest-variance factors in the sport`,
+      `At ${dogML}, ${dog} is worth backing — the upset probability is higher than the market implies`,
+      `${dog} has been covering at home as an underdog this season — the home crowd creates real pressure`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Fav ─────────────────────────────────────────────────────────── */
-  const r1 = [];
+  if (pType === 1) {
+    if (favLeader) {
+      dataScore++;
+      real.push(`${lStr(favLeader, favLeaderPts)} is posting elite numbers and creating matchup problems ${dog} has no answer for`);
+    }
+    if (dogLeader) {
+      dataScore++;
+      real.push(`${dog} runs through ${lStr(dogLeader, dogLeaderPts)} — if ${fav} takes him away, the offense has nowhere else to go`);
+    }
+    const fill = [
+      favIsHome
+        ? `${fav} at home as a favorite has been dominant — college home court is a real and measurable edge`
+        : `${fav} on the road holds the talent advantage — this program covers road spots at a consistent rate`,
+      `${fav} ${spread} — the better team covering by this margin is the most likely outcome tonight`,
+      `${_poss(dog)} depth shrinks considerably against this caliber of opponent — fatigue in the second half creates the margin`,
+    ];
+    return _assemble(real, fill, dataScore);
+  }
+
+  /* ML Fav */
   if (favLeader) {
     dataScore++;
-    r1.push(`${leaderStr(favLeader, favLeaderPts)} is the engine of this offense — creating matchup problems throughout ${_poss(dog)} entire rotation`);
-    r1.push(`${favLeader} has been at his best in big games this season — ${fav} is the team you back when this scorer is running hot`);
-  } else {
-    r1.push(`${fav} efficiency has been at an elite level at both ends — real depth and execution advantage in this matchup`);
+    real.push(`${lStr(favLeader, favLeaderPts)} is the engine of this offense — creating matchup problems throughout ${_poss(dog)} entire rotation`);
   }
-  reasons.push(_pick(r1, r));
-
-  const r2 = [];
   if (dogLeader) {
     dataScore++;
-    r2.push(`${dog} runs through ${leaderStr(dogLeader, dogLeaderPts)} — if ${fav} takes him away, there is no offensive fallback plan`);
-  } else {
-    r2.push(`${dog} does not have the offensive depth to match ${fav} for 40 minutes — the depth gap shows up late in close games`);
+    real.push(`${dog} runs through ${lStr(dogLeader, dogLeaderPts)} — if ${fav} takes him away, there is no offensive fallback plan`);
   }
-  reasons.push(_pick(r2, r));
-
-  reasons.push(favIsHome
-    ? `${fav} at home as a favorite in this building has been dominant — home court in college basketball is a real and measurable edge`
-    : `${fav} on the road holds the talent advantage — this program covers in road spots at a consistent rate this season`
-  );
-  reasons.push(`${_poss(fav)} depth advantage is significant — the rotation length creates fatigue and execution errors in the second half`);
-  return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+  const fill = [
+    favIsHome
+      ? `${fav} at home in this building has been dominant — home court in college basketball is a real and measurable edge`
+      : `${fav} on the road holds the talent edge — this program covers road spots at a consistent rate this season`,
+    `${_poss(fav)} depth advantage is significant — the rotation length creates fatigue and execution errors in the second half`,
+    `${dog} does not have the firepower to match ${fav} for 40 minutes — the depth gap shows up late`,
+  ];
+  return _assemble(real, fill, dataScore);
 }
 
 /* ── NCAAF ────────────────────────────────────────────────────────── */
 function _ncaafReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r) {
   const { favQB, dogQB, favRB, dogRB } = p;
-  const reasons = [];
+  const total  = odds?.total || '47.5';
+  const spread = favIsHome ? (odds?.home?.spread || '-7.0') : (odds?.away?.spread || '-7.0');
+  const real   = [];
   let dataScore = 0;
-  const total   = odds?.total || '47.5';
-  const spread  = favIsHome ? (odds?.home?.spread || '-7.0') : (odds?.away?.spread || '-7.0');
 
-  /* Over ─────────────────────────────────────────────────────────── */
   if (pType === 2) {
-    const r1 = [];
     if (favQB && dogQB) {
       dataScore += 2;
-      r1.push(`${favQB} and ${dogQB} are both willing to throw — two pass-happy quarterbacks make the ${total} total very reachable`);
+      real.push(`${favQB} and ${dogQB} are both willing to throw — two pass-heavy quarterbacks makes the ${total} total very reachable tonight`);
     } else if (favQB) {
       dataScore++;
-      r1.push(`${favQB} has been one of the most productive quarterbacks in the country — the offense is going to put up points`);
-    } else {
-      r1.push(`Both offenses have been allowing big numbers — the scoring ceiling in this specific matchup is elevated`);
+      real.push(`${favQB} has been one of the most productive quarterbacks in the country — the offense puts up points`);
+    } else if (dogQB) {
+      dataScore++;
+      real.push(`${dogQB} gives ${dog} the upside to push this total — both defenses have been allowing numbers`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(`Both defenses have been vulnerable against the run and pass — the scoring potential on both sides is real`);
-    reasons.push(`Historical matchup between these programs has trended toward offense — the pattern supports the over tonight`);
-    reasons.push(`Over ${total} — the offensive talent on both sides and the defensive limitations make this number clearable`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      `Both defenses have been vulnerable against the run and pass — the scoring ceiling is elevated`,
+      `Historical matchup between these programs has trended toward offense — the pattern supports the over`,
+      `Over ${total} — the offensive talent and defensive limitations on both sides make this number clearable`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Under ─────────────────────────────────────────────────────────── */
   if (pType === 3) {
-    const r1 = [];
     if (favQB) {
       dataScore++;
-      r1.push(`${favQB} is facing one of the better defenses he has seen all year — this is not a free-flowing passing environment`);
-    } else {
-      r1.push(`Both defenses have been excellent this season — the under is the natural play when two elite units square off`);
+      real.push(`${favQB} is facing one of the better defenses he has seen all year — this is not a free-flowing passing environment`);
     }
-    reasons.push(_pick(r1, r));
-    reasons.push(dogQB
-      ? `${dogQB} is going to be under consistent pressure — the defense has been at its best against quarterbacks of this style`
-      : `Both offenses have struggled to sustain drives against physical defenses — fewer possessions means fewer points`
-    );
-    reasons.push(`Slow tempo teams — both programs limit possessions and play field position football, which keeps the final score low`);
-    reasons.push(`Under ${total} — the defensive quality on both sides of this game is the strongest signal on the board tonight`);
-    return { reasons, dataQuality: dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      dogQB
+        ? `${dogQB} is going to be under consistent pressure — the defense has been at its best against this style`
+        : `Both offenses have struggled to sustain drives against physical defenses — fewer possessions means fewer points`,
+      `Slow tempo teams — both programs limit possessions and play field position football`,
+      `Under ${total} — the defensive quality on both sides of this game is the clearest edge on the board`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* Spread ─────────────────────────────────────────────────────────── */
-  if (pType === 1) {
-    const r1 = [];
-    if (favQB) {
-      dataScore++;
-      r1.push(`${favQB} has been one of the most efficient quarterbacks in the country — the offense executes the scheme and creates the margin`);
-      r1.push(`${fav} runs through ${favQB} — a quarterback at this level in this system is the reason the spread is live`);
-    } else {
-      r1.push(`${fav} has a clear scheme and execution edge — sustained field position control throughout the game is the result`);
-    }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
-    if (dogQB) {
-      dataScore++;
-      r2.push(`${dogQB} faces a ${fav} defense that has been playing shutdown football — expect pressure and difficult moments throughout`);
-      r2.push(`${dog} relies on ${dogQB} to generate offense, but ${fav} has the defensive personnel to disrupt his timing all night`);
-    } else {
-      r2.push(`${dog} does not have the quarterback play to sustain drives against this level of competition — field position tips to ${fav}`);
-    }
-    reasons.push(_pick(r2, r));
-    reasons.push(favRB
-      ? `${favRB} in the ground game controls the clock and limits ${_poss(dog)} possessions — field position edge is foundational to the scheme`
-      : `${_poss(fav)} ground game creates the play-action advantage that opens up the passing game and creates the margin`
-    );
-    reasons.push(`${fav} ${spread} — the better team, executing the cleaner scheme, covering by this margin is the most likely outcome`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
-  }
-
-  /* ML Dog ─────────────────────────────────────────────────────────── */
   if (role === 'dog') {
-    const r1 = [];
     if (dogQB) {
       dataScore++;
-      r1.push(`${dogQB} at home has been performing at a high level — this quarterback is dangerous with the home crowd behind him`);
-      r1.push(`${dog} goes through ${dogQB} — in this environment, he has shown the ability to manage games and create explosive plays`);
-    } else {
-      r1.push(`${dog} at home in college football — the home field advantage is one of the most significant forces in American sports`);
+      real.push(`${dogQB} at home has been performing at a high level — dangerous with this crowd behind him at plus money`);
     }
-    reasons.push(_pick(r1, r));
-    const r2 = [];
     if (favQB) {
       dataScore++;
-      r2.push(`${favQB} has to handle a hostile road environment — road games in college football erase a significant portion of the talent gap`);
-    } else {
-      r2.push(`${fav} on the road faces a prepared ${dog} team — the road conditions and crowd make this game much closer than the price suggests`);
+      real.push(`${favQB} has to handle a hostile road environment — road games in college football erase a significant portion of the talent gap`);
     }
-    reasons.push(_pick(r2, r));
-    reasons.push(dogRB
-      ? `${dogRB} gives ${dog} the ground game to control the clock and keep this score close — time of possession is everything at plus money`
-      : `${dog} has the run game to keep this competitive and drain the clock — a low-scoring game is where the upset opportunity lives`
-    );
-    reasons.push(`At ${dogML}, ${dog} is the play — college football home underdogs cover at a rate the market consistently underprices`);
-    return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+    const fill = [
+      dogRB
+        ? `${dogRB} gives ${dog} the ground game to control the clock and keep this score close`
+        : `${dog} has the run game to keep this competitive and drain the clock — upsets live in low-scoring games`,
+      `Home field advantage in college football is one of the most powerful forces in American sports`,
+      `At ${dogML}, ${dog} is the right side — college football home underdogs cover at a rate the market underprices`,
+    ];
+    return _assemble(real, fill, dataScore);
   }
 
-  /* ML Fav ─────────────────────────────────────────────────────────── */
-  const r1 = [];
+  if (pType === 1) {
+    if (favQB) {
+      dataScore++;
+      real.push(`${favQB} has been one of the most efficient quarterbacks in the country — the offense executes and creates the multi-score margin`);
+    }
+    if (dogQB) {
+      dataScore++;
+      real.push(`${dogQB} faces a ${fav} defense that has been playing shutdown football — expect consistent pressure and mistakes`);
+    }
+    const fill = [
+      favRB
+        ? `${favRB} in the ground game controls the clock and limits ${_poss(dog)} possessions — field position edge is foundational`
+        : `${_poss(fav)} ground game creates the play-action advantage that opens up the passing game and creates the margin`,
+      `${fav} ${spread} — the better team, executing the cleaner scheme, covering by this margin is the most likely outcome`,
+      `${dog} red zone defense has been vulnerable — ${fav} converts scoring chances at a high rate`,
+    ];
+    return _assemble(real, fill, dataScore);
+  }
+
+  /* ML Fav */
   if (favQB) {
     dataScore++;
-    r1.push(`${favQB} has been operating efficiently and making the right decisions — the offense is clicking at the right time`);
-    r1.push(`${fav} goes through ${favQB} — a quarterback playing at this level is the hardest thing to defend in college football`);
-  } else {
-    r1.push(`${fav} holds the execution and scheme edge — their offensive system has been a problem for opponents all season`);
+    real.push(`${favQB} has been operating efficiently and making the right decisions — the offense is clicking at the right time`);
   }
-  reasons.push(_pick(r1, r));
-
-  const r2 = [];
   if (dogQB) {
     dataScore++;
-    r2.push(`${dogQB} is facing a ${fav} defense that has been suffocating — expect consistent pressure and difficulty all game`);
-    r2.push(`${dog} relies on ${dogQB}, but ${fav} has the defensive scheme to disrupt his timing and force errors in critical moments`);
-  } else {
-    r2.push(`${dog} does not have the quarterback play to sustain drives against ${fav} — the field position gap creates the margin`);
+    real.push(`${dogQB} is facing a ${fav} defense that has been suffocating — expect consistent pressure and difficulty all game`);
   }
-  reasons.push(_pick(r2, r));
-
-  reasons.push(favRB
-    ? `${favRB} is the ground game option that sets up play-action and controls the game tempo — the run game is the foundation of this scheme`
-    : `${_poss(fav)} ground game creates the play-action advantage that defines their offensive identity and drives the winning margin`
-  );
-  reasons.push(favIsHome
-    ? `${fav} at home is where this program has been most dominant — the combination of talent and crowd is difficult to overcome`
-    : `${fav} on the road as the clearly better team — the talent gap does not disappear when the schedule takes them away from home`
-  );
-  return { reasons, dataQuality: dataScore >= 2 ? 'high' : dataScore >= 1 ? 'medium' : 'low' };
+  const fill = [
+    favRB
+      ? `${favRB} is the ground game option that sets up play-action and controls tempo — the run game defines ${_poss(fav)} offensive identity`
+      : `${_poss(fav)} ground game creates the play-action edge that drives the winning margin`,
+    favIsHome
+      ? `${fav} at home is where this program has been most dominant — crowd and talent combine as a tough obstacle`
+      : `${fav} on the road as the clearly better team — the talent gap does not disappear when the schedule sends them away`,
+    `${dog} does not have the quarterback play to sustain drives against ${_poss(fav)} defense tonight`,
+  ];
+  return _assemble(real, fill, dataScore);
 }
 
-/* ── Player extraction from ESPN summary ─────────────────────── */
+/* ── Assembler: enforces sentence-count discipline ───────────────── */
+function _assemble(real, fill, dataScore) {
+  if (dataScore === 0) {
+    // No player data → 1 honest sentence, homepage-ineligible
+    return { reasons: [fill[0]], dataQuality: 'low' };
+  }
+  if (dataScore === 1) {
+    // One player → 2 sentences total
+    return { reasons: [...real, fill[0]].slice(0, 2), dataQuality: 'medium' };
+  }
+  // Two or more players → up to 4 sentences
+  return { reasons: [...real, ...fill].slice(0, 4), dataQuality: 'high' };
+}
+
+/* ── Player extraction from ESPN summary ─────────────────────────── */
 function extractPlayers(data, sport, game) {
   const out = {};
   try {
@@ -890,6 +691,7 @@ function extractPlayers(data, sport, game) {
         out[`${side}PitcherK`]   = k;
       });
     }
+
     if (sport === 'nhl') {
       (data.rosters || []).forEach(roster => {
         const side    = roster.homeAway === 'home' ? 'home' : 'away';
@@ -898,11 +700,17 @@ function extractPlayers(data, sport, game) {
         if (starter) out[`${side}Goalie`] = starter.athlete?.shortName || starter.athlete?.displayName || null;
       });
     }
+
     if (sport === 'nba' || sport === 'ncaam') {
-      (data.leaders || []).forEach(tl => {
-        const abbr = tl.team?.abbreviation || '';
-        const side = abbr === game.home.abbr ? 'home' : abbr === game.away.abbr ? 'away' : null;
-        if (!side) return;
+      (data.leaders || []).forEach((tl, idx) => {
+        const abbr   = (tl.team?.abbreviation || '').toUpperCase();
+        const homeAb = (game.home.abbr || '').toUpperCase();
+        const awayAb = (game.away.abbr || '').toUpperCase();
+        // Primary match by abbreviation; fallback by list order (home=0, away=1)
+        let side = null;
+        if (abbr && homeAb && abbr === homeAb) side = 'home';
+        else if (abbr && awayAb && abbr === awayAb) side = 'away';
+        else side = idx === 0 ? 'home' : 'away'; // positional fallback
         const ptsLeaders = (tl.leaders || []).find(c => c.name === 'points' || c.abbreviation === 'PTS');
         const top = ptsLeaders?.leaders?.[0];
         if (top) {
@@ -911,11 +719,16 @@ function extractPlayers(data, sport, game) {
         }
       });
     }
+
     if (sport === 'nfl' || sport === 'ncaaf') {
-      (data.leaders || []).forEach(tl => {
-        const abbr = tl.team?.abbreviation || '';
-        const side = abbr === game.home.abbr ? 'home' : abbr === game.away.abbr ? 'away' : null;
-        if (!side) return;
+      (data.leaders || []).forEach((tl, idx) => {
+        const abbr   = (tl.team?.abbreviation || '').toUpperCase();
+        const homeAb = (game.home.abbr || '').toUpperCase();
+        const awayAb = (game.away.abbr || '').toUpperCase();
+        let side = null;
+        if (abbr && homeAb && abbr === homeAb) side = 'home';
+        else if (abbr && awayAb && abbr === awayAb) side = 'away';
+        else side = idx === 0 ? 'home' : 'away';
         const passLeaders = (tl.leaders || []).find(c => c.name === 'passingYards' || c.abbreviation === 'PYDS');
         const passTop = passLeaders?.leaders?.[0];
         if (passTop) out[`${side}QB`] = passTop.athlete?.shortName || passTop.athlete?.displayName || null;
@@ -925,18 +738,22 @@ function extractPlayers(data, sport, game) {
       });
     }
   } catch (e) {
-    console.warn('[HTB] Player extraction error:', e?.message);
+    console.warn('[HTB] extractPlayers error:', e?.message);
   }
+
+  // Log extraction result so Vercel logs show what data is available
+  const named = Object.entries(out).filter(([k, v]) => v && !k.includes('Rec') && !k.includes('K')).map(([k, v]) => `${k}=${v}`);
+  console.log(`[HTB] extractPlayers(${sport} ${game.id}): ${named.length ? named.join(', ') : 'NO player data extracted'}`);
+
   return out;
 }
 
 /* ── Core pick computation ────────────────────────────────────── */
 function computePick(game, odds, players, today, role) {
-  const sp      = game.sport;
-  const spUp    = sp.toUpperCase();
-  const away    = game.away.name;
-  const home    = game.home.name;
-  const r       = mkRng(`${game.id}-${today}-${role}`);
+  const sp  = game.sport;
+  const away = game.away.name;
+  const home = game.home.name;
+  const r   = mkRng(`${game.id}-${today}-${role}`);
 
   let favIsHome;
   if (odds?.favorite === 'home') {
@@ -956,8 +773,7 @@ function computePick(game, odds, players, today, role) {
   const dfltTotal = sp === 'mlb' ? '8.0' : sp === 'nhl' ? '5.5' : sp === 'nba' ? '220.5' : sp === 'ncaam' ? '145.5' : '47.5';
   const dfltLine  = sp === 'mlb' || sp === 'nhl' ? '-1.5' : '-3.0';
 
-  // Build player context object for builders
-  const playerCtx = {
+  const p = {
     favPitcher:    (favIsHome ? players?.homePitcher    : players?.awayPitcher)    || null,
     dogPitcher:    (favIsHome ? players?.awayPitcher    : players?.homePitcher)    || null,
     favPitcherERA: (favIsHome ? players?.homePitcherERA : players?.awayPitcherERA) || null,
@@ -977,36 +793,28 @@ function computePick(game, odds, players, today, role) {
     dogLeaderPts:  (favIsHome ? players?.awayLeaderPts  : players?.homeLeaderPts)  || null,
   };
 
+  const builders = { mlb: _mlbReasons, nba: _nbaReasons, nhl: _nhlReasons, nfl: _nflReasons, ncaam: _ncaamReasons, ncaaf: _ncaafReasons };
+  const buildFn  = builders[sp] || _mlbReasons;
+
   const favMLNum    = parseInt(String(favML).replace('+', ''), 10);
   const dogMLNum    = parseInt(String(dogML).replace('+', ''), 10);
   const mlIsExtreme = !isNaN(favMLNum) && favMLNum <= ML_HARD_CAP;
-
-  // Select builder for this sport
-  const builders = { mlb: _mlbReasons, nba: _nbaReasons, nhl: _nhlReasons, nfl: _nflReasons, ncaam: _ncaamReasons, ncaaf: _ncaafReasons };
-  const buildFn  = builders[sp] || _mlbReasons;
 
   if (role === 'dog') {
     if (isNaN(dogMLNum) || dogMLNum < DOG_MIN_ML) return null;
     const conf    = randConf(5.8, 8.2, r);
     const units   = _computeUnits(conf, 'dog', dogML);
-    const { reasons, dataQuality } = buildFn(0, 'dog', favIsHome, fav, dog, favML, dogML, playerCtx, odds, r);
+    const { reasons, dataQuality } = buildFn(0, 'dog', favIsHome, fav, dog, favML, dogML, p, odds, r);
     const uLabel  = units >= 1.0 ? '1u Dog Pick' : '0.5u Dog Lean';
-    return {
-      sport: sp, matchup: `${away} @ ${home}`,
-      pick: `${dog} ML`, odds: dogML,
-      edge: 'dog', edgeLabel: uLabel,
-      conf, units, reasons, dataQuality,
-    };
+    return { sport: sp, matchup: `${away} @ ${home}`, pick: `${dog} ML`, odds: dogML, edge: 'dog', edgeLabel: uLabel, conf, units, reasons, dataQuality };
   }
 
   const pTypeRaw = Math.floor(r() * 4);
   const pType    = (pTypeRaw === 0 && mlIsExtreme && odds) ? 1 : pTypeRaw;
-
-  const conf      = randConf(6.5, 9.2, r);
+  const conf     = randConf(6.5, 9.2, r);
   const modelProb = _confToWinProb(conf);
 
   let pick, pickOdds, edge;
-
   if (pType === 0 || !odds) {
     pick     = `${fav} ML`;
     pickOdds = favML;
@@ -1034,7 +842,7 @@ function computePick(game, odds, players, today, role) {
     if (modelProb - mktImplied < MIN_EDGE_PCT) return null;
   }
 
-  const { reasons, dataQuality } = buildFn(pType, 'top', favIsHome, fav, dog, favML, dogML, playerCtx, odds, r);
+  const { reasons, dataQuality } = buildFn(pType, 'top', favIsHome, fav, dog, favML, dogML, p, odds, r);
 
   const units = _computeUnits(conf, edge, favML);
   let edgeLabel;
@@ -1058,7 +866,7 @@ function validatePick(pick, game) {
     awayLow.includes(teamPart) || homeLow.includes(teamPart) ||
     teamPart.includes(awayLow) || teamPart.includes(homeLow);
   if (!valid) {
-    console.warn(`[HTB] Pick rejected — "${pick.pick}" team not found in "${game.away.name} @ ${game.home.name}"`);
+    console.warn(`[HTB] Pick rejected — "${pick.pick}" not matched in "${game.away.name} @ ${game.home.name}"`);
     return null;
   }
   return pick;

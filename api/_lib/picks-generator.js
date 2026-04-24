@@ -131,11 +131,20 @@ function _scoreHomepick(pick, game) {
 
 function _curateHomepicks(pairs, max) {
   if (!pairs.length || max <= 0) return [];
-  if (pairs.length <= max) return [...pairs];
+
+  // Hard quality gate: if any medium/high picks exist, exclude low-quality picks entirely.
+  // Low-quality picks (0 named players) only appear if that is ALL that is available.
+  const qualityPairs = pairs.filter(p => (p.pick.dataQuality || 'low') !== 'low');
+  const effectivePairs = qualityPairs.length > 0 ? qualityPairs : pairs;
+  if (qualityPairs.length < pairs.length) {
+    console.log(`[picks-gen] curate: excluded ${pairs.length - qualityPairs.length} low-quality picks from homepage pool (${effectivePairs.length} eligible)`);
+  }
+
+  if (effectivePairs.length <= max) return [...effectivePairs];
 
   const PER_SPORT_MAX = 2; // hard cap per sport on the homepage
 
-  const sorted = [...pairs].sort((a, b) => _scoreHomepick(b.pick, b.game) - _scoreHomepick(a.pick, a.game));
+  const sorted = [...effectivePairs].sort((a, b) => _scoreHomepick(b.pick, b.game) - _scoreHomepick(a.pick, a.game));
 
   const counts  = {};
   const selected = [];
