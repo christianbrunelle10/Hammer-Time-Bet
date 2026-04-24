@@ -121,6 +121,11 @@ function _scoreHomepick(pick, game) {
     else if (oddsNum >= -250) score +=  4;
   }
 
+  // Penalize picks with no real player/matchup data so generic cards don't reach the homepage
+  if      (pick.dataQuality === 'low')    score -= 15;
+  else if (pick.dataQuality === 'medium') score -=  5;
+  // 'high' → no penalty
+
   return score;
 }
 
