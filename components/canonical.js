@@ -154,8 +154,8 @@
           score: home.score                 || '0',
           rec:   home.records?.[0]?.summary || '',
         },
-        status:   sType === 'STATUS_IN_PROGRESS' ? 'live'
-                : sType === 'STATUS_FINAL'        ? 'final'
+        status:   /^STATUS_(?:IN_PROGRESS|END_PERIOD|OVERTIME)/.test(sType)  ? 'live'
+                : /^STATUS_FINAL/.test(sType)                                 ? 'final'
                 : 'pre',
         state:    comp.status.type.detail     || '',
         gameTime: comp.status.type.shortDetail || '',
@@ -205,8 +205,8 @@
           score: home.score                 || '0',
           rec:   home.records?.[0]?.summary || '',
         },
-        status:   sType === 'STATUS_IN_PROGRESS' ? 'live'
-                : sType === 'STATUS_FINAL'        ? 'final'
+        status:   /^STATUS_(?:IN_PROGRESS|END_PERIOD|OVERTIME)/.test(sType)  ? 'live'
+                : /^STATUS_FINAL/.test(sType)                                 ? 'final'
                 : 'pre',
         state:    comp.status.type.detail     || '',
         gameTime: comp.status.type.shortDetail || '',
