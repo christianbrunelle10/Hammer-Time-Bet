@@ -27,7 +27,7 @@ function randConf(min, max, r) { return parseFloat((r() * (max - min) + min).toF
 const ML_HARD_CAP  = -300;
 const ML_VALUE_MAX = -150;
 const MIN_EDGE_PCT = 0.02;
-const DOG_MIN_ML   = 115;
+const DOG_MIN_ML   = 105;
 
 function _mlToImplied(ml) {
   const n = parseInt(String(ml).replace('+', ''), 10);

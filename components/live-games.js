@@ -281,7 +281,7 @@ const HTB_ESPN_SUMMARY = {
    Set this to your Vercel deployment URL after deploying api/odds.js.
    The key never leaves the server — this URL is safe to commit.
    ============================================================ */
-const HTB_ODDS_PROXY = 'https://your-project.vercel.app/api/odds';
+const HTB_ODDS_PROXY = 'https://www.hammertimebet.com/api/odds';
 
 /* ============================================================
    SEASON WINDOWS
