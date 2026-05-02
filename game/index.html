@@ -299,12 +299,6 @@ function filterStatCols(labels, sport, catName) {
     pitching: new Set(['IP','H','R','ER','BB','SO','HR','ERA']),
   };
 
-  /* NHL uses ordered arrays — column order is enforced, not just filtered. */
-  const nhlOrder = {
-    skaters: ['G','A','+/-','S','SOG','SM','BS','PN','PIM','HT','TK','GV','SHFT','TOI','PPTOI','SHTOI','ESTOI','FW','FL','FO%'],
-    goalies: ['GA','SA','SV','SV%','TOI'],
-  };
-
   if (sport === 'nba') {
     const f = all.filter(c => wantNBA.has(c.label));
     return f.length ? f : all.slice(0, 10);
@@ -321,17 +315,24 @@ function filterStatCols(labels, sport, catName) {
     }
   }
   if (sport === 'nhl') {
-    const order = nhlOrder[catName.toLowerCase()];
-    if (order) {
-      /* Build a label→index map from ESPN's raw labels, then walk the desired
-         order so columns always appear in the right sequence regardless of
-         what order ESPN returns them in. */
-      const labelIdx = new Map(labels.map((l, i) => [l, i]));
-      const cols = order
-        .filter(lbl => labelIdx.has(lbl))
-        .map(lbl => ({ label: lbl, idx: labelIdx.get(lbl) }));
-      return cols.length ? cols : all.slice(0, 8);
-    }
+    /* Detect goalie vs skater by label content — ESPN's category name field
+       varies across API versions ('Skaters', 'skater', 'athleteSkaterStats', etc.)
+       and cannot be relied on for matching. Goalies always have SA and SV% labels. */
+    const labelSet = new Set(labels);
+    const isGoalie = labelSet.has('SA') || labelSet.has('SV%') || labelSet.has('GAA');
+
+    const order = isGoalie
+      ? ['GA','SA','SV','SV%','TOI']
+      : ['G','A','+/-','S','SOG','SM','BS','PN','PIM','HT','TK','GV','SHFT','TOI','PPTOI','SHTOI','ESTOI','FW','FL','FO%'];
+
+    /* Build a label→index map from ESPN's raw labels, walk the desired order,
+       and return only columns ESPN actually provides — in the correct sequence.
+       Columns not present in the response (e.g. YTDG) are silently dropped. */
+    const labelIdx = new Map(labels.map((l, i) => [l, i]));
+    const cols = order
+      .filter(lbl => labelIdx.has(lbl))
+      .map(lbl => ({ label: lbl, idx: labelIdx.get(lbl) }));
+    return cols.length ? cols : all.slice(0, 8);
   }
   return all;
 }
@@ -354,6 +355,10 @@ function parsePlayerStats(data, sport, game) {
       const catName = cat.name || '';
       const allLabels = cat.labels || cat.keys || [];
       if (!allLabels.length) return;
+
+      if (sport === 'nhl') {
+        console.log(`[HTBStats] NHL cat name="${catName}" displayName="${cat.displayName}" labels=[${allLabels.join(',')}]`);
+      }
 
       const cols = filterStatCols(allLabels, sport, catName);
       if (!cols.length) return;
