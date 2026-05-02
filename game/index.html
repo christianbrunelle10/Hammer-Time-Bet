@@ -397,79 +397,9 @@ function isFavHome(odds) {
 }
 
 /* ============================================================
-   AI ANALYSIS TEMPLATES
-   ============================================================ */
-function buildAnalysis(game, odds, sport) {
-  const homeFav  = isFavHome(odds);
-  const favTeam  = homeFav ? game.home.name : game.away.name;
-  const dogTeam  = homeFav ? game.away.name : game.home.name;
-  const total    = odds?.total?.val || '—';
-  const lineStr  = odds?.line?.home || odds?.line?.away || '';
-
-  const summaries = {
-    mlb:   `${favTeam} enter this matchup with a favorable starting pitching edge and strong recent offensive production. The Hammer Model identifies a value gap in the current market price based on pitcher metrics, ballpark factors, and recent form trends.`,
-    nba:   `${favTeam} hold a meaningful net rating advantage in this matchup. The model projects a ${Math.abs(4 + (parseInt(game.away.score||0) % 3))}-point edge over the closing line based on pace-adjusted efficiency, defensive matchup profile, and home court dynamics.`,
-    nfl:   `${favTeam} present a compelling spread case driven by offensive efficiency metrics and defensive versatility. Line movement and sharp money indicators align with the model's projection, creating a clear edge at current pricing.`,
-    ncaaf: `${favTeam} are the model's preferred play in this conference matchup. Key advantages include turnover differential, third-down conversion rate, and a favorable pressure differential against ${dogTeam}'s offensive line.`,
-    ncaam: `${favTeam} hold the edge in this college basketball matchup. The Hammer Model flags pace differential, defensive efficiency, and recent form as primary drivers behind the current projection.`,
-    nhl:   `${favTeam} have a strong underlying edge in this puck-line spot. Goaltending save percentage, shot quality metrics, and power play efficiency all favor the model's pick at current market pricing.`,
-  };
-
-  const factorSets = {
-    mlb: [
-      `${favTeam} starting pitcher ranks top-10 in K/9 and xFIP over the last 21 days`,
-      `${dogTeam} batting .239 vs right-handed pitching in last 14 games — below league average`,
-      `Line moved 6–8 cents from open toward ${favTeam} — indication of sharp professional action`,
-      `Ballpark factor neutral to slightly pitcher-friendly for today's conditions`,
-      `Public betting split 64%/36% — market fade opportunity confirmed by model`,
-    ],
-    nba: [
-      `${favTeam} net rating: +7.2 vs ${dogTeam} net rating: -0.8 — significant gap`,
-      `Pace mismatch favors ${favTeam}: slower, half-court sets neutralize ${dogTeam}'s transition game`,
-      `${dogTeam} allowing 118.4 PPP off turnovers — ${favTeam} ranks 4th in turnover creation`,
-      `Total set at ${total} — model projects ${parseFloat(total)||0 + 2.1} given recent scoring trends`,
-      `ATS trend: ${favTeam} covers 68% in this specific matchup profile over last 3 seasons`,
-    ],
-    nfl: [
-      `${favTeam} EPA/play: +0.12 — top quartile in the league this season`,
-      `${dogTeam} allowing a 38% third-down conversion rate — exploitable in short-yardage spots`,
-      `Spread moved from open indicating coordinated sharp action`,
-      `Turnover differential: ${favTeam} +6 over last 8 games vs ${dogTeam} -2`,
-      `${dogTeam} second game of back-to-back travel — fatigue factor underpriced by market`,
-    ],
-    ncaaf: [
-      `${favTeam} turnover margin: +8 this season — elite ball security at this level`,
-      `${dogTeam} 3rd-down conversion: 32% — well below national average of 40%`,
-      `${favTeam} home record strong — crowd factor historically impacts spread by 1.5–2 pts`,
-      `Line sharp-side consensus aligns with ${favTeam} since open`,
-      `Model projects ${favTeam} wins 71% of simulations — implied probability exceeds line price`,
-    ],
-    ncaam: [
-      `${favTeam} offensive efficiency rating: top-40 nationally — elite half-court execution`,
-      `${dogTeam} allowing 1.09 PPP in transition — exploitable at ${favTeam}'s pace`,
-      `Line has moved toward ${favTeam} since open — sharp action confirmed`,
-      `${favTeam} covers spread in 64% of conference home games this season`,
-      `Model projects ${favTeam} wins 69% of simulations at current total`,
-    ],
-    nhl: [
-      `${favTeam} goaltender save percentage last 10 starts: .924 — top-5 in league`,
-      `${dogTeam} power play efficiency ranks 24th — limits upside in man-advantage situations`,
-      `Head-to-head trends: ${favTeam} covers puck line in 6 of last 9 meetings`,
-      `Total at ${total} — rink conditions support under pricing`,
-      `Sharp action confirmed on ${favTeam} puck line since market open`,
-    ],
-  };
-
-  return {
-    summary: summaries[sport] || `${game.away.name} vs ${game.home.name} — the Hammer Model identifies a clear edge based on current form, line movement, and situational factors.`,
-    factors: factorSets[sport] || [`Model edge identified on ${favTeam}`, 'Line movement confirms sharp action', 'Value confirmed vs public betting split'],
-  };
-}
-
-/* ============================================================
    RISK FACTORS
    ============================================================ */
-function buildRisks(game, odds, sport) {
+function buildRisks(game, sport) {
   const risks = {
     mlb:   ['Starting pitcher pitch count could limit deep appearances if early trouble arises', 'Bullpen workload elevated over past 4 days — potential fatigue in late innings', 'Weather conditions may introduce variables not captured in base model', 'Lineup construction: injuries to key bats reduce projected run total'],
     nba:   ['Injury reports may shift lineup assumptions — monitor pre-game availability', 'Schedule fatigue: second night of back-to-back for away team', 'Foul trouble risk for key interior players vs aggressive offense', 'Total variance is high in this pace matchup — model spread could narrow'],
@@ -485,22 +415,59 @@ function buildRisks(game, odds, sport) {
 /* ============================================================
    ALTERNATE LEANS
    ============================================================ */
-function buildAlts(game, odds, sport) {
-  const total   = odds?.total?.val || '—';
-  const homeFav = isFavHome(odds);
-  const favTeam = homeFav ? game.home.name : game.away.name;
-  const dogTeam = homeFav ? game.away.name : game.home.name;
+function buildAlts(game, odds, sport, pick) {
+  const total    = odds?.total?.val || '—';
+  const homeFav  = isFavHome(odds);
+  const favTeam  = homeFav ? game.home.name : game.away.name;
+  const dogTeam  = homeFav ? game.away.name : game.home.name;
+
+  const pickStr     = (pick?.pick || '').toLowerCase();
+  const favLower    = favTeam.toLowerCase();
+  const dogLower    = dogTeam.toLowerCase();
+  const pickedFavML = pickStr.includes(favLower) && pickStr.includes('ml');
+  const pickedDogML = pickStr.includes(dogLower) && pickStr.includes('ml');
+  const pickedFavLine = pickStr.includes(favLower) && !pickStr.includes('ml');
+  const pickedDogLine = pickStr.includes(dogLower) && !pickStr.includes('ml');
 
   const alts = {
-    mlb:   [`First 5 innings: ${favTeam} -0.5 (value if starter excels)`, `${dogTeam} ML at plus money — live if early deficit is small`, `Under ${total} if both starters dominate through 6 innings`],
-    nba:   [`${dogTeam} +${Math.abs(parseInt(odds?.line?.away)||5.5)} spread — backdoor cover potential`, `Over ${total} if pace accelerates in first quarter`, `${favTeam} -Q1 spread if they establish lead early`],
-    nfl:   [`${dogTeam} ML — live underdog if ${favTeam} slow start`, `Under ${total} if wind speeds increase at game time`, `${favTeam} team total over — offense expected to control possession`],
-    ncaaf: [`${dogTeam} +first-half spread if they start fast`, `Total under if both defenses tighten in second half`, `${favTeam} ML instead of spread if you want less variance`],
-    ncaam: [`${dogTeam} first-half ML — value if they dictate pace`, `Over ${total} if both teams shoot above 40% from 3`, `${favTeam} -3.5 alt spread at improved payout`],
-    nhl:   [`${favTeam} ML instead of puck line — avoids -1.5 requirement`, `Over ${total} if both goalies allow early goals`, `${dogTeam} puck line +1.5 as a hedge on tight game`],
+    mlb: [
+      !pickedFavLine ? `First 5 innings: ${favTeam} -0.5 (value if starting pitcher dominates early)` : null,
+      !pickedDogML   ? `${dogTeam} ML at plus money — live if game is close through 5` : null,
+      `Under ${total} if both starters are sharp — lower-scoring game scenario`,
+    ].filter(Boolean),
+    nba: [
+      !pickedDogLine ? `${dogTeam} +spread — backdoor cover potential if game tightens late` : null,
+      `Over ${total} if pace accelerates in the opening quarter`,
+      !pickedFavML   ? `${favTeam} ML — less variance than spread if you prefer the win bet` : null,
+    ].filter(Boolean),
+    nfl: [
+      !pickedDogML   ? `${dogTeam} ML — live underdog if they start within a score` : null,
+      `Under ${total} if wind or defensive play controls the tempo`,
+      !pickedFavLine ? `${favTeam} team total over — offense expected to control possession` : null,
+    ].filter(Boolean),
+    ncaaf: [
+      !pickedDogLine ? `${dogTeam} first-half spread if they start fast` : null,
+      `Total under if both defenses tighten in the second half`,
+      !pickedFavML   ? `${favTeam} ML instead of spread for less variance` : null,
+    ].filter(Boolean),
+    ncaam: [
+      !pickedDogML   ? `${dogTeam} first-half ML — value if they dictate pace early` : null,
+      `Over ${total} if both teams shoot above average from three`,
+      !pickedFavLine ? `${favTeam} alternate spread at improved payout` : null,
+    ].filter(Boolean),
+    nhl: [
+      !pickedFavML   ? `${favTeam} ML instead of puck line — avoids the -1.5 requirement` : null,
+      `Over ${total} if both goalies allow early goals`,
+      !pickedDogLine ? `${dogTeam} puck line +1.5 as a hedge on a tight game` : null,
+    ].filter(Boolean),
   };
 
-  return alts[sport] || [`${dogTeam} ML at plus money — hedge play`, `Total ${total} under as contrarian lean`];
+  const result = alts[sport] || [
+    !pickedDogML ? `${dogTeam} ML at plus money — hedge play` : null,
+    `Total ${total} under as contrarian lean`,
+  ].filter(Boolean);
+
+  return result.length ? result : [`No additional leans available beyond the primary pick for this game.`];
 }
 
 /* ============================================================
@@ -521,27 +488,6 @@ function buildVerdict(game, odds, sport, pick) {
   };
 
   return verdicts[sport] || `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Key factors align in favor of this play at current market pricing. Recommended at 2 units.`;
-}
-
-/* ============================================================
-   MATCH API PICK TO THIS GAME
-   Finds the pick from /api/picks that belongs to this game by
-   matching team names/abbreviations against the matchup field.
-   Returns null if no pick exists for this game today.
-   ============================================================ */
-function _matchPickToGame(picks, game) {
-  const allPicks = [...(picks.top || []), ...(picks.dog || [])];
-  if (!allPicks.length) return null;
-
-  const targets = [
-    game.away.name, game.away.abbr,
-    game.home.name, game.home.abbr,
-  ].map(s => (s || '').toLowerCase()).filter(s => s.length > 2);
-
-  return allPicks.find(p => {
-    const haystack = `${p.matchup || ''} ${p.pick || ''}`.toLowerCase();
-    return targets.some(t => haystack.includes(t));
-  }) || null;
 }
 
 /* ============================================================
@@ -724,9 +670,8 @@ function renderGame(game, odds, sport, data, apiPick) {
   const linescore   = data ? parseLinescore(data, sport, game) : null;
   const teamStats   = data ? parseTeamStats(data, sport, game) : [];
   const playerStats = data ? parsePlayerStats(data, sport, game) : [];
-  const analysis    = buildAnalysis(game, odds, sport);
-  const risks       = buildRisks(game, odds, sport);
-  const alts        = buildAlts(game, odds, sport);
+  const risks       = buildRisks(game, sport);
+  const alts        = buildAlts(game, odds, sport, apiPick);
   const verdict     = apiPick ? buildVerdict(game, odds, sport, apiPick) : null;
 
   document.title = `${game.away.name} vs ${game.home.name} — HammerTimeBet`;
@@ -822,10 +767,10 @@ function renderGame(game, odds, sport, data, apiPick) {
           <h2 class="sec-title">Why It Rates Well</h2>
         </div>
         <div class="analysis-card">
-          <p class="analysis-summary">${analysis.summary}</p>
-          <div class="factor-list">
-            ${analysis.factors.map(f => `<div class="factor">${f}</div>`).join('')}
-          </div>
+          ${apiPick?.reasons?.length
+            ? `<div class="factor-list">${apiPick.reasons.map(r => `<div class="factor">${r}</div>`).join('')}</div>`
+            : `<p class="analysis-summary" style="color:#555">Model reasoning will be available closer to game time.</p>`
+          }
         </div>
       </div>
     </section>
@@ -936,19 +881,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    /* Fetch ESPN game data and today's picks for this sport in parallel */
-    const [espnResp, picksResp] = await Promise.all([
+    /* Fetch ESPN game data and the official Hammer pick for this game in parallel */
+    const [espnResp, pickResp] = await Promise.all([
       fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) }),
-      fetch(`/api/picks?sport=${sport}`, { signal: AbortSignal.timeout(7000) }),
+      fetch(`/api/pick?id=${encodeURIComponent(gameId)}&sport=${sport}`, { signal: AbortSignal.timeout(7000) }),
     ]);
 
     if (!espnResp.ok) throw new Error(`ESPN returned ${espnResp.status}`);
-    const data  = await espnResp.json();
-    const picks = picksResp.ok ? await picksResp.json() : { top: [], dog: [] };
+    const data     = await espnResp.json();
+    const pickData = pickResp.ok ? await pickResp.json() : null;
 
-    const game   = parseESPNSummary(data, sport);
-    const odds   = adaptOddsForDisplay(game);
-    const pick   = _matchPickToGame(picks, game); // null if no pick for this game
+    const game = parseESPNSummary(data, sport);
+    const odds = adaptOddsForDisplay(game);
+    const pick = pickData?.pick || null;
 
     renderGame(game, odds, sport, data, pick);
   } catch (err) {

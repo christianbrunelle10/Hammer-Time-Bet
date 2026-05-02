@@ -806,7 +806,7 @@ function computePick(game, odds, players, today, role) {
     const units   = _computeUnits(conf, 'dog', dogML);
     const { reasons, dataQuality } = buildFn(0, 'dog', favIsHome, fav, dog, favML, dogML, p, odds, r);
     const uLabel  = units >= 1.0 ? '1u Dog Pick' : '0.5u Dog Lean';
-    return { sport: sp, matchup: `${away} @ ${home}`, pick: `${dog} ML`, odds: dogML, edge: 'dog', edgeLabel: uLabel, conf, units, reasons, dataQuality };
+    return { sport: sp, gameId: game.id, matchup: `${away} @ ${home}`, pick: `${dog} ML`, odds: dogML, edge: 'dog', edgeLabel: uLabel, conf, units, reasons, dataQuality };
   }
 
   const pTypeRaw = Math.floor(r() * 4);
@@ -851,7 +851,7 @@ function computePick(game, odds, players, today, role) {
   else if (units >= 1.0) edgeLabel = edge === 'strong' ? '1u Strong' : '1u Value';
   else                   edgeLabel = '0.5u Lean';
 
-  return { sport: sp, matchup: `${away} @ ${home}`, pick, odds: pickOdds, edge, edgeLabel, conf, units, reasons, dataQuality };
+  return { sport: sp, gameId: game.id, matchup: `${away} @ ${home}`, pick, odds: pickOdds, edge, edgeLabel, conf, units, reasons, dataQuality };
 }
 
 /* ── Pick validation ─────────────────────────────────────────── */

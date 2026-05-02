@@ -95,9 +95,20 @@ function fromESPNEvent(event, sport) {
   };
 }
 
+/** Parse ESPN summary response into a canonical game (odds attached if pickcenter present). */
+function fromESPNSummary(data, sport) {
+  const comp = data.header?.competitions?.[0];
+  if (!comp) return null;
+  const game = fromESPNEvent({ id: String(data.header?.id || ''), competitions: [comp] }, sport);
+  if (!game) return null;
+  const pc = (data.pickcenter || [])[0];
+  if (pc) game.odds = parsePickcenter(pc);
+  return game;
+}
+
 /** Attach pickcenter odds to a canonical game object. */
 function withPickcenter(game, pc) {
   return { ...game, odds: parsePickcenter(pc) };
 }
 
-module.exports = { fromESPNEvent, withPickcenter, parsePickcenter };
+module.exports = { fromESPNEvent, fromESPNSummary, withPickcenter, parsePickcenter };
