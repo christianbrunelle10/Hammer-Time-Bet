@@ -195,8 +195,8 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
   </div>
 </section>
 
-<!-- ── DRAFTKINGS ODDS ───────────────────────────────── -->
-<section class="section" id="odds">
+<!-- ── DRAFTKINGS ODDS (hidden until live odds source available) ── -->
+<section class="section" id="odds" style="display:none">
   <div class="section-inner">
     <div class="section-head">
       <div>
@@ -217,7 +217,12 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
         <h2 class="section-title">Featured Golfer Picks</h2>
       </div>
     </div>
-    <div class="picks-grid" id="golf-picks-grid"></div>
+    <div class="picks-grid" id="golf-picks-grid">
+      <div style="grid-column:1/-1;background:#101010;border:1px solid #1e1e1e;border-radius:12px;
+                  padding:44px 20px;text-align:center;color:#444;font-size:13px">
+        Golf picks are generated for active tournaments. Check back during a live PGA Tour event.
+      </div>
+    </div>
   </div>
 </section>
 
@@ -229,223 +234,137 @@ footer p{font-size:11px;color:#444;max-width:500px;margin:0 auto}
 
 
 <script>
-/* ============================================================
-   MOCK TOURNAMENT DATA
-   Mirrors ESPN PGA scoreboard shape — swap fetchLeaderboard()
-   body when live ESPN data is confirmed available.
-   ============================================================ */
-const MOCK_TOURNAMENT = {
-  name:    'Masters Tournament',
-  course:  'Augusta National GC',
-  location:'Augusta, GA',
-  purse:   '$18,000,000',
-  round:   'Round 3 — In Progress',
-  par:     72,
-};
+/* Golf Leaderboard — live ESPN data, no mock fallback */
 
-const MOCK_LEADERBOARD = [
-  { pos:'1',  name:'Scottie Scheffler',  country:'USA', flag:'🇺🇸', score:-14, today:-5, thru:'F',  strokes:202, move:'same' },
-  { pos:'2',  name:'Rory McIlroy',       country:'NIR', flag:'🇬🇧', score:-11, today:-4, thru:'F',  strokes:205, move:'up'   },
-  { pos:'3',  name:'Collin Morikawa',    country:'USA', flag:'🇺🇸', score:-9,  today:-3, thru:'F',  strokes:207, move:'up'   },
-  { pos:'T4', name:'Jon Rahm',           country:'ESP', flag:'🇪🇸', score:-8,  today:-2, thru:'F',  strokes:208, move:'down' },
-  { pos:'T4', name:'Xander Schauffele',  country:'USA', flag:'🇺🇸', score:-8,  today:-4, thru:'F',  strokes:208, move:'up'   },
-  { pos:'6',  name:'Viktor Hovland',     country:'NOR', flag:'🇳🇴', score:-7,  today:-1, thru:'F',  strokes:209, move:'same' },
-  { pos:'T7', name:'Brooks Koepka',      country:'USA', flag:'🇺🇸', score:-6,  today:0,  thru:'F',  strokes:210, move:'down' },
-  { pos:'T7', name:'Ludvig Åberg',       country:'SWE', flag:'🇸🇪', score:-6,  today:-3, thru:'F',  strokes:210, move:'up'   },
-  { pos:'9',  name:'Patrick Cantlay',    country:'USA', flag:'🇺🇸', score:-5,  today:+1, thru:'F',  strokes:211, move:'down' },
-  { pos:'10', name:'Tommy Fleetwood',    country:'ENG', flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', score:-4,  today:-2, thru:'F',  strokes:212, move:'up'   },
-  { pos:'CUT', name:null }, // cut line marker
-  { pos:'T11',name:'Justin Thomas',      country:'USA', flag:'🇺🇸', score:-1,  today:+2, thru:'F',  strokes:215, move:'down' },
-  { pos:'T11',name:'Shane Lowry',        country:'IRL', flag:'🇮🇪', score:-1,  today:-1, thru:'F',  strokes:215, move:'same' },
-];
+function scoreClass(n) {
+  if (n < 0) return 'under';
+  if (n > 0) return 'over';
+  return 'even';
+}
+function scoreLabel(n) {
+  if (n < 0) return String(n);
+  if (n > 0) return `+${n}`;
+  return 'E';
+}
 
-/* ============================================================
-   ESPN LEADERBOARD FETCH
-   SWAP this function body when ESPN PGA endpoint is confirmed.
-   ESPN Golf: https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard
-   ============================================================ */
 async function fetchLeaderboard() {
   try {
-    const r = await fetch(
+    const sbResp = await fetch(
       'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard',
-      { signal: AbortSignal.timeout(5000) }
+      { signal: AbortSignal.timeout(8000) }
     );
-    if (!r.ok) throw new Error();
-    const data = await r.json();
-    const event = data.events?.[0];
-    if (!event) throw new Error();
+    if (!sbResp.ok) return null;
+    const sbData = await sbResp.json();
+    const event = sbData.events?.[0];
+    if (!event) return null;
 
     const comp        = event.competitions?.[0];
-    const competitors = comp?.competitors || [];
-    if (!competitors.length) throw new Error();
+    const competitors = comp?.competitors;
+    if (!competitors?.length) return null;
+
+    const currentRound = comp.status?.period ?? 1;
+    const roundDetail  = comp.status?.type?.detail ?? 'In Progress';
+
+    /* Fetch venue/purse from core API in parallel with player processing */
+    const corePromise = fetch(
+      `https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/${event.id}?lang=en&region=us`,
+      { signal: AbortSignal.timeout(6000) }
+    ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+    /* Build position map: sort by order, detect ties via equal score */
+    const sorted = [...competitors].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    const posMap = new Map();
+    let idx = 0;
+    while (idx < sorted.length) {
+      const score    = sorted[idx].score;
+      const startPos = sorted[idx].order ?? (idx + 1);
+      let   end      = idx;
+      while (end < sorted.length && sorted[end].score === score) end++;
+      const tied = (end - idx) > 1;
+      for (let k = idx; k < end; k++) {
+        posMap.set(sorted[k].id, tied ? `T${startPos}` : String(startPos));
+      }
+      idx = end;
+    }
+
+    const players = sorted.slice(0, 25).map(c => {
+      const linescores = c.linescores ?? [];
+
+      /* Today: displayValue of the current round linescore */
+      const todayLs  = linescores.find(l => l.period === currentRound);
+      const todayRaw = todayLs?.displayValue;
+      let todayNum   = null;
+      if (todayRaw && todayRaw !== '-') {
+        if (todayRaw === 'E') todayNum = 0;
+        else { const n = parseInt(todayRaw, 10); if (!isNaN(n)) todayNum = n; }
+      }
+
+      /* Thru: number of holes played today (sub-linescores array length), F if 18 */
+      const holesPlayed = todayLs?.linescores?.length ?? 0;
+      const thru = holesPlayed === 18 ? 'F' : holesPlayed > 0 ? String(holesPlayed) : '—';
+
+      /* Total strokes: sum all rounds with real stroke values (value > 0) */
+      const strokes = linescores.reduce(
+        (acc, l) => acc + (typeof l.value === 'number' && l.value > 0 ? Math.round(l.value) : 0), 0
+      );
+
+      const pos    = posMap.get(c.id) ?? String(c.order ?? '—');
+      const posNum = parseInt(pos.replace('T', ''), 10);
+
+      return {
+        pos,
+        top3:    posNum <= 3,
+        name:    c.athlete?.displayName ?? '—',
+        country: c.athlete?.flag?.alt   ?? '',
+        score:   typeof c.score === 'number' ? c.score : null,
+        today:   todayNum,
+        thru,
+        strokes: strokes > 0 ? strokes : '—',
+      };
+    });
+
+    /* Await core API for venue/purse (fetch started above) */
+    const coreData  = await corePromise;
+    const courseObj = coreData?.courses?.[0];
+    const course    = courseObj?.name ?? null;
+    const addr      = courseObj?.address;
+    const location  = addr ? [addr.city, addr.state].filter(Boolean).join(', ') : null;
+    const purse     = coreData?.displayPurse ?? null;
 
     return {
-      tournament: {
-        name:    event.name || MOCK_TOURNAMENT.name,
-        course:  comp.venue?.fullName || MOCK_TOURNAMENT.course,
-        location:comp.venue?.address?.city || MOCK_TOURNAMENT.location,
-        round:   comp.status?.type?.detail || MOCK_TOURNAMENT.round,
-        purse:   MOCK_TOURNAMENT.purse,
-        par:     MOCK_TOURNAMENT.par,
-      },
-      players: competitors.slice(0, 14).map(c => ({
-        pos:     c.status || c.linescores?.[0]?.position?.displayName || '—',
-        name:    c.athlete?.displayName || '—',
-        country: c.athlete?.flag?.alt || '',
-        flag:    '',
-        score:   parseInt(c.score) || 0,
-        today:   parseInt(c.linescores?.find(l => l.type === 'today')?.value) || 0,
-        thru:    c.status?.thru || '—',
-        strokes: parseInt(c.statistics?.[0]?.value) || 0,
-        move:    'same',
-      })),
+      tournament: { name: event.name ?? 'PGA Tour', course, location, purse, round: roundDetail },
+      players,
     };
   } catch {
-    return { tournament: MOCK_TOURNAMENT, players: MOCK_LEADERBOARD };
+    return null;
   }
 }
 
-/* ============================================================
-   ODDS MOCK
-   Replace fetchDKOdds() when odds proxy is ready.
-   ============================================================ */
-const DK_GOLF_ODDS = [
-  { name:'Scottie Scheffler', flag:'🇺🇸', winner:'+175',  top5:'-180', top10:'-350', mc:'-800' },
-  { name:'Rory McIlroy',      flag:'🇬🇧', winner:'+320',  top5:'-110', top10:'-280', mc:'-700' },
-  { name:'Collin Morikawa',   flag:'🇺🇸', winner:'+600',  top5:'+120', top10:'-175', mc:'-550' },
-  { name:'Jon Rahm',          flag:'🇪🇸', winner:'+750',  top5:'+160', top10:'-140', mc:'-450' },
-  { name:'Xander Schauffele', flag:'🇺🇸', winner:'+800',  top5:'+175', top10:'-130', mc:'-420' },
-  { name:'Viktor Hovland',    flag:'🇳🇴', winner:'+1200', top5:'+260', top10:'+110', mc:'-350' },
-  { name:'Brooks Koepka',     flag:'🇺🇸', winner:'+1600', top5:'+340', top10:'+155', mc:'-280' },
-  { name:'Ludvig Åberg',      flag:'🇸🇪', winner:'+1800', top5:'+380', top10:'+175', mc:'-260' },
-];
-
-/* ============================================================
-   GOLF PICKS DATA
-   ============================================================ */
-const GOLF_PICKS = [
-  {
-    name:    'Scottie Scheffler',
-    tournament:'Masters Tournament',
-    bet:     'Outright Winner',
-    pick:    'Scheffler To Win',
-    odds:    '+175',
-    type:    'strong',
-    badge:   'Strong Play',
-    conf:    8.6,
-    units:   '1u',
-    stats:   [{ lbl:'SG: Total', val:'+4.81' }, { lbl:'GIR %', val:'76.4%' }],
-    reasons: [
-      '5-shot lead entering final round — historically wins 84% of the time from here',
-      'World #1 averaging +4.81 strokes gained total over the field this week',
-      'Ball striking ranks 1st in the field — hitting 76% of greens in regulation',
-      '+175 is exceptional value for a player with a commanding lead on Sunday',
-    ]
-  },
-  {
-    name:    'Rory McIlroy',
-    tournament:'Masters Tournament',
-    bet:     'Top 5 Finish',
-    pick:    'McIlroy Top 5',
-    odds:    '-110',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.8,
-    units:   '1u',
-    stats:   [{ lbl:'SG: Putting', val:'+1.92' }, { lbl:'Driving Acc', val:'68.2%' }],
-    reasons: [
-      'McIlroy\'s putter has come alive — +1.92 SG putting, best in the field',
-      'Only 3 shots off the lead entering Sunday — birdie barrage could close the gap',
-      'Rory 8-for-10 making top-5 when inside 5 shots of lead in a major',
-      'Career grand slam narrative adds motivation — no one wants this more',
-    ]
-  },
-  {
-    name:    'Xander Schauffele',
-    tournament:'Masters Tournament',
-    bet:     'Top 10 Finish',
-    pick:    'Schauffele Top 10',
-    odds:    '-130',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.5,
-    units:   '1u',
-    stats:   [{ lbl:'SG: App.', val:'+2.14' }, { lbl:'Birdie Rate', val:'28.3%' }],
-    reasons: [
-      'Schauffele approach play has been elite — +2.14 strokes gained approach',
-      'Sitting T4 with a birdie rate of 28.3% — well-placed for a Sunday charge',
-      'Top-10 at -130 is solid value for the reigning Open champion on form',
-      'Augusta suits his draw ball flight — models him finishing 6th–8th',
-    ]
-  },
-  {
-    name:    'Ludvig Åberg',
-    tournament:'Masters Tournament',
-    bet:     'Outright Winner',
-    pick:    'Åberg Longshot',
-    odds:    '+1800',
-    type:    'long',
-    badge:   'Longshot',
-    conf:    6.2,
-    units:   '0.5u',
-    stats:   [{ lbl:'SG: Off Tee', val:'+2.38' }, { lbl:'Eagles', val:'2' }],
-    reasons: [
-      'The Swedish rookie has the best driving stats in the field this week',
-      'Already made 2 eagles — high ceiling player who can go low in a hurry',
-      '+1800 is maximum value at 6 back — any Scheffler stumble and this opens up',
-      'Best longshot play on the board — even a half-unit returns 9 units if he wins',
-    ]
-  },
-  {
-    name:    'Viktor Hovland',
-    tournament:'Masters Tournament',
-    bet:     'Top 10 Finish',
-    pick:    'Hovland Top 10',
-    odds:    '+110',
-    type:    'value',
-    badge:   'Value Play',
-    conf:    7.1,
-    units:   '1u',
-    stats:   [{ lbl:'SG: Total', val:'+2.77' }, { lbl:'Round 3', val:'-7' }],
-    reasons: [
-      'Hovland shot a 65 in round 3 — most momentum of any player outside top 3',
-      '+110 for top-10 is positive expected value — model has him at 68% probability',
-      'Norwegian known for strong Sunday performances in stroke-play events',
-      'Best under-the-radar pick at plus-money on the board heading into the final round',
-    ]
-  },
-];
-
-/* ============================================================
-   RENDER LEADERBOARD
-   ============================================================ */
-function scoreClass(score) {
-  if (score < 0) return 'under';
-  if (score > 0) return 'over';
-  return 'even';
-}
-function scoreLabel(score) {
-  if (score < 0) return score.toString();
-  if (score > 0) return `+${score}`;
-  return 'E';
-}
-function moveIcon(move) {
-  if (move === 'up')   return '<span class="lb-move up">▲</span>';
-  if (move === 'down') return '<span class="lb-move down">▼</span>';
-  return '<span class="lb-move same">—</span>';
-}
-
 function renderLeaderboard(data) {
-  const t = data.tournament;
-  document.getElementById('leaderboard-wrap').innerHTML = `
+  const wrap = document.getElementById('leaderboard-wrap');
+  if (!data) {
+    wrap.innerHTML = `
+      <div style="background:#101010;border:1px solid #1e1e1e;border-radius:12px;
+                  display:flex;flex-direction:column;align-items:center;justify-content:center;
+                  gap:10px;padding:64px 20px;color:#444;font-size:14px;text-align:center">
+        <div style="font-size:32px">⛳</div>
+        <div>No live golf leaderboard available right now.</div>
+        <div style="font-size:11px;color:#333">Check back when a PGA Tour event is in progress.</div>
+      </div>`;
+    return;
+  }
+
+  const t    = data.tournament;
+  const meta = `
+    <span class="tb-item"><strong>Course:</strong> ${t.course ?? 'Course unavailable'}</span>
+    <span class="tb-item"><strong>Location:</strong> ${t.location ?? 'Location unavailable'}</span>
+    <span class="tb-item"><strong>Purse:</strong> ${t.purse ?? 'Purse unavailable'}</span>`;
+
+  wrap.innerHTML = `
     <div class="tournament-banner">
       <div>
         <div class="tb-name">${t.name}</div>
-        <div class="tb-meta">
-          <span class="tb-item"><strong>Course:</strong> ${t.course}</span>
-          <span class="tb-item"><strong>Location:</strong> ${t.location}</span>
-          <span class="tb-item"><strong>Purse:</strong> ${t.purse}</span>
-        </div>
+        <div class="tb-meta">${meta}</div>
       </div>
       <div class="tb-status">${t.round}</div>
     </div>
@@ -453,35 +372,30 @@ function renderLeaderboard(data) {
       <table class="lb-table">
         <thead>
           <tr>
-            <th class="num">Pos</th>
-            <th>Player</th>
-            <th class="num">Score</th>
-            <th class="num">Today</th>
-            <th class="num">Thru</th>
-            <th class="num">Strokes</th>
-            <th class="num">Trend</th>
+            <th class="num">Pos</th><th>Player</th>
+            <th class="num">Score</th><th class="num">Today</th>
+            <th class="num">Thru</th><th class="num">Strokes</th>
           </tr>
         </thead>
         <tbody>
           ${data.players.map(p => {
-            if (p.pos === 'CUT') return `
-              <tr class="lb-cut-row">
-                <td colspan="7"><div class="lb-cut-label">Projected Cut Line</div></td>
-              </tr>`;
+            const scoreDisp = p.score !== null ? scoreLabel(p.score) : '—';
+            const scoreCls  = p.score !== null ? scoreClass(p.score) : 'even';
+            const todayDisp = p.today !== null ? scoreLabel(p.today) : '—';
+            const todayCls  = p.today !== null ? scoreClass(p.today) : 'even';
             return `
               <tr>
-                <td><div class="lb-pos ${['1','2','3'].includes(p.pos) ? 'top3' : ''}">${p.pos}</div></td>
+                <td><div class="lb-pos${p.top3 ? ' top3' : ''}">${p.pos}</div></td>
                 <td>
                   <div class="lb-player">
-                    <span class="lb-name">${p.flag} ${p.name}</span>
+                    <span class="lb-name">${p.name}</span>
                     <span class="lb-country">${p.country}</span>
                   </div>
                 </td>
-                <td><div class="lb-score ${scoreClass(p.score)}">${scoreLabel(p.score)}</div></td>
-                <td><div class="lb-today ${scoreClass(p.today)}">${scoreLabel(p.today)}</div></td>
+                <td><div class="lb-score ${scoreCls}">${scoreDisp}</div></td>
+                <td><div class="lb-today ${todayCls}">${todayDisp}</div></td>
                 <td><div class="lb-thru">${p.thru}</div></td>
                 <td><div class="lb-strokes">${p.strokes}</div></td>
-                <td>${moveIcon(p.move)}</td>
               </tr>`;
           }).join('')}
         </tbody>
@@ -490,81 +404,10 @@ function renderLeaderboard(data) {
     </div>`;
 }
 
-/* ============================================================
-   RENDER ODDS
-   ============================================================ */
-function renderOdds() {
-  document.getElementById('odds-grid').innerHTML = DK_GOLF_ODDS.map(p => `
-    <div class="odds-card">
-      <div class="odds-card-head">
-        <span class="odds-player">${p.flag} ${p.name}</span>
-      </div>
-      <div class="odds-rows">
-        <div class="odds-row">
-          <span class="odds-type">Winner</span>
-          <span class="odds-val">${p.winner}</span>
-        </div>
-        <div class="odds-row">
-          <span class="odds-type">Top 5</span>
-          <span class="odds-val ${parseFloat(p.top5) > 0 ? 'value' : ''}">${p.top5}</span>
-        </div>
-        <div class="odds-row">
-          <span class="odds-type">Top 10</span>
-          <span class="odds-val">${p.top10}</span>
-        </div>
-        <div class="odds-row">
-          <span class="odds-type">Make Cut</span>
-          <span class="odds-val">${p.mc}</span>
-        </div>
-      </div>
-    </div>`).join('');
-}
-
-/* ============================================================
-   RENDER PICKS
-   ============================================================ */
-function renderPicks() {
-  document.getElementById('golf-picks-grid').innerHTML = GOLF_PICKS.map(p => {
-    const confPct   = `${p.conf * 10}%`;
-    const statsHTML = p.stats.map(s => `
-      <div class="pc-stat"><div class="pc-stat-lbl">${s.lbl}</div><div class="pc-stat-val">${s.val}</div></div>
-    `).join('');
-    return `
-      <div class="pick-card ${p.type}">
-        <div class="pc-top">
-          <span class="pc-sport">PGA</span>
-          <span class="pc-badge ${p.type}">${p.badge}</span>
-        </div>
-        <div class="pc-tournament">${p.tournament}</div>
-        <div class="pc-pick">${p.name}</div>
-        <div class="pc-bet-type">${p.bet}</div>
-        <div class="pc-odds">${p.odds}</div>
-        <div class="pc-conf">
-          <span class="pc-conf-lbl">Confidence</span>
-          <div class="conf-track"><div class="conf-fill" style="width:${confPct}"></div></div>
-          <span class="pc-conf-val">${p.conf}/10</span>
-        </div>
-        <div class="pc-sep"></div>
-        <div class="pc-reasons">${p.reasons.map(r => `<div class="pc-reason">${r}</div>`).join('')}</div>
-        <div class="pc-stat-row">${statsHTML}</div>
-        <div class="pc-hint">View Full Analysis →</div>
-      </div>`;
-  }).join('');
-}
-
-/* ============================================================
-   INIT
-   ============================================================ */
 async function init() {
   const data = await fetchLeaderboard();
   renderLeaderboard(data);
-  renderOdds();
-  renderPicks();
-  // Auto-refresh leaderboard every 60s
-  setInterval(async () => {
-    const fresh = await fetchLeaderboard();
-    renderLeaderboard(fresh);
-  }, 60000);
+  setInterval(async () => renderLeaderboard(await fetchLeaderboard()), 60000);
 }
 
 document.addEventListener('DOMContentLoaded', init);
