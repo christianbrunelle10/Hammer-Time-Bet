@@ -484,23 +484,219 @@ function buildAlts(game, odds, sport, pick) {
 }
 
 /* ============================================================
-   FINAL VERDICT
+   MATCHUP CONTEXT ENGINE
+   Extracts real available data from the ESPN summary response.
+   Returns [{ title, points[] }] cards — never invents stats.
+   If detailed data is absent, returns honest structural context.
    ============================================================ */
-function buildVerdict(game, odds, sport, pick) {
+
+/** Pull game leaders from data.leaders, filtered by category keyword. */
+function _gameLeaders(data, keywords) {
+  const out = [];
+  (data.leaders || []).forEach(cat => {
+    const name = (cat.name || cat.displayName || '').toLowerCase();
+    if (!keywords.some(k => name.includes(k))) return;
+    (cat.leaders || []).slice(0, 2).forEach(l => {
+      const player = l.athlete?.shortName || l.athlete?.displayName;
+      if (!player) return;
+      const abbr = l.team?.abbreviation ? ` (${l.team.abbreviation})` : '';
+      const val  = l.displayValue || '';
+      const lbl  = cat.shortDisplayName || cat.displayName || '';
+      if (val) out.push(`${player}${abbr} — ${lbl}: ${val}`);
+    });
+  });
+  return out;
+}
+
+/** Season records card from canonical game object. */
+function _recordsCard(game) {
+  const pts = [];
+  if (game.away.rec) pts.push(`${game.away.name}: ${game.away.rec}`);
+  if (game.home.rec) pts.push(`${game.home.name}: ${game.home.rec} (home)`);
+  return pts.length ? { title: 'Season Records', points: pts } : null;
+}
+
+/** Current spread line from the display odds object. */
+function _spreadLine(odds, favTeam) {
+  const fav = odds?.favorite;
+  const sp  = fav === 'home' ? odds?.home?.spread : odds?.away?.spread;
+  return sp ? `Current spread: ${favTeam} ${sp}` : null;
+}
+
+function buildMatchupContext(data, game, odds, sport, apiPick) {
+  const cards   = [];
   const homeFav = isFavHome(odds);
   const favTeam = homeFav ? game.home.name : game.away.name;
   const dogTeam = homeFav ? game.away.name : game.home.name;
 
+  /* ── MLB ── */
+  if (sport === 'mlb') {
+    const probs = (data.probables || []).filter(p => p.athlete?.displayName || p.athlete?.shortName);
+    if (probs.length) {
+      const pts = probs.map(p => {
+        const name   = p.athlete.shortName || p.athlete.displayName || '—';
+        const prefix = p.team?.abbreviation ? `${p.team.abbreviation}: ` : '';
+        const stats  = (p.statistics || [])
+          .filter(s => s.displayValue && s.displayValue !== '--' && s.displayValue !== '0')
+          .map(s => `${s.abbreviation || s.name} ${s.displayValue}`)
+          .slice(0, 4).join(', ');
+        return `${prefix}${name}${stats ? ` (${stats})` : ''}`;
+      });
+      cards.push({ title: 'Probable Starters', points: pts });
+    }
+    const leaders = _gameLeaders(data, ['batting','hitting','pitching','scoring']);
+    if (leaders.length) cards.push({ title: 'Game Leaders', points: leaders.slice(0, 6) });
+    const rc = _recordsCard(game);
+    if (rc) cards.push(rc);
+    if (!probs.length && !leaders.length) {
+      const sp = _spreadLine(odds, favTeam);
+      cards.push({ title: 'Matchup Frame', points: [
+        `${favTeam} enter as the market-favored side. Starting pitching matchup and bullpen depth are the primary swing factors.`,
+        `${dogTeam} carry plus-money value — run prevention and timely hitting will determine whether they cover.`,
+        sp,
+        'Detailed player-level data is limited for this matchup — lean is based on price, matchup structure, and current game context.',
+      ].filter(Boolean) });
+    }
+  }
+
+  /* ── NBA ── */
+  if (sport === 'nba') {
+    const leaders = _gameLeaders(data, ['scoring','rebound','assist','block','steal']);
+    if (leaders.length) cards.push({ title: 'Game Leaders', points: leaders.slice(0, 6) });
+    const rc = _recordsCard(game);
+    if (rc) cards.push(rc);
+    if (!leaders.length) {
+      const sp = _spreadLine(odds, favTeam);
+      cards.push({ title: 'Matchup Frame', points: [
+        `${favTeam} hold the market edge. Guard play, pick-and-roll coverage, and three-point variance are the primary swing factors.`,
+        `${dogTeam} will look to push pace and create transition opportunities — a live backdoor cover is in play if they stay within single digits.`,
+        sp,
+        'Detailed lineup and injury data not yet confirmed. Monitor pre-game availability reports before locking in.',
+      ].filter(Boolean) });
+    }
+  }
+
+  /* ── NFL ── */
+  if (sport === 'nfl') {
+    const leaders = _gameLeaders(data, ['passing','rushing','receiving','sack','interception','defense','tackle']);
+    if (leaders.length) cards.push({ title: 'Game Leaders', points: leaders.slice(0, 8) });
+    const rc = _recordsCard(game);
+    if (rc) cards.push(rc);
+    if (!leaders.length) {
+      const sp = _spreadLine(odds, favTeam);
+      cards.push({ title: 'Matchup Frame', points: [
+        `${favTeam} hold the structural advantage at current pricing. Trench play, turnover margin, and red zone efficiency will decide the cover.`,
+        'Quarterback performance and pressure rate are the highest-leverage stats — the team that limits sacks and protects the ball covers most weeks.',
+        sp,
+        'Check official injury reports at game time. Skill-position availability can meaningfully shift the effective spread.',
+      ].filter(Boolean) });
+    }
+  }
+
+  /* ── NHL ── */
+  if (sport === 'nhl') {
+    const leaders = _gameLeaders(data, ['goal','assist','point','save','goaltend']);
+    if (leaders.length) cards.push({ title: 'Game Leaders', points: leaders.slice(0, 6) });
+    const rc = _recordsCard(game);
+    if (rc) cards.push(rc);
+    if (!leaders.length) {
+      const sp = _spreadLine(odds, favTeam);
+      cards.push({ title: 'Matchup Frame', points: [
+        `${favTeam} enter as the pricing favorite. Goaltending performance and shot suppression are the primary drivers — the team that limits high-danger chances controls the game.`,
+        `${dogTeam} at plus money carry inherent value. Hockey's natural variance means any team can steal a game on a hot goalie night.`,
+        sp,
+        'Starting goaltenders are not always confirmed until pregame warmups. Verify lineup before committing.',
+      ].filter(Boolean) });
+    }
+  }
+
+  /* ── NCAAF ── */
+  if (sport === 'ncaaf') {
+    const leaders = _gameLeaders(data, ['passing','rushing','receiving','defense','tackle','sack']);
+    if (leaders.length) cards.push({ title: 'Game Leaders', points: leaders.slice(0, 6) });
+    const rc = _recordsCard(game);
+    if (rc) cards.push(rc);
+    if (!leaders.length) {
+      const sp = _spreadLine(odds, favTeam);
+      cards.push({ title: 'Matchup Frame', points: [
+        `${game.home.name} hold a home field edge — crowd noise and travel fatigue are consistently underpriced at the college level.`,
+        'Turnover margin and third-down conversion rate are the two most predictive metrics in college football. The team that wins both typically covers.',
+        `${favTeam} hold the market edge at current pricing.`,
+        sp,
+        'Transfer portal turnover means current-season roster form carries more weight than multi-year program history.',
+      ].filter(Boolean) });
+    }
+  }
+
+  /* ── NCAAM ── */
+  if (sport === 'ncaam') {
+    const leaders = _gameLeaders(data, ['scoring','rebound','assist','block','steal']);
+    if (leaders.length) cards.push({ title: 'Game Leaders', points: leaders.slice(0, 6) });
+    const rc = _recordsCard(game);
+    if (rc) cards.push(rc);
+    if (!leaders.length) {
+      const sp = _spreadLine(odds, favTeam);
+      cards.push({ title: 'Matchup Frame', points: [
+        `${game.home.name} benefit from home court — worth 3–4 points in most conference settings.`,
+        'Three-point shooting variance and free throw volume are the highest-leverage stats at the college level. The team that generates the most line attempts typically covers.',
+        `${favTeam} hold the market edge at current pricing.`,
+        sp,
+        'Detailed player availability and efficiency data is limited — lean is based on price, matchup structure, and current game context.',
+      ].filter(Boolean) });
+    }
+  }
+
+  /* ── Golf ── */
+  if (sport === 'golf') {
+    const pickedPlayer = apiPick?.pick || '—';
+    const betType = (() => {
+      const p = pickedPlayer.toLowerCase();
+      if (p.includes('top 5'))  return 'Top 5 finish';
+      if (p.includes('top 10')) return 'Top 10 finish';
+      if (p.includes('top 20')) return 'Top 20 finish';
+      if (p.includes('top 30')) return 'Top 30 finish';
+      if (p.includes('ml') || p.includes('win') || p.includes('outright')) return 'Outright win';
+      return 'Tournament lean';
+    })();
+    const golferName = pickedPlayer.replace(/\s+(Top\s*\d+|ML|Outright|Win|to\s+Win|F5|\+\d+|-\d+).*$/i, '').trim();
+    cards.push({
+      title: golferName ? `${golferName} — Bet Overview` : 'Tournament Pick Overview',
+      points: [
+        `Pick: ${pickedPlayer}`,
+        `Bet type: ${betType}`,
+        apiPick?.odds ? `Odds: ${apiPick.odds}` : null,
+        'Golf analysis uses available tournament context, course fit, and current form. Strokes-gained data, historical course results, and injury status are only referenced when confirmed in the event feed.',
+      ].filter(Boolean),
+    });
+    cards.push({ title: 'Golf Analysis Note', points: [
+      'Position plays (top 10/20) carry better risk-adjusted value than outright winners in most large fields.',
+      'Detailed player-level data is limited for this event — lean is based on price, course fit, and matchup structure within the current field.',
+    ]});
+  }
+
+  return cards;
+}
+
+/* ============================================================
+   FINAL VERDICT
+   ============================================================ */
+function buildVerdict(game, odds, sport, pick) {
+  const conf   = pick.conf.toFixed(1);
+  const bet    = `<strong>${pick.pick}</strong>`;
+  const units  = pick.units != null ? pick.units : 1.0;
+  const uLabel = units <= 0.5 ? '0.5u lean' : units <= 1.5 ? '1u play' : `${units}u play`;
+
   const verdicts = {
-    mlb:   `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. The pitching edge, line movement, and situational factors all point in the same direction. This is a 2-unit play at standard sizing. Monitor starting lineup and weather before locking in.`,
-    nba:   `This is a ${pick.conf.toFixed(1)}/10 confidence spread play on <strong>${pick.pick}</strong>. Net rating differential, pace, and ATS trends support the model's output. Recommended at 2 units. Check injury report at tip-off before committing full allocation.`,
-    nfl:   `The model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. EPA metrics, line movement, and situational edges align. Standard 2-unit recommendation. Weather updates should be monitored if wind becomes a factor.`,
-    ncaaf: `This is a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Efficiency metrics and home-field factors justify the play. 2-unit sizing appropriate. Note: college lines can move late — get in before kickoff if possible.`,
-    ncaam: `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Adjusted efficiency ratings and line movement support the projection. Standard 2-unit play. Check for late scratches or lineup changes before tip-off.`,
-    nhl:   `This is a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Underlying metrics, goaltending edge, and puck line history support the model's output. 2-unit standard recommendation. Confirm goaltender start in pregame warmups.`,
+    mlb:   `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Starting pitching matchup and bullpen depth are the primary swing factors — monitor probable starters and any late lineup changes before locking in.`,
+    nba:   `This is a ${conf}/10 confidence ${uLabel} on ${bet}. Matchup structure, pace differential, and current market positioning support the lean. Check the injury report at tip-off — availability changes can shift the effective spread significantly.`,
+    nfl:   `The model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Offensive efficiency, turnover margin, and current market positioning drive the lean. Check official injury reports before kickoff and monitor weather for outdoor venues.`,
+    ncaaf: `This is a ${conf}/10 confidence ${uLabel} on ${bet}. Home field advantage, turnover differential, and current market pricing support the lean. College lines can shift meaningfully on game day — aim to get this at the current number or better.`,
+    ncaam: `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Current market pricing, home court advantage, and matchup structure support the projection. Check for late lineup scratches before tip-off.`,
+    nhl:   `This is a ${conf}/10 confidence ${uLabel} on ${bet}. Current market positioning and matchup structure drive the lean. Confirm the starting goaltender in pregame warmups — lineup changes can flip the value on this play.`,
+    golf:  `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Golf carries high variance over four rounds — this lean is based on available course context, current form, and market pricing within the field.`,
   };
 
-  return verdicts[sport] || `The Hammer Model rates this a ${pick.conf.toFixed(1)}/10 confidence play on <strong>${pick.pick}</strong>. Key factors align in favor of this play at current market pricing. Recommended at 2 units.`;
+  return verdicts[sport] || `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Key factors align in favor of this play at current market pricing. Recommended at ${units} units.`;
 }
 
 /* ============================================================
@@ -683,6 +879,7 @@ function renderGame(game, odds, sport, data, apiPick) {
   const linescore   = data ? parseLinescore(data, sport, game) : null;
   const teamStats   = data ? parseTeamStats(data, sport, game) : [];
   const playerStats = data ? parsePlayerStats(data, sport, game) : [];
+  const matchupCtx  = data ? buildMatchupContext(data, game, odds, sport, apiPick) : [];
   const risks       = buildRisks(game, sport);
   const alts        = buildAlts(game, odds, sport, apiPick);
   const verdict     = apiPick ? buildVerdict(game, odds, sport, apiPick) : null;
@@ -787,6 +984,24 @@ function renderGame(game, odds, sport, data, apiPick) {
         </div>
       </div>
     </section>
+
+    <!-- KEY MATCHUP -->
+    ${matchupCtx.length ? `
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-head">
+          <div class="eyebrow">Matchup Intelligence</div>
+          <h2 class="sec-title">Key Matchup</h2>
+        </div>
+        <div class="info-grid">
+          ${matchupCtx.map(card => `
+            <div class="info-card">
+              <div class="info-card-title">${card.title}</div>
+              ${card.points.map(p => `<div class="info-item">${p}</div>`).join('')}
+            </div>`).join('')}
+        </div>
+      </div>
+    </section>` : ''}
 
     <!-- RISK FACTORS -->
     <section class="section">
