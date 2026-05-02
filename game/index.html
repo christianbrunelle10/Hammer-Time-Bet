@@ -298,9 +298,11 @@ function filterStatCols(labels, sport, catName) {
     batting:  new Set(['AB','R','H','RBI','HR','BB','SO','AVG']),
     pitching: new Set(['IP','H','R','ER','BB','SO','HR','ERA']),
   };
-  const nhlWant = {
-    skaters: new Set(['G','A','PTS','+/-','SOG','PIM']),
-    goalies: new Set(['SA','GA','SV','SV%','TOI']),
+
+  /* NHL uses ordered arrays — column order is enforced, not just filtered. */
+  const nhlOrder = {
+    skaters: ['G','A','+/-','S','SOG','SM','BS','PN','PIM','HT','TK','GV','SHFT','TOI','PPTOI','SHTOI','ESTOI','FW','FL','FO%'],
+    goalies: ['GA','SA','SV','SV%','TOI'],
   };
 
   if (sport === 'nba') {
@@ -319,10 +321,16 @@ function filterStatCols(labels, sport, catName) {
     }
   }
   if (sport === 'nhl') {
-    const ws = nhlWant[catName.toLowerCase()];
-    if (ws) {
-      const f = all.filter(c => ws.has(c.label));
-      return f.length ? f : all.slice(0, 6);
+    const order = nhlOrder[catName.toLowerCase()];
+    if (order) {
+      /* Build a label→index map from ESPN's raw labels, then walk the desired
+         order so columns always appear in the right sequence regardless of
+         what order ESPN returns them in. */
+      const labelIdx = new Map(labels.map((l, i) => [l, i]));
+      const cols = order
+        .filter(lbl => labelIdx.has(lbl))
+        .map(lbl => ({ label: lbl, idx: labelIdx.get(lbl) }));
+      return cols.length ? cols : all.slice(0, 8);
     }
   }
   return all;
