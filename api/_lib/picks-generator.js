@@ -27,12 +27,10 @@ const SM = {
   nhl:   id => `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${id}`,
 };
 
-function _todayParam() {
-  const n = new Date();
-  return `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}`;
-}
-
-function _todayISO() { return new Date().toISOString().slice(0, 10); }
+/** Returns YYYY-MM-DD in Eastern Time — ESPN and Redis keys must match ET date. */
+function _todayET()   { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); }
+function _todayParam(){ return _todayET().replace(/-/g, ''); }   // YYYYMMDD for ESPN ?dates=
+function _todayISO()  { return _todayET(); }                      // YYYY-MM-DD for Redis keys
 
 async function _fetchGames(sport) {
   const url = SB[sport];
@@ -76,9 +74,9 @@ async function _fetchSummary(sport, game) {
 
 /* ── Homepage curation: 7-signal scoring formula ────────────── */
 function _scoreHomepick(pick, game) {
-  const now   = new Date();
-  const month = now.getMonth() + 1;
-  const day   = now.getDate();
+  const [, _m, _d] = _todayET().split('-').map(Number);
+  const month = _m;
+  const day   = _d;
   let score   = 0;
 
   const SPORT_BASE = {

@@ -45,9 +45,9 @@ const ODDS_SPORT_KEY = {
   nhl:   'icehockey_nhl',
 };
 
+/** Returns YYYYMMDD in Eastern Time — keeps ESPN ?dates= param on the correct day. */
 function _todayParam() {
-  const n = new Date();
-  return `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}`;
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).replace(/-/g, '');
 }
 
 function _fmtML(n) {
@@ -81,11 +81,15 @@ function _toDisplayOdds(canonical) {
 async function _fetchScoreboard(sport) {
   const url = ESPN_SB[sport];
   if (!url) return [];
+  const dateParam = _todayParam();
+  console.log(`[/api/live] _fetchScoreboard ${sport} date=${dateParam}`);
   try {
-    const r = await fetch(`${url}?dates=${_todayParam()}`, { signal: AbortSignal.timeout(6000) });
+    const r = await fetch(`${url}?dates=${dateParam}`, { signal: AbortSignal.timeout(6000) });
     if (!r.ok) return [];
     const { events = [] } = await r.json();
-    return events.map(ev => fromESPNEvent(ev, sport)).filter(Boolean);
+    const games = events.map(ev => fromESPNEvent(ev, sport)).filter(Boolean);
+    console.log(`[/api/live] ${sport} → ${games.length} games`);
+    return games;
   } catch { return []; }
 }
 

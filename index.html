@@ -276,8 +276,9 @@ footer p{font-size:11px;color:var(--w4);line-height:1.8;max-width:560px;margin:0
 /* ============================================================
    DATE HELPERS
    ============================================================ */
+/** Returns YYYY-MM-DD in Eastern Time — matches ESPN and picks API date keys. */
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 function formatDateLabel(iso) {
   const [y, m, d] = iso.split('-').map(Number);

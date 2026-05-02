@@ -67,11 +67,9 @@
   /* ============================================================
      FETCH HELPERS
      ============================================================ */
+  /** Returns YYYYMMDD in Eastern Time — ESPN ?dates= must match the ET calendar date. */
   function _todayParam() {
-    const n = new Date();
-    const m = String(n.getMonth() + 1).padStart(2, '0');
-    const d = String(n.getDate()).padStart(2, '0');
-    return `${n.getFullYear()}${m}${d}`;
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).replace(/-/g, '');
   }
 
   async function _get(url) {
@@ -388,9 +386,13 @@
     async fetchScoreboard(sport) {
       const url = ESPN.scoreboard[sport];
       if (!url) return [];
+      const dateParam = _todayParam();
+      console.log(`[HTBData] fetchScoreboard ${sport} date=${dateParam}`);
       try {
-        const { events = [] } = await _get(`${url}?dates=${_todayParam()}`);
-        return events.map(e => _parseEvent(e, sport)).filter(Boolean);
+        const { events = [] } = await _get(`${url}?dates=${dateParam}`);
+        const games = events.map(e => _parseEvent(e, sport)).filter(Boolean);
+        console.log(`[HTBData] fetchScoreboard ${sport} → ${games.length} games`);
+        return games;
       } catch {
         return [];
       }

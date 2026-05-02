@@ -29,7 +29,8 @@ const ESPN_SM = {
 
 const VALID = new Set(['mlb', 'nba', 'nfl', 'ncaaf', 'ncaam', 'nhl']);
 
-function _todayISO() { return new Date().toISOString().slice(0, 10); }
+/** Returns YYYY-MM-DD in Eastern Time — Redis cache keys must match ET date. */
+function _todayISO() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }); }
 
 /** Safe fallback pick: uses current market pricing without inventing stats. */
 function _fallbackPick(game, odds, today) {

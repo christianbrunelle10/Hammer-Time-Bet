@@ -313,19 +313,21 @@ const HTB_SPORT_TITLES = {
 function _isInSeason(sport) {
   const win = HTB_SEASON_WINDOWS[sport];
   if (!win) return true; // golf = always in season
-  const now   = new Date();
-  const cur   = (now.getMonth() + 1) * 100 + now.getDate();
+  const [, _m, _d] = _todayET().split('-').map(Number);
+  const cur   = _m * 100 + _d;
   const start = win.start[0] * 100 + win.start[1];
   const end   = win.end[0]   * 100 + win.end[1];
   // Wrap-around seasons (start > end numerically, e.g. NFL 801 > 215)
   return start > end ? (cur >= start || cur <= end) : (cur >= start && cur <= end);
 }
 
+/** Returns YYYYMMDD in Eastern Time — ESPN ?dates= must match the ET calendar date. */
 function _todayParam() {
-  const n = new Date();
-  const m = String(n.getMonth() + 1).padStart(2, '0');
-  const d = String(n.getDate()).padStart(2, '0');
-  return `${n.getFullYear()}${m}${d}`;
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).replace(/-/g, '');
+}
+/** Returns YYYY-MM-DD in Eastern Time. */
+function _todayET() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
 /* ============================================================
@@ -433,11 +435,15 @@ async function _fetchScores(sport) {
   if (window.HTBData) return HTBData.fetchScoreboard(sport);
   const url = HTB_ESPN[sport];
   if (!url) return [];
+  const dateParam = _todayParam();
+  console.log(`[HTBLive] _fetchScores ${sport} date=${dateParam}`);
   try {
-    const r = await fetch(`${url}?dates=${_todayParam()}`, { signal: AbortSignal.timeout(5000) });
+    const r = await fetch(`${url}?dates=${dateParam}`, { signal: AbortSignal.timeout(5000) });
     if (!r.ok) return [];
     const { events = [] } = await r.json();
-    return events.map(e => _parseEvent(e, sport)).filter(Boolean);
+    const games = events.map(e => _parseEvent(e, sport)).filter(Boolean);
+    console.log(`[HTBLive] _fetchScores ${sport} → ${games.length} games`);
+    return games;
   } catch {
     return [];
   }
@@ -734,7 +740,7 @@ function _scoreGame(game) {
   if (game.status === 'live') score += 40;
 
   // Month-aware sport weights — reflects seasonal importance
-  const month = new Date().getMonth() + 1; // 1-12
+  const month = parseInt(_todayET().split('-')[1], 10); // 1-12, Eastern Time
   const BASE = {
     // NBA/NHL playoffs run April-June — heavily prioritised during that window
     nba:   (month >= 4 && month <= 6) ? 38 : 18,

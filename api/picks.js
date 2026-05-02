@@ -40,7 +40,7 @@ const ACTIVE_MONTHS = {
 };
 
 function _isActiveSeason(sport) {
-  const m = new Date().getMonth() + 1;
+  const m = parseInt(new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).split('-')[1], 10);
   return (ACTIVE_MONTHS[sport] || []).includes(m);
 }
 
