@@ -371,23 +371,7 @@ const HTB_MOCK_SCORES = {
   ],
 };
 
-const HTB_MOCK_GOLF = {
-  tournament: { name:'Masters Tournament', course:'Augusta National GC', round:'Round 3 — In Progress' },
-  players: [
-    { pos:'1',   name:'Scottie Scheffler', flag:'🇺🇸', score:-14, today:-5, thru:'F' },
-    { pos:'2',   name:'Rory McIlroy',      flag:'🇬🇧', score:-11, today:-4, thru:'F' },
-    { pos:'3',   name:'Collin Morikawa',   flag:'🇺🇸', score:-9,  today:-3, thru:'F' },
-    { pos:'T4',  name:'Jon Rahm',          flag:'🇪🇸', score:-8,  today:-2, thru:'F' },
-    { pos:'T4',  name:'Xander Schauffele', flag:'🇺🇸', score:-8,  today:-4, thru:'F' },
-  ],
-  odds: [
-    { name:'Scottie Scheffler', winner:'+175',  top5:'-180', top10:'-350' },
-    { name:'Rory McIlroy',      winner:'+320',  top5:'-110', top10:'-280' },
-    { name:'Collin Morikawa',   winner:'+600',  top5:'+120', top10:'-175' },
-    { name:'Jon Rahm',          winner:'+750',  top5:'+160', top10:'-140' },
-    { name:'Xander Schauffele', winner:'+800',  top5:'+175', top10:'-130' },
-  ],
-};
+/* HTB_MOCK_GOLF removed — no fake golf fallback data */
 
 const HTB_ODDS_MOCK = {
   mlb: [
@@ -552,27 +536,62 @@ async function _fetchGolf() {
   }
   try {
     const r = await fetch(HTB_ESPN.golf, { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error();
+    if (!r.ok) return null;
     const data  = await r.json();
     const event = data.events?.[0];
-    if (!event) throw new Error();
-    const comp  = event.competitions?.[0];
-    const competitors = comp?.competitors || [];
-    if (!competitors.length) throw new Error();
+    if (!event) return null;
+    const comp        = event.competitions?.[0];
+    const competitors = comp?.competitors;
+    if (!competitors?.length) return null;
+
+    const currentRound = comp.status?.period ?? 1;
+    const roundDetail  = comp.status?.type?.detail ?? 'In Progress';
+
+    /* Position map with tie detection */
+    const sorted = [...competitors].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+    const posMap = new Map();
+    let idx = 0;
+    while (idx < sorted.length) {
+      const score    = sorted[idx].score;
+      const startPos = sorted[idx].order ?? (idx + 1);
+      let   end      = idx;
+      while (end < sorted.length && sorted[end].score === score) end++;
+      const tied = (end - idx) > 1;
+      for (let k = idx; k < end; k++) {
+        posMap.set(sorted[k].id, tied ? `T${startPos}` : String(startPos));
+      }
+      idx = end;
+    }
+
+    const players = sorted.slice(0, 5).map(c => {
+      const linescores  = c.linescores ?? [];
+      const todayLs     = linescores.find(l => l.period === currentRound);
+      const todayRaw    = todayLs?.displayValue;
+      let todayNum      = null;
+      if (todayRaw && todayRaw !== '-') {
+        if (todayRaw === 'E') todayNum = 0;
+        else { const n = parseInt(todayRaw, 10); if (!isNaN(n)) todayNum = n; }
+      }
+      const holesPlayed = todayLs?.linescores?.length ?? 0;
+      const thru        = holesPlayed === 18 ? 'F' : holesPlayed > 0 ? String(holesPlayed) : null;
+      const pos         = posMap.get(c.id) ?? String(c.order ?? '—');
+      return {
+        pos,
+        name:  c.athlete?.displayName ?? '—',
+        flag:  '',
+        score: typeof c.score === 'number' ? c.score : 0,
+        today: todayNum ?? 0,
+        thru,
+      };
+    });
+
     return {
-      tournament: { name: event.name, course: comp.venue?.fullName || '', round: comp.status?.type?.detail || '' },
-      players: competitors.slice(0, 5).map(c => ({
-        pos:    c.linescores?.[0]?.position?.displayName || '—',
-        name:   c.athlete?.displayName || '—',
-        flag:   '',
-        score:  parseInt(c.score) || 0,
-        today:  0,
-        thru:   '—',
-      })),
-      odds: HTB_MOCK_GOLF.odds,
+      tournament: { name: event.name ?? 'PGA Tour', course: '', round: roundDetail },
+      players,
+      odds: [],
     };
   } catch {
-    return HTB_MOCK_GOLF;
+    return null;
   }
 }
 
@@ -679,13 +698,15 @@ function _golfCard(data) {
 
   const leaderboardRows = players.slice(0, 5).map(p => {
     if (!p.name) return '';
-    const isTop3 = ['1','2','3'].includes(String(p.pos));
+    const posNum = parseInt(String(p.pos).replace('T', ''), 10);
+    const isTop3 = posNum <= 3;
+    const thruLabel = p.thru === 'F' ? 'F' : p.thru ? `Thru ${p.thru}` : '';
     return `
       <div class="htb-golf-row">
         <span class="htb-golf-pos${isTop3 ? ' top3' : ''}">${p.pos}</span>
-        <span class="htb-golf-player">${p.flag || ''} ${p.name}</span>
+        <span class="htb-golf-player">${p.name}</span>
         <span class="htb-golf-score ${_scoreClass(p.score)}">${_scoreLabel(p.score)}</span>
-        <span class="htb-golf-today" style="color:#444">${p.thru === 'F' ? 'F' : p.thru ? `Thru ${p.thru}` : ''}</span>
+        <span class="htb-golf-today" style="color:#444">${thruLabel}</span>
       </div>`;
   }).join('');
 
@@ -926,7 +947,7 @@ class HTBLiveGames extends HTMLElement {
       btn.addEventListener('click', () => {
         this.dispatchEvent(new CustomEvent('htb:golf', {
           bubbles: true,
-          detail:  this._golfData || HTB_MOCK_GOLF,
+          detail:  this._golfData,
         }));
       });
     });
