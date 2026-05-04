@@ -427,17 +427,13 @@
          return fetch(`/api/odds?sport=${sport}`).then(r => r.json())
     ---------------------------------------------------------- */
     async fetchOdds(sport) {
-      // ── LIVE FETCH (uncomment when key is set) ────────────────
-      // if (CONFIG.ODDS_API_KEY !== 'YOUR_ODDS_API_KEY') {
-      //   const key    = CONFIG.ODDS_API_KEY;
-      //   const sKey   = ODDS_SPORT_KEY[sport];
-      //   const url    = `${CONFIG.ODDS_BASE}/${sKey}/odds?apiKey=${key}&regions=us&markets=h2h,spreads,totals&bookmakers=draftkings`;
-      //   try {
-      //     const games = await _get(url);
-      //     return games.map(g => _transformOddsAPIGame(g));
-      //   } catch {}
-      // }
-      // ── MOCK FALLBACK ─────────────────────────────────────────
+      try {
+        const r = await fetch(`/api/odds?sport=${sport}`, { signal: AbortSignal.timeout(CONFIG.FETCH_TIMEOUT) });
+        if (r.ok) {
+          const { odds } = await r.json();
+          if (odds?.length) return odds;
+        }
+      } catch {}
       return MOCK.odds[sport] || [];
     },
 

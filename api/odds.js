@@ -19,6 +19,7 @@ const SPORT_KEY = {
   nba:   'basketball_nba',
   nfl:   'americanfootball_nfl',
   ncaaf: 'americanfootball_ncaaf',
+  ncaam: 'basketball_ncaab',
   nhl:   'icehockey_nhl',
 };
 

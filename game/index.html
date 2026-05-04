@@ -1057,6 +1057,20 @@ function showError(msg) {
 }
 
 /* ============================================================
+   ODDS API — match game by team name substring
+   ============================================================ */
+function matchOddsAPIGame(game, oddsList) {
+  if (!oddsList?.length) return null;
+  const al = game.away.name.toLowerCase();
+  const hl = game.home.name.toLowerCase();
+  return oddsList.find(o => {
+    const oal = (o.awayTeam || '').toLowerCase();
+    const ohl = (o.homeTeam || '').toLowerCase();
+    return oal.endsWith(al) || al.endsWith(oal) || ohl.endsWith(hl) || hl.endsWith(ohl);
+  }) || null;
+}
+
+/* ============================================================
    ESPN SUMMARY ENDPOINTS (mirrors data.js)
    ============================================================ */
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports';
@@ -1109,10 +1123,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    /* Fetch ESPN game data and the official Hammer pick for this game in parallel */
-    const [espnResp, pickResp] = await Promise.all([
+    /* Fetch ESPN data, Hammer pick, and live odds in parallel */
+    const [espnResp, pickResp, oddsResp] = await Promise.all([
       fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) }),
       fetch(`/api/pick?id=${encodeURIComponent(gameId)}&sport=${sport}`, { signal: AbortSignal.timeout(7000) }),
+      fetch(`/api/odds?sport=${sport}`, { signal: AbortSignal.timeout(7000) }).catch(() => null),
     ]);
 
     if (!espnResp.ok) throw new Error(`ESPN returned ${espnResp.status}`);
@@ -1120,7 +1135,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pickData = pickResp.ok ? await pickResp.json() : null;
 
     const game = parseESPNSummary(data, sport);
-    const odds = adaptOddsForDisplay(game);
+    let odds = adaptOddsForDisplay(game);
+
+    if (oddsResp?.ok) {
+      try {
+        const oddsData = await oddsResp.json();
+        const match = matchOddsAPIGame(game, oddsData.odds || []);
+        if (match) odds = match;
+      } catch {}
+    }
+
     const pick = pickData?.pick || null;
 
     renderGame(game, odds, sport, data, pick);
