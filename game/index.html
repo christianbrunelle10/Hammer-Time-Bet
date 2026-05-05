@@ -34,6 +34,13 @@ button{cursor:pointer;border:none;font-family:inherit}
 .live-dot{width:6px;height:6px;border-radius:50%;background:#00d084;animation:blink 1.5s ease-in-out infinite;display:inline-block;margin-right:4px}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
 
+/* ── LIVE LINES LOADING ── */
+.live-lines-loading{display:flex;align-items:center;gap:8px;font-size:12px;color:#555;padding:6px 0}
+.ll-spinner{width:13px;height:13px;border:2px solid #222;border-top-color:#555;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.live-lines-meta{margin-top:10px;display:flex;align-items:center;gap:14px;font-size:10px;font-weight:600;letter-spacing:.06em;color:#444}
+.live-lines-meta .ll-book{text-transform:uppercase}
+
 .scoreboard{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .team-block{flex:1;min-width:140px;background:#101010;border:1px solid #1e1e1e;border-radius:12px;padding:20px;text-align:center}
 .team-block.winner{border-color:#2e2e2e}
@@ -935,14 +942,18 @@ function renderGame(game, odds, sport, data, apiPick) {
       </div>
     </section>` : ''}
 
-    <!-- GAME LINES -->
-    <section class="section">
+    <!-- LIVE LINES -->
+    <section class="section" id="live-lines-wrap">
       <div class="section-inner">
         <div class="section-head">
-          <div class="eyebrow">Matchup Overview</div>
-          <h2 class="sec-title">Game Lines</h2>
+          <div class="eyebrow">Live Odds</div>
+          <h2 class="sec-title">Live Lines</h2>
         </div>
-        ${renderOdds(odds, sport)}
+        <div id="live-lines-content">
+          <div class="live-lines-loading">
+            <span class="ll-spinner"></span>Loading live lines…
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1057,17 +1068,105 @@ function showError(msg) {
 }
 
 /* ============================================================
-   ODDS API — match game by team name substring
+   LIVE LINES — render normalized /api/game-odds response
    ============================================================ */
-function matchOddsAPIGame(game, oddsList) {
-  if (!oddsList?.length) return null;
-  const al = game.away.name.toLowerCase();
-  const hl = game.home.name.toLowerCase();
-  return oddsList.find(o => {
-    const oal = (o.awayTeam || '').toLowerCase();
-    const ohl = (o.homeTeam || '').toLowerCase();
-    return oal.endsWith(al) || al.endsWith(oal) || ohl.endsWith(hl) || hl.endsWith(ohl);
-  }) || null;
+function renderLiveLines(d, sport) {
+  if (!d) {
+    return '<p style="color:#555;font-size:13px">Live lines unavailable for this game.</p>';
+  }
+  const lineLabel = sport === 'mlb' ? 'Run Line' : sport === 'nhl' ? 'Puck Line' : 'Spread';
+  const favCls = v => {
+    const n = parseInt((v || '').replace('+', ''), 10);
+    return !isNaN(n) && n < 0 ? 'fav' : '';
+  };
+
+  const aMl      = d.moneylineAway || '—';
+  const hMl      = d.moneylineHome || '—';
+  const aSpd     = d.spreadAway?.split(' ')[0] || '—';
+  const hSpd     = d.spreadHome?.split(' ')[0] || '—';
+  const aSpdOdds = d.spreadAway?.match(/\(([^)]+)\)/)?.[1] || '';
+  const hSpdOdds = d.spreadHome?.match(/\(([^)]+)\)/)?.[1] || '';
+  const totOver   = d.totalOver  || '—';
+  const totUnder  = d.totalUnder || '—';
+  const overOdds  = d.overOdds  ? `(${d.overOdds})`  : '';
+  const underOdds = d.underOdds ? `(${d.underOdds})` : '';
+  const updatedStr = d.lastUpdated
+    ? new Date(d.lastUpdated).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    : null;
+
+  return `
+    <div class="odds-row">
+      <div class="odds-block">
+        <div class="odds-lbl">Moneyline</div>
+        <div class="odds-teams">
+          <div class="odds-team-row">
+            <div class="odds-team-name">Away</div>
+            <div class="odds-val ${favCls(aMl)}">${aMl}</div>
+          </div>
+          <div class="odds-team-row">
+            <div class="odds-team-name">Home</div>
+            <div class="odds-val ${favCls(hMl)}">${hMl}</div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-block">
+        <div class="odds-lbl">${lineLabel}</div>
+        <div class="odds-teams">
+          <div class="odds-team-row">
+            <div class="odds-team-name">Away</div>
+            <div class="odds-val">${aSpd} <span style="font-size:11px;color:#555">${aSpdOdds}</span></div>
+          </div>
+          <div class="odds-team-row">
+            <div class="odds-team-name">Home</div>
+            <div class="odds-val">${hSpd} <span style="font-size:11px;color:#555">${hSpdOdds}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="odds-block">
+        <div class="odds-lbl">Total (O/U)</div>
+        <div class="odds-teams">
+          <div class="odds-team-row">
+            <div class="odds-team-name">Over</div>
+            <div class="odds-val">${totOver} <span style="font-size:11px;color:#555">${overOdds}</span></div>
+          </div>
+          <div class="odds-team-row">
+            <div class="odds-team-name">Under</div>
+            <div class="odds-val">${totUnder} <span style="font-size:11px;color:#555">${underOdds}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${(d.bookmaker || updatedStr) ? `
+    <div class="live-lines-meta">
+      ${d.bookmaker  ? `<span class="ll-book">${d.bookmaker}</span>` : ''}
+      ${updatedStr   ? `<span>Updated ${updatedStr}</span>` : ''}
+    </div>` : ''}`;
+}
+
+/** Async: fetch /api/game-odds and inject into the Live Lines section. */
+async function loadLiveLines(game, sport) {
+  const contentEl = document.getElementById('live-lines-content');
+  const eyebrowEl = document.querySelector('#live-lines-wrap .eyebrow');
+  if (!contentEl) return;
+
+  try {
+    const qs = new URLSearchParams({
+      sport,
+      homeTeam: game.home.name,
+      awayTeam: game.away.name,
+    });
+    const r = await fetch(`/api/game-odds?${qs}`, { signal: AbortSignal.timeout(8000) });
+    if (r.status === 404) {
+      contentEl.innerHTML = '<p style="color:#555;font-size:13px">Live lines unavailable for this game.</p>';
+      return;
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if (eyebrowEl && d.bookmaker) eyebrowEl.textContent = d.bookmaker;
+    contentEl.innerHTML = renderLiveLines(d, sport);
+  } catch {
+    contentEl.innerHTML = '<p style="color:#555;font-size:13px">Live lines unavailable for this game.</p>';
+  }
 }
 
 /* ============================================================
@@ -1123,11 +1222,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    /* Fetch ESPN data, Hammer pick, and live odds in parallel */
-    const [espnResp, pickResp, oddsResp] = await Promise.all([
+    /* Fetch ESPN game data and Hammer pick in parallel; odds load separately after render */
+    const [espnResp, pickResp] = await Promise.all([
       fetch(urlFn(gameId), { signal: AbortSignal.timeout(7000) }),
       fetch(`/api/pick?id=${encodeURIComponent(gameId)}&sport=${sport}`, { signal: AbortSignal.timeout(7000) }),
-      fetch(`/api/odds?sport=${sport}`, { signal: AbortSignal.timeout(7000) }).catch(() => null),
     ]);
 
     if (!espnResp.ok) throw new Error(`ESPN returned ${espnResp.status}`);
@@ -1135,19 +1233,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pickData = pickResp.ok ? await pickResp.json() : null;
 
     const game = parseESPNSummary(data, sport);
-    let odds = adaptOddsForDisplay(game);
-
-    if (oddsResp?.ok) {
-      try {
-        const oddsData = await oddsResp.json();
-        const match = matchOddsAPIGame(game, oddsData.odds || []);
-        if (match) odds = match;
-      } catch {}
-    }
-
+    const odds = adaptOddsForDisplay(game);
     const pick = pickData?.pick || null;
 
     renderGame(game, odds, sport, data, pick);
+    loadLiveLines(game, sport);
   } catch (err) {
     showError(`Could not load game data for <strong>${sport.toUpperCase()} ${gameId}</strong>. The game may have ended or ESPN data is temporarily unavailable.<br><br><span style="font-size:11px;color:#444">${err.message}</span>`);
   }
