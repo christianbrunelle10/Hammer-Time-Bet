@@ -9,6 +9,87 @@
 const { fromESPNEvent, parsePickcenter } = require('./canonical');
 const { computePick, validatePick, extractPlayers } = require('./pick-engine');
 
+/* ── Odds API config ─────────────────────────────────────── */
+const ODDS_SPORT_KEY = {
+  mlb:   'baseball_mlb',
+  nba:   'basketball_nba',
+  nfl:   'americanfootball_nfl',
+  ncaaf: 'americanfootball_ncaaf',
+  ncaam: 'basketball_ncaab',
+  nhl:   'icehockey_nhl',
+};
+
+function _fmtO(n) { if (n == null) return null; return n >= 0 ? `+${n}` : String(n); }
+
+/** Fetch The Odds API for all sports in parallel. Returns { [sport]: rawGameArray }. */
+async function _fetchOddsAPIBatch(sports) {
+  const apiKey    = process.env.ODDS_API_KEY;
+  const bookmaker = process.env.ODDS_BOOKMAKER || 'draftkings';
+  if (!apiKey) return {};
+  const results = await Promise.allSettled(
+    sports.map(async sport => {
+      const sKey = ODDS_SPORT_KEY[sport];
+      if (!sKey) return { sport, games: [] };
+      const url = `https://api.the-odds-api.com/v4/sports/${sKey}/odds/?apiKey=${apiKey}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&bookmakers=${bookmaker}`;
+      try {
+        const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) { console.warn(`[picks-gen] Odds API ${sport} HTTP ${r.status}`); return { sport, games: [] }; }
+        return { sport, games: await r.json() };
+      } catch (e) {
+        console.warn(`[picks-gen] Odds API ${sport} error: ${e?.message}`);
+        return { sport, games: [] };
+      }
+    })
+  );
+  const map = {};
+  results.forEach(r => { if (r.status === 'fulfilled') map[r.value.sport] = r.value.games; });
+  const total = Object.values(map).reduce((s, g) => s + g.length, 0);
+  console.log(`[picks-gen] Odds API batch: ${Object.keys(map).join(',')} → ${total} games`);
+  return map;
+}
+
+/** Match canonical game to raw Odds API entry by team-name substring. */
+function _matchOddsAPIGame(game, oddsGames) {
+  if (!oddsGames?.length) return null;
+  const al = game.away.name.toLowerCase();
+  const hl = game.home.name.toLowerCase();
+  return oddsGames.find(og => {
+    const oal = (og.away_team || '').toLowerCase();
+    const ohl = (og.home_team || '').toLowerCase();
+    return (oal.endsWith(al) || al.endsWith(oal)) && (ohl.endsWith(hl) || hl.endsWith(ohl));
+  }) || null;
+}
+
+/** Convert raw Odds API game → canonical odds shape used by pick-engine. */
+function _oddsAPIToCanonical(og) {
+  const book = og.bookmakers?.[0];
+  if (!book) return null;
+  const markets = {};
+  (book.markets || []).forEach(m => { markets[m.key] = m.outcomes; });
+  const h2h     = markets.h2h     || [];
+  const spreads = markets.spreads  || [];
+  const totals  = markets.totals   || [];
+  const awayML  = h2h.find(o => o.name === og.away_team);
+  const homeML  = h2h.find(o => o.name === og.home_team);
+  const awaySpd = spreads.find(o => o.name === og.away_team);
+  const homeSpd = spreads.find(o => o.name === og.home_team);
+  const over    = totals.find(o => o.name === 'Over');
+  const under   = totals.find(o => o.name === 'Under');
+  const aML = awayML?.price, hML = homeML?.price;
+  let favorite = null;
+  if (aML != null && hML != null) favorite = aML < hML ? 'away' : 'home';
+  else if (hML != null)           favorite = hML < 0 ? 'home' : 'away';
+  else if (aML != null)           favorite = aML < 0 ? 'away' : 'home';
+  return {
+    favorite,
+    away: { ml: _fmtO(aML), spread: _fmtO(awaySpd?.point), spreadOdds: _fmtO(awaySpd?.price) || '-110' },
+    home: { ml: _fmtO(hML), spread: _fmtO(homeSpd?.point), spreadOdds: _fmtO(homeSpd?.price) || '-110' },
+    total:     over?.point  != null ? String(over.point)  : null,
+    overOdds:  _fmtO(over?.price)  || '-110',
+    underOdds: _fmtO(under?.price) || '-110',
+  };
+}
+
 /* ── ESPN endpoints ─────────────────────────────────────────── */
 const SB = {
   mlb:   'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
@@ -52,23 +133,29 @@ async function _fetchGames(sport) {
   }
 }
 
-async function _fetchSummary(sport, game) {
+async function _fetchSummary(sport, game, oddsAPIGames) {
   const fn = SM[sport];
   if (!fn) return { odds: null, players: {} };
   try {
     const r = await fetch(fn(game.id), { signal: AbortSignal.timeout(7000) });
     if (!r.ok) {
       console.warn(`[picks-gen] ${sport} summary ${game.id} HTTP ${r.status}`);
-      return { odds: null, players: {} };
+      const og = _matchOddsAPIGame(game, oddsAPIGames);
+      return { odds: og ? _oddsAPIToCanonical(og) : null, players: {} };
     }
     const data    = await r.json();
     const pc      = (data.pickcenter || [])[0];
-    const odds    = pc ? parsePickcenter(pc) : null;
+    let odds      = pc ? parsePickcenter(pc) : null;
+    if (!odds) {
+      const og = _matchOddsAPIGame(game, oddsAPIGames);
+      if (og) { odds = _oddsAPIToCanonical(og); console.log(`[picks-gen] ${sport} ${game.id}: Odds API fallback`); }
+    }
     const players = extractPlayers(data, sport, game);
     return { odds, players };
   } catch (e) {
     console.warn(`[picks-gen] ${sport} summary ${game.id} error: ${e?.message}`);
-    return { odds: null, players: {} };
+    const og = _matchOddsAPIGame(game, oddsAPIGames);
+    return { odds: og ? _oddsAPIToCanonical(og) : null, players: {} };
   }
 }
 
@@ -200,12 +287,16 @@ function _curateHomepicks(pairs, max) {
  * @returns {Promise<{ allTop: Array<{pick,game}>, allDog: Array<{pick,game}> }>}
  */
 async function generateAllPicks(sports, today) {
-  const t0       = Date.now();
-  const allGames = (await Promise.all(sports.map(_fetchGames))).flat();
+  const t0 = Date.now();
+  const [gamesByArr, oddsAPIBatch] = await Promise.all([
+    Promise.all(sports.map(_fetchGames)),
+    _fetchOddsAPIBatch(sports),
+  ]);
+  const allGames = gamesByArr.flat();
   console.log(`[picks-gen] ${sports.join(',')} → ${allGames.length} total games (${Date.now() - t0}ms fetched)`);
 
   const summaryResults = await Promise.allSettled(
-    allGames.map(g => _fetchSummary(g.sport, g))
+    allGames.map(g => _fetchSummary(g.sport, g, oddsAPIBatch[g.sport] || []))
   );
   const summaryMap = {};
   let oddsMisses = 0;
