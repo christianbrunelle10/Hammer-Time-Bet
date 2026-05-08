@@ -419,75 +419,215 @@ function isFavHome(odds) {
 /* ============================================================
    RISK FACTORS
    ============================================================ */
-function buildRisks(game, sport) {
+function buildRisks(game, sport, odds, pick) {
+  const favIsHome = isFavHome(odds);
+  const fav   = favIsHome ? game.home.name : game.away.name;
+  const dog   = favIsHome ? game.away.name : game.home.name;
+  const total = odds?.total?.val || null;
+  const favML = favIsHome ? (odds?.ml?.home || '') : (odds?.ml?.away || '');
+  const dogML = favIsHome ? (odds?.ml?.away || '') : (odds?.ml?.home || '');
+  const pickStr  = (pick?.pick || '').toLowerCase();
+  const isLine   = !pickStr.startsWith('over') && !pickStr.startsWith('under') && !pickStr.includes('ml');
+  const isOver   = pickStr.startsWith('over');
+  const isUnder  = pickStr.startsWith('under');
+  const lineVal  = pick?.pick?.match(/([+-]\d+\.?\d*)/)?.[1] || null;
+  const pickOdds = pick?.odds || null;
+
   const risks = {
-    mlb:   ['Starting pitcher pitch count could limit deep appearances if early trouble arises', 'Bullpen workload elevated over past 4 days — potential fatigue in late innings', 'Weather conditions may introduce variables not captured in base model', 'Lineup construction: injuries to key bats reduce projected run total'],
-    nba:   ['Injury reports may shift lineup assumptions — monitor pre-game availability', 'Schedule fatigue: second night of back-to-back for away team', 'Foul trouble risk for key interior players vs aggressive offense', 'Total variance is high in this pace matchup — model spread could narrow'],
-    nfl:   ['Weather forecast includes wind gusts 15+ mph — impacts passing game value', 'Key offensive lineman questionable — monitoring for game-time decision', 'Red zone efficiency can be volatile week-to-week; sample size caveat applies', 'Tight line offers limited value cushion — unit sizing adjusted accordingly'],
-    ncaaf: ['Transfer portal turnover means limited historical sample for current rosters', 'Crowd factor for home team may not be fully captured in model', 'Scheme adjustment tendencies vary — second-half adjustments can swing spread', 'Line movement suggests some sharp disagreement with model output'],
-    ncaam: ['Tournament context (if applicable) adds variance not present in regular season', 'Foul trouble for key players can rapidly alter game flow', 'Small conference scheduling gaps may inflate certain efficiency metrics', 'Line has been bet heavily on one side — reverse line movement risk'],
-    nhl:   ['Goaltender starts not always confirmed until pregame warmups', 'Back-to-back schedule increases injury and fatigue variance', 'Power play opportunity count is volatile and can swing total', 'Puck line at -1.5 requires decisive win — eliminates overtime value'],
+    mlb: [
+      isLine && lineVal
+        ? `Run line at ${lineVal} requires a decisive win — a single big inning for ${dog} or a blown save can flip the cover while ${fav} still wins the game`
+        : pickOdds
+          ? `Moneyline at ${pickOdds} leaves limited margin for error — one crooked-number inning for ${dog} reshapes the value regardless of the final result`
+          : `${fav} is the market favorite, but baseball's run-scoring variance is high — a single inning can change the game regardless of pitching quality`,
+      `Bullpen usage over the previous series determines which high-leverage arms are available late — a lead held through 6 innings is not guaranteed to hold if the closer is unavailable`,
+      total
+        ? `Run environment context: total sits at ${total} — if the game flows to the under, the scoring is likely compressing late when it is hardest to predict`
+        : `Run environment is the hardest variable to pin down — late-game bullpen matchups often determine the final margin more than any pitching quality model`,
+      `Verify confirmed starting pitchers, recent ERA and form, and any late lineup scratches before committing — a rested ace vs a fatigued bullpen game are priced very differently`,
+    ],
+    nba: [
+      isLine && lineVal
+        ? `Spread at ${lineVal} against ${dog} carries real backdoor cover risk — a garbage-time push in the final 90 seconds is the most common way favorites fail to cover in the NBA`
+        : pickOdds
+          ? `Moneyline at ${pickOdds} is accurately priced but leaves no cushion — ${dog} staying within a possession late is not unlikely in any NBA game`
+          : `NBA games are decided in the final five minutes — a talent edge does not guarantee covering the number if the trailing team shoots free throws and cuts the lead`,
+      `Foul trouble on the primary ball-handler or wing scorer changes possession rate, pace, and shot quality — monitor in-game if a key piece picks up two early fouls`,
+      total
+        ? `Over/under at ${total} is highly sensitive to early-game pace — if the first quarter is a slow half-court game, the trajectory is locked in and the under becomes the play`
+        : `Total swings dramatically based on pace in the first eight minutes — both teams establish their scoring rhythm early and rarely deviate from it`,
+      `Check availability reports at tip-off — an impact player returning from questionable status or a key contributor sitting out moves the effective spread 2–3 points and is not reflected in pre-game lines`,
+    ],
+    nfl: [
+      isLine && lineVal
+        ? `Spread at ${lineVal} depends on sustained execution — a single turnover-for-score or blocked special teams play can erase a talent edge and flip the cover without changing the story of the game`
+        : pickOdds
+          ? `Moneyline at ${pickOdds} removes the cover concern but a late ${dog} score can make this closer than the market anticipated and creates live-betting pressure`
+          : `NFL games are decided by 3–4 plays — a turnover at the wrong time, a missed field goal, or a special teams score changes the final margin entirely`,
+      `Turnover margin is the single most volatile stat in professional football — a 3-turnover swing erases a talent edge, the spread, and sometimes the winner of the game`,
+      total
+        ? `Under ${total} requires both teams to play clean possession football — a pick-six or special teams score can push the total regardless of how both offenses are actually executing`
+        : `Red zone scoring is less predictable than models suggest — field goals instead of touchdowns leave totals under while spreads can still be covered`,
+      `Official injury report at kickoff is material — skill-position availability at WR1 and CB1 can shift the effective spread by 2–3 points and is never fully baked into the opening line`,
+    ],
+    ncaaf: [
+      isLine && lineVal
+        ? `Spread at ${lineVal} is vulnerable if ${dog} controls the clock — a run-heavy approach by the underdog limits possessions and keeps the score within the margin deep into the fourth quarter`
+        : `College home underdogs historically cover at a rate that the market consistently underprices — crowd noise and travel fatigue create genuine variance`,
+      `Second-half scheme adjustments can swing college games significantly — coordinators who make effective halftime changes regularly erase first-half advantages in the final margin`,
+      `Transfer portal roster turnover means smaller historical sample for this exact version of both rosters — current-season metrics carry more predictive weight than multi-year program history`,
+      total
+        ? `The ${total} total is sensitive to pace — if either team commits to running the ball and playing field position, the final score can land 10+ points below the current number`
+        : `Scoring pace in college football is highly coach-dependent — run-heavy schemes can suppress totals dramatically below what the market expects`,
+    ],
+    ncaam: [
+      isLine && lineVal
+        ? `Spread at ${lineVal} depends on ${fav} executing their primary offensive option consistently — foul trouble on a key creator early disrupts the entire game plan and can flip the cover`
+        : `College basketball upsets happen at a rate the market systematically underweights — a hot shooting night from ${dog} can flip any game inside the last five minutes`,
+      `Foul trouble on the primary scorer or point guard resets the entire offensive structure — teams with limited roster depth suffer disproportionately against physical defenses`,
+      total
+        ? `Over/under at ${total} is sensitive to three-point variance — college teams can shoot 12-of-25 or 3-of-25 from three in the same game, shifting the total by 15+ points in either direction`
+        : `Shooting variance at the college level is extreme — the same team can score 85 and 55 points in back-to-back games against comparable opponents, making totals the hardest college bet to model`,
+      `Line movement on college games can reflect sharp money that retail books have already absorbed — locking in the current number before it moves further is advisable if you have conviction`,
+    ],
+    nhl: [
+      isLine
+        ? `Puck line at -1.5 requires a two-goal win — games decided in overtime, including the shootout, result in a one-goal final that loses the spread even when ${fav} wins the game outright`
+        : pickOdds
+          ? `Moneyline at ${pickOdds} reflects a sport where one bounce or one penalty at the wrong time reshapes the outcome — variance is structural in hockey, not statistical noise`
+          : `Hockey outcomes are more variance-driven than any other major sport — a hot goaltender or a single neutral-zone turnover can change a game that statistics suggest was already decided`,
+      `Starting goaltender confirmation should happen at warmups — if the confirmed starter is pulled or replaced late, the crease value that underpins this pick changes meaningfully`,
+      total
+        ? `Total at ${total} in hockey is highly sensitive to special teams — a single 5-on-3 power play opportunity that converts can push the total above or below this number on its own`
+        : `Power play opportunities are volatile — a penalty-heavy game pushes goals well above expected; a clean, physical game plays significantly below what the total implies`,
+      `Back-to-back schedule exposure and travel distance affect NHL performance more measurably than in any other major sport — verify rest day context and confirm travel schedule before final commitment`,
+    ],
   };
 
-  return risks[sport] || ['Monitor injury reports before game time', 'Line movement may impact closing price', 'Weather or travel factors may apply'];
+  return risks[sport] || [
+    `Monitor injury reports and line movement in the hours before game time`,
+    pickOdds ? `Value at ${pickOdds} requires the outcome to unfold close to the projected scenario — price sensitivity is real` : `Check the closing number before committing — line movement in the final hours often reflects late sharp action`,
+    `Variance is always a factor in single-game betting — size the bet according to conviction level and bankroll management principles`,
+  ];
 }
 
 /* ============================================================
    ALTERNATE LEANS
    ============================================================ */
 function buildAlts(game, odds, sport, pick) {
-  const total    = odds?.total?.val || '—';
+  const total    = odds?.total?.val || null;
   const homeFav  = isFavHome(odds);
   const favTeam  = homeFav ? game.home.name : game.away.name;
   const dogTeam  = homeFav ? game.away.name : game.home.name;
+  const favML    = homeFav ? (odds?.ml?.home || null) : (odds?.ml?.away || null);
+  const dogML    = homeFav ? (odds?.ml?.away || null) : (odds?.ml?.home || null);
+  const favLine  = homeFav ? odds?.line?.home?.split(' ')[0] : odds?.line?.away?.split(' ')[0];
+  const dogLine  = homeFav ? odds?.line?.away?.split(' ')[0] : odds?.line?.home?.split(' ')[0];
+  const totalStr = total ? `${total}` : '—';
 
-  const pickStr     = (pick?.pick || '').toLowerCase();
-  const favLower    = favTeam.toLowerCase();
-  const dogLower    = dogTeam.toLowerCase();
-  const pickedFavML = pickStr.includes(favLower) && pickStr.includes('ml');
-  const pickedDogML = pickStr.includes(dogLower) && pickStr.includes('ml');
+  const pickStr       = (pick?.pick || '').toLowerCase();
+  const favLower      = favTeam.toLowerCase();
+  const dogLower      = dogTeam.toLowerCase();
+  const pickedFavML   = pickStr.includes(favLower) && pickStr.includes('ml');
+  const pickedDogML   = pickStr.includes(dogLower) && pickStr.includes('ml');
   const pickedFavLine = pickStr.includes(favLower) && !pickStr.includes('ml');
   const pickedDogLine = pickStr.includes(dogLower) && !pickStr.includes('ml');
+  const pickedOver    = pickStr.startsWith('over');
+  const pickedUnder   = pickStr.startsWith('under');
 
   const alts = {
     mlb: [
-      !pickedFavLine ? `First 5 innings: ${favTeam} -0.5 (value if starting pitcher dominates early)` : null,
-      !pickedDogML   ? `${dogTeam} ML at plus money — live if game is close through 5` : null,
-      `Under ${total} if both starters are sharp — lower-scoring game scenario`,
-    ].filter(Boolean),
+      !pickedFavLine && favLine
+        ? `${favTeam} run line ${favLine} — when the starter goes deep and the bullpen holds a lead, the run line pays better than the straight moneyline at a price that is worth the requirement`
+        : null,
+      !pickedDogML && dogML
+        ? `${dogTeam} ML (${dogML}) — if their starter holds ${favTeam} through five innings, the plus-money value is sustainable at the final horn`
+        : null,
+      !pickedUnder && total
+        ? `Under ${totalStr} — if both starters are locked in and command their secondary pitches, this game finishes below the current number`
+        : null,
+      !pickedOver && total
+        ? `First 5 innings over — both rotations have been allowing early runs before settling in; the scoring front-loads before the bullpens take over`
+        : null,
+    ].filter(Boolean).slice(0, 3),
     nba: [
-      !pickedDogLine ? `${dogTeam} +spread — backdoor cover potential if game tightens late` : null,
-      `Over ${total} if pace accelerates in the opening quarter`,
-      !pickedFavML   ? `${favTeam} ML — less variance than spread if you prefer the win bet` : null,
-    ].filter(Boolean),
+      !pickedDogLine && dogLine
+        ? `${dogTeam} ${dogLine} — a live backdoor cover if the game tightens in the fourth quarter, which is the most common way spread favorites fail to close out in the NBA`
+        : null,
+      !pickedOver && total
+        ? `Over ${totalStr} — if the pace is fast from the opening tip and neither defense settles in, the total can be reached by the third quarter`
+        : null,
+      !pickedFavML && favML
+        ? `${favTeam} ML (${favML}) — pure win bet that removes the cover requirement and still pays if ${favTeam} wins a close one in the final 30 seconds`
+        : null,
+      !pickedUnder && total
+        ? `Under ${totalStr} — if both teams play physical halfcourt basketball and the primary scorers are contested all night, the total falls short of this number`
+        : null,
+    ].filter(Boolean).slice(0, 3),
     nfl: [
-      !pickedDogML   ? `${dogTeam} ML — live underdog if they start within a score` : null,
-      `Under ${total} if wind or defensive play controls the tempo`,
-      !pickedFavLine ? `${favTeam} team total over — offense expected to control possession` : null,
-    ].filter(Boolean),
+      !pickedDogML && dogML
+        ? `${dogTeam} ML (${dogML}) — pure underdog play that wins on any ${dogTeam} victory and avoids all spread variance; the live value holds if they stay within a score at halftime`
+        : null,
+      !pickedUnder && total
+        ? `Under ${totalStr} — if both defenses control the line of scrimmage in the first half, the game can finish well below this number without either offense ever truly exploding`
+        : null,
+      !pickedFavLine && favLine
+        ? `${favTeam} first-half spread ${favLine} — the favorite's offense typically controls early possession time and the halftime margin is often more decisive than the final`
+        : null,
+      !pickedOver && total
+        ? `Over ${totalStr} — if either secondary struggles in man coverage early, the passing game opens up and scoring accelerates faster than the total implies`
+        : null,
+    ].filter(Boolean).slice(0, 3),
     ncaaf: [
-      !pickedDogLine ? `${dogTeam} first-half spread if they start fast` : null,
-      `Total under if both defenses tighten in the second half`,
-      !pickedFavML   ? `${favTeam} ML instead of spread for less variance` : null,
-    ].filter(Boolean),
+      !pickedDogLine && dogLine
+        ? `${dogTeam} first-half spread ${dogLine} — home underdogs in college football are historically competitive before fatigue and depth differentials create separation in the fourth quarter`
+        : null,
+      !pickedUnder && total
+        ? `Under ${totalStr} — if both defenses tighten in the second half and the trailing team can not push pace, the total finishes below the current number`
+        : null,
+      !pickedFavML && favML
+        ? `${favTeam} ML (${favML}) — if you want the win without the cover requirement, the moneyline removes all spread variance from the equation`
+        : null,
+      !pickedOver && total
+        ? `Over ${totalStr} — if either defense is susceptible to the pass, this game can finish well over the number once fourth-quarter tempo opens up`
+        : null,
+    ].filter(Boolean).slice(0, 3),
     ncaam: [
-      !pickedDogML   ? `${dogTeam} first-half ML — value if they dictate pace early` : null,
-      `Over ${total} if both teams shoot above average from three`,
-      !pickedFavLine ? `${favTeam} alternate spread at improved payout` : null,
-    ].filter(Boolean),
+      !pickedDogML && dogML
+        ? `${dogTeam} first half — college underdogs who dictate early pace frequently cover the first-half spread even in games they lose outright; strong value if ${dogTeam} starts well`
+        : null,
+      !pickedOver && total
+        ? `Over ${totalStr} — if both teams shoot at or above their three-point averages in the first ten minutes, the over becomes the clear play of the game`
+        : null,
+      !pickedFavLine && favLine
+        ? `${favTeam} alternate spread ${favLine} — buying down the number reduces cover risk while still paying meaningful value if the talent gap shows up late`
+        : null,
+      !pickedUnder && total
+        ? `Under ${totalStr} — if both coaches prioritize halfcourt execution and the game becomes physical, the scoring pace finishes below this number from midway through the second half`
+        : null,
+    ].filter(Boolean).slice(0, 3),
     nhl: [
-      !pickedFavML   ? `${favTeam} ML instead of puck line — avoids the -1.5 requirement` : null,
-      `Over ${total} if both goalies allow early goals`,
-      !pickedDogLine ? `${dogTeam} puck line +1.5 as a hedge on a tight game` : null,
-    ].filter(Boolean),
+      !pickedFavML && favML
+        ? `${favTeam} ML (${favML}) — removes the two-goal requirement entirely and wins on any ${favTeam} victory including overtime and the shootout`
+        : null,
+      !pickedOver && total
+        ? `Over ${totalStr} — if both goalies allow early goals and power play opportunities create traffic, the total can be reached by the early third period`
+        : null,
+      !pickedDogLine && dogLine
+        ? `${dogTeam} puck line ${dogLine} — buys a full goal of cushion; wins if ${dogTeam} keeps the game within one goal at the final horn including overtime`
+        : null,
+      !pickedUnder && total
+        ? `Under ${totalStr} — if both goalies are sharp early and the game plays physical and low-penalty, the scoring pace does not reach this number`
+        : null,
+    ].filter(Boolean).slice(0, 3),
   };
 
   const result = alts[sport] || [
-    !pickedDogML ? `${dogTeam} ML at plus money — hedge play` : null,
-    `Total ${total} under as contrarian lean`,
+    !pickedDogML && dogML ? `${dogTeam} ML (${dogML}) — value play for bettors who think the game is closer than the market implies` : null,
+    total ? `Under ${totalStr} — contrarian lean if both teams play conservative and the game becomes a possession battle` : null,
   ].filter(Boolean);
 
-  return result.length ? result : [`No additional leans available beyond the primary pick for this game.`];
+  return result.length ? result : [`The primary pick represents the clearest edge in this game — no high-confidence alternate lean is available.`];
 }
 
 /* ============================================================
@@ -556,12 +696,14 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     const rc = _recordsCard(game);
     if (rc) cards.push(rc);
     if (!probs.length && !leaders.length) {
-      const sp = _spreadLine(odds, favTeam);
+      const sp    = _spreadLine(odds, favTeam);
+      const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} enter as the market-favored side. Starting pitching matchup and bullpen depth are the primary swing factors.`,
-        `${dogTeam} carry plus-money value — run prevention and timely hitting will determine whether they cover.`,
+        `${favTeam} hold the market edge — confirmed starters, ERA, rest, and recent form against this lineup type are the primary drivers of the run-scoring range in this game.`,
+        `${dogTeam} at plus money have a legitimate upset path if their starter limits early damage and keeps the game within a run through five innings.`,
+        total ? `Total sits at ${total} — pitching quality on both sides will determine whether this finishes over or under that number.` : null,
         sp,
-        'Detailed player-level data is limited for this matchup — lean is based on price, matchup structure, and current game context.',
+        'Confirmed starting pitcher data not yet loaded — verify probable starters, recent ERA, and any lineup scratches before locking in.',
       ].filter(Boolean) });
     }
   }
@@ -573,12 +715,14 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     const rc = _recordsCard(game);
     if (rc) cards.push(rc);
     if (!leaders.length) {
-      const sp = _spreadLine(odds, favTeam);
+      const sp    = _spreadLine(odds, favTeam);
+      const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} hold the market edge. Guard play, pick-and-roll coverage, and three-point variance are the primary swing factors.`,
-        `${dogTeam} will look to push pace and create transition opportunities — a live backdoor cover is in play if they stay within single digits.`,
+        `${favTeam} hold the market edge — half-court execution, primary scorer volume, paint scoring differential, and three-point rate are the most predictive variables in this matchup.`,
+        `${dogTeam} path to an upset or cover runs through pace control, limiting second-chance points, and a hot shooting performance from at least one secondary scorer.`,
+        total ? `Total set at ${total} — pace in the opening quarter typically establishes the scoring trajectory for the entire game.` : null,
         sp,
-        'Detailed lineup and injury data not yet confirmed. Monitor pre-game availability reports before locking in.',
+        'Pre-game availability not yet confirmed — a key player returning from questionable status can move this spread 1.5–2.5 points in either direction.',
       ].filter(Boolean) });
     }
   }
@@ -590,12 +734,14 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     const rc = _recordsCard(game);
     if (rc) cards.push(rc);
     if (!leaders.length) {
-      const sp = _spreadLine(odds, favTeam);
+      const sp    = _spreadLine(odds, favTeam);
+      const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} hold the structural advantage at current pricing. Trench play, turnover margin, and red zone efficiency will decide the cover.`,
-        'Quarterback performance and pressure rate are the highest-leverage stats — the team that limits sacks and protects the ball covers most weeks.',
+        `${favTeam} hold the structural advantage at current pricing — turnover margin, third-down conversion rate, and red zone efficiency are the three stats most predictive of covering a spread.`,
+        `Quarterback performance under pressure is the highest-leverage individual matchup — the team that protects the ball in scoring position and limits sacks covers at a measurably higher rate.`,
+        total ? `Total set at ${total} — red zone field goal vs. touchdown ratio and special teams efficiency determine whether this finishes over or under.` : null,
         sp,
-        'Check official injury reports at game time. Skill-position availability can meaningfully shift the effective spread.',
+        'Check the official injury report at kickoff — WR1 and CB1 availability can shift the effective spread by 2–3 points and is often not fully priced in before game day.',
       ].filter(Boolean) });
     }
   }
@@ -607,12 +753,14 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     const rc = _recordsCard(game);
     if (rc) cards.push(rc);
     if (!leaders.length) {
-      const sp = _spreadLine(odds, favTeam);
+      const sp    = _spreadLine(odds, favTeam);
+      const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} enter as the pricing favorite. Goaltending performance and shot suppression are the primary drivers — the team that limits high-danger chances controls the game.`,
-        `${dogTeam} at plus money carry inherent value. Hockey's natural variance means any team can steal a game on a hot goalie night.`,
+        `${favTeam} are the pricing favorite — goaltending save percentage, high-danger chance suppression, and power play conversion rate are the three metrics most predictive of NHL outcomes at this price range.`,
+        `${dogTeam} at plus money in hockey is never a throwaway bet — a 60-minute in-form goaltending performance can steal any game regardless of shots faced or possession share.`,
+        total ? `Total sits at ${total} — if both goalies are sharp and the game plays physical and low-penalty, the under is the natural lean in this range.` : null,
         sp,
-        'Starting goaltenders are not always confirmed until pregame warmups. Verify lineup before committing.',
+        'Confirm starting goaltender at warmups — a last-minute change in net changes the crease value underpinning this pick.',
       ].filter(Boolean) });
     }
   }
@@ -624,13 +772,14 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     const rc = _recordsCard(game);
     if (rc) cards.push(rc);
     if (!leaders.length) {
-      const sp = _spreadLine(odds, favTeam);
+      const sp    = _spreadLine(odds, favTeam);
+      const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${game.home.name} hold a home field edge — crowd noise and travel fatigue are consistently underpriced at the college level.`,
-        'Turnover margin and third-down conversion rate are the two most predictive metrics in college football. The team that wins both typically covers.',
-        `${favTeam} hold the market edge at current pricing.`,
+        `${game.home.name} benefit from home field — crowd noise, travel fatigue, and officiating environment are consistently underpriced at the college level, typically worth 3–5 points depending on the program and atmosphere.`,
+        `Turnover margin and third-down conversion rate are the two most predictive metrics in college football — the team that wins both typically covers, regardless of raw talent differential.`,
+        `${favTeam} hold the market edge at current pricing — transfer portal turnover means current-season metrics carry more predictive weight than multi-year program history.`,
+        total ? `Total set at ${total} — if either team commits to running the ball and controlling clock, the final score can land significantly below this number.` : null,
         sp,
-        'Transfer portal turnover means current-season roster form carries more weight than multi-year program history.',
       ].filter(Boolean) });
     }
   }
@@ -642,13 +791,15 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     const rc = _recordsCard(game);
     if (rc) cards.push(rc);
     if (!leaders.length) {
-      const sp = _spreadLine(odds, favTeam);
+      const sp    = _spreadLine(odds, favTeam);
+      const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${game.home.name} benefit from home court — worth 3–4 points in most conference settings.`,
-        'Three-point shooting variance and free throw volume are the highest-leverage stats at the college level. The team that generates the most line attempts typically covers.',
-        `${favTeam} hold the market edge at current pricing.`,
+        `${game.home.name} benefit from home court — worth 3–4 points in most conference settings and more in hostile environments where crowd pressure affects free throw timing and officiating.`,
+        `Three-point shooting variance and free throw volume are the highest-leverage stats at the college level — the team that generates the most free throw attempts and shoots average from three typically covers.`,
+        `${favTeam} hold the market edge at current pricing — efficiency differential and scoring option depth are the primary variables separating these rosters.`,
+        total ? `Total set at ${total} — three-point variance alone can shift the final score 15+ points; verify your lean against the total once the game starts.` : null,
         sp,
-        'Detailed player availability and efficiency data is limited — lean is based on price, matchup structure, and current game context.',
+        'Detailed player availability and efficiency data not yet confirmed — monitor pre-game reports and any late scratches before locking in.',
       ].filter(Boolean) });
     }
   }
@@ -693,17 +844,23 @@ function buildVerdict(game, odds, sport, pick) {
   const units  = pick.units != null ? pick.units : 1.0;
   const uLabel = units <= 0.5 ? '0.5u lean' : units <= 1.5 ? '1u play' : `${units}u play`;
 
-  const verdicts = {
-    mlb:   `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Starting pitching matchup and bullpen depth are the primary swing factors — monitor probable starters and any late lineup changes before locking in.`,
-    nba:   `This is a ${conf}/10 confidence ${uLabel} on ${bet}. Matchup structure, pace differential, and current market positioning support the lean. Check the injury report at tip-off — availability changes can shift the effective spread significantly.`,
-    nfl:   `The model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Offensive efficiency, turnover margin, and current market positioning drive the lean. Check official injury reports before kickoff and monitor weather for outdoor venues.`,
-    ncaaf: `This is a ${conf}/10 confidence ${uLabel} on ${bet}. Home field advantage, turnover differential, and current market pricing support the lean. College lines can shift meaningfully on game day — aim to get this at the current number or better.`,
-    ncaam: `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Current market pricing, home court advantage, and matchup structure support the projection. Check for late lineup scratches before tip-off.`,
-    nhl:   `This is a ${conf}/10 confidence ${uLabel} on ${bet}. Current market positioning and matchup structure drive the lean. Confirm the starting goaltender in pregame warmups — lineup changes can flip the value on this play.`,
-    golf:  `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Golf carries high variance over four rounds — this lean is based on available course context, current form, and market pricing within the field.`,
+  // Use the pick's primary reason as the main anchor — makes every verdict unique
+  const r0 = (pick.reasons && pick.reasons[0]) || '';
+  const anchor = r0 ? ` ${r0.charAt(0).toLowerCase() + r0.slice(1).replace(/\.$/, '')}.` : '';
+
+  const cta = {
+    mlb:   `Verify confirmed starters and recent ERA/form before committing — a well-rested arm vs a tired bullpen game are priced very differently.`,
+    nba:   `Check the injury report at tip-off — a player returning from questionable status can shift the effective spread 2–3 points and is not reflected in the pre-game line.`,
+    nfl:   `Review the official injury report at kickoff and monitor the depth chart — skill-position availability is the highest-leverage pre-game variable in the NFL.`,
+    ncaaf: `College lines can move significantly on game day — locking in the current number and monitoring for sharp line movement before kickoff is advisable.`,
+    ncaam: `College totals in particular are sensitive to shooting variance — the same team can score 30 more points in back-to-back games; verify your line before tip.`,
+    nhl:   `Confirm the starting goaltender in pregame warmups — a last-minute lineup change in net materially shifts the crease value this pick is built on.`,
+    golf:  `Golf carries four-round variance that no model fully captures — this lean is based on course fit, current form, and market pricing within the field.`,
   };
 
-  return verdicts[sport] || `The Hammer Model rates this a ${conf}/10 confidence ${uLabel} on ${bet}. Key factors align in favor of this play at current market pricing. Recommended at ${units} units.`;
+  const closingLine = cta[sport] || `Key factors align in favor of this play at current market pricing. Recommended at ${units} units.`;
+
+  return `The Hammer Model rates ${bet} a ${conf}/10 confidence ${uLabel}.${anchor} ${closingLine}`;
 }
 
 /* ============================================================
@@ -887,7 +1044,7 @@ function renderGame(game, odds, sport, data, apiPick) {
   const teamStats   = data ? parseTeamStats(data, sport, game) : [];
   const playerStats = data ? parsePlayerStats(data, sport, game) : [];
   const matchupCtx  = data ? buildMatchupContext(data, game, odds, sport, apiPick) : [];
-  const risks       = buildRisks(game, sport);
+  const risks       = buildRisks(game, sport, odds, apiPick);
   const alts        = buildAlts(game, odds, sport, apiPick);
   const verdict     = apiPick ? buildVerdict(game, odds, sport, apiPick) : null;
 

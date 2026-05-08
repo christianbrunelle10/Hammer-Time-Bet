@@ -143,14 +143,14 @@ function _mlbReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       `${dog} offense has been limited against quality starters — the multi-run margin is on the table`,
     ];
     if (pType === 2) return [
-      `Both bullpens have been heavily used this week — late-inning scoring is a real factor tonight`,
-      `The ${total} total is in range for what these offenses have been doing recently`,
-      `Neither team has the shutdown depth to prevent scoring once the lead changes hands`,
+      `Late-inning bullpen exposure on both sides adds meaningful scoring variance — once the starters exit, run totals tend to accelerate`,
+      `The ${total} total is achievable based on what both lineups have been doing at the plate in recent series`,
+      `Neither bullpen has the depth to limit damage across multiple high-leverage innings — scoring late in this game is a real factor`,
     ];
     if (pType === 3) return [
-      `Both offenses have been inconsistent at the plate — the scoring pace is tracking under this total`,
-      `Under ${total} — the pitching matchup on both sides supports the low-score play tonight`,
-      `${_poss(fav)} lineup has been cold — ${dog} pitching is capable of keeping the run total in check`,
+      `Both lineups have been inconsistent at the plate — the scoring pace for this matchup supports a game that finishes under ${total}`,
+      `Under ${total} — when both starters have the command to go deep into games, run totals rarely clear this number`,
+      `${_poss(fav)} lineup has been below average in run-scoring situations — ${dog} pitching has the profile to hold the total in check`,
     ];
     return [
       favIsHome
@@ -219,7 +219,7 @@ function _nbaReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
         ? `${dog} on the road has been more competitive than the market reflects — the road record makes this price too generous`
         : `${dog} at home is where you want them as an underdog — do not dismiss the home floor advantage in this building`,
       `At ${dogML}, ${dog} offers real plus-money value — this type of game is decided by a handful of possessions`,
-      `${fav} has not been dominant away from their building — ${dog} is positioned to keep this game close`,
+      `${fav} has not been automatic on the road — ${dog} home court removes enough of the gap to make this price viable`,
     ];
     return _assemble(real, fill, dataScore);
   }
@@ -280,9 +280,9 @@ function _nhlReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       real.push(`Both goalies have been tested heavily this week — neither crease is locked down entering tonight`);
     }
     const fill = [
-      `Both power play units have been active and converting — a penalty-heavy game pushes the goal total up`,
-      `These two teams have been involved in high-scoring games in recent meetings — the offensive trend holds`,
-      `Over ${total} — goaltending and pace both point toward more scoring than the posted number suggests`,
+      `Both power play units have been converting at a strong clip — a penalty-heavy game with active man-advantage situations pushes the goal total above the posted number`,
+      `Both teams generate high shot volume — when neither goalie is at their peak, those chances translate into goals and the total climbs`,
+      `Over ${total} — pace and shot generation on both sides create the offensive environment that makes this number reachable`,
     ];
     return _assemble(real, fill, dataScore);
   }
@@ -299,9 +299,9 @@ function _nhlReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       real.push(`${dogGoalie} has been sharp for ${dog} — two goalies playing well on both sides limits the combined total`);
     }
     const fill = [
-      `Both teams in a tight standings battle — defensive structure is locked in and disciplined in high-stakes games`,
-      `Historical matchup between these two has trended toward defensive battles — the pattern holds tonight`,
-      `Under ${total} — the goaltending quality in this game makes this total look high for what it will actually produce`,
+      `High-stakes matchups tighten defensive structure on both sides — disciplined positioning and fewer shot lanes are the norm when standings points are on the line`,
+      `When both goalies are playing at a high level simultaneously, the combined scoring output consistently falls short of the posted total — the crease quality is the edge here`,
+      `Under ${total} — the goaltending quality in this game makes this number look high for what it will actually produce`,
     ];
     return _assemble(real, fill, dataScore);
   }
@@ -395,10 +395,10 @@ function _nflReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
     }
     const fill = [
       dogQB
-        ? `${dogQB} faces a defense that has been playing at its best — not a comfortable passing environment`
-        : `Both offenses have struggled to sustain drives against quality defenses — this game has the look of a grinder`,
-      `Weather or scheme factors may slow the pace — conservative game management from both coaching staffs`,
-      `Under ${total} — the defensive quality on both sides exceeds what this total is priced at`,
+        ? `${dogQB} is going to face a defense playing its best football — consistent pressure and coverage will create the difficult third-down situations that stall drives and keep the score down`
+        : `Both offenses have struggled to sustain multi-play drives against physical defenses — fewer possessions means fewer scoring opportunities`,
+      `Both coaching staffs favor possession efficiency over pace in tight games — expect clock-conservative play calling that naturally suppresses the total`,
+      `Under ${total} — the defensive quality on both sides of this game is the clearest edge on the board tonight`,
     ];
     return _assemble(real, fill, dataScore);
   }
@@ -592,10 +592,10 @@ function _ncaafReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, 
     }
     const fill = [
       dogQB
-        ? `${dogQB} is going to be under consistent pressure — the defense has been at its best against this style`
-        : `Both offenses have struggled to sustain drives against physical defenses — fewer possessions means fewer points`,
-      `Slow tempo teams — both programs limit possessions and play field position football`,
-      `Under ${total} — the defensive quality on both sides of this game is the clearest edge on the board`,
+        ? `${dogQB} is going to be under consistent pressure from a defense that has been at its best — expect difficult third-down situations and forced possessions ending in punts`
+        : `Both programs lean on ball control and limiting opponent possessions — the game plan on both sides favors field position over aggressive passing`,
+      `Both coaching staffs prioritize defensive structure and clock management — the tempo in this game is designed to suppress the total, not push it`,
+      `Under ${total} — the defensive quality on both sides of this game is the clearest edge on the board tonight`,
     ];
     return _assemble(real, fill, dataScore);
   }
