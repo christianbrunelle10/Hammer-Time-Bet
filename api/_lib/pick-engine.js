@@ -64,7 +64,7 @@ const _eraGrade = era => {
    Return { reasons: string[], dataQuality: 'high'|'medium'|'low' }
 
    Rules:
-     dataScore === 0 → reasons.length = 1  (low)
+     dataScore === 0 → reasons.length = 3  (low — homepage-ineligible)
      dataScore === 1 → reasons.length = 2  (medium)
      dataScore >= 2  → reasons.length = 4  (high)
 ═══════════════════════════════════════════════════════════════════ */
@@ -143,14 +143,14 @@ function _mlbReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       `${dog} offense has been limited against quality starters — the multi-run margin is on the table`,
     ];
     if (pType === 2) return [
-      `Late-inning bullpen exposure on both sides adds meaningful scoring variance — once the starters exit, run totals tend to accelerate`,
-      `The ${total} total is achievable based on what both lineups have been doing at the plate in recent series`,
+      `Over ${total} is in play here — late-inning bullpen exposure adds meaningful scoring variance once the starters exit`,
+      `The ${total} total is reachable based on the run-scoring environment in this matchup — the offense on both sides has the upside`,
       `Neither bullpen has the depth to limit damage across multiple high-leverage innings — scoring late in this game is a real factor`,
     ];
     if (pType === 3) return [
-      `Both lineups have been inconsistent at the plate — the scoring pace for this matchup supports a game that finishes under ${total}`,
-      `Under ${total} — when both starters have the command to go deep into games, run totals rarely clear this number`,
-      `${_poss(fav)} lineup has been below average in run-scoring situations — ${dog} pitching has the profile to hold the total in check`,
+      `Under ${total} is the number I want here — the run-scoring environment in this matchup supports a game that finishes well below that line`,
+      `Under ${total} — when starters command the zone and go deep into games, run totals rarely clear this number`,
+      `${_poss(fav)} pitching advantage suppresses what ${dog} can do offensively — the scoring stays in check from first pitch`,
     ];
     return [
       favIsHome
@@ -185,7 +185,7 @@ function _nbaReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       real.push(`${lStr(dogLeader, dogLeaderPts)} keeps ${dog} in high-scoring games — the offensive profile here supports the over`);
     }
     const fill = [
-      `Both teams rank near the top in offensive pace — this game plays out as a high-tempo scoring game`,
+      `${fav} and ${dog} are built to score — the offensive environment in this matchup pushes totals in this range`,
       `Neither defense has shown the ability to consistently slow this opponent's top scorer`,
       `Over ${total} — the offensive talent in this matchup makes this number clearable`,
     ];
@@ -198,7 +198,7 @@ function _nbaReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       real.push(`${fav} runs through ${lStr(favLeader, favLeaderPts)} — when both defenses lock in and take away the primary scorer, the pace drops below this total`);
     }
     const fill = [
-      `Both defenses have been playing at an elite level — the scoring pace is tracking well under this number`,
+      `${fav} has been locking teams down defensively — when they're at this level, the combined scoring rarely reaches this number`,
       `Coaching on both sides prioritizes defensive stops — halfcourt game expected throughout`,
       `Under ${total} — the defensive quality in this matchup is the clearest edge on the board tonight`,
     ];
@@ -381,7 +381,7 @@ function _nflReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, r)
       real.push(`${dogQB} has been finding the end zone consistently — the total is in range for what these two offenses have been doing`);
     }
     const fill = [
-      `Both offenses have been scoring at a high clip — pace will be aggressive from the opening drive`,
+      `${fav} offense has been scoring in bunches — pace will be aggressive from the opening drive`,
       `Neither secondary is at full strength — both QBs will find favorable matchups to attack`,
       `Over ${total} — the combined offensive production from both sides makes this number clearable`,
     ];
@@ -483,7 +483,7 @@ function _ncaamReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, 
       real.push(`${lStr(dogLeader, dogLeaderPts)} keeps ${dog} in high-scoring games — the offensive profile supports the over`);
     }
     const fill = [
-      `Both teams rank near the top nationally in offensive pace — this matchup has the ingredients for a shootout`,
+      `${fav} runs a pace that creates the offensive volume needed to push this total`,
       `Neither defense can consistently slow down the opponent's primary scorer in this matchup`,
       `Over ${total} — the offensive talent and defensive limitations on both sides make this number clearable`,
     ];
@@ -496,8 +496,8 @@ function _ncaamReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, 
       real.push(`${fav} runs through ${lStr(favLeader, favLeaderPts)} — when both defenses lock in and take away the primary scorer, the pace falls below this number`);
     }
     const fill = [
-      `Both defenses have been among the best nationally — the scoring pace is tracking well under this total`,
-      `Both coaches prioritize defensive stops over offensive pace — this game has the look of a grinder`,
+      `${fav} has been locking opponents down defensively — the scoring pace is tracking well under this number`,
+      `${dog} coach prioritizes ball control and limiting possessions — this game has the look of a grinder`,
       `Under ${total} — the defensive quality on both sides makes this total look too high for what the game will produce`,
     ];
     return _assemble(real, fill, dataScore);
@@ -578,7 +578,7 @@ function _ncaafReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, 
       real.push(`${dogQB} gives ${dog} the upside to push this total — both defenses have been allowing numbers`);
     }
     const fill = [
-      `Both defenses have been vulnerable against the run and pass — the scoring ceiling is elevated`,
+      `${dog} has been scoring freely — the defensive vulnerabilities on both sides create the ceiling for this total`,
       `Historical matchup between these programs has trended toward offense — the pattern supports the over`,
       `Over ${total} — the offensive talent and defensive limitations on both sides make this number clearable`,
     ];
@@ -662,8 +662,8 @@ function _ncaafReasons(pType, role, favIsHome, fav, dog, favML, dogML, p, odds, 
 /* ── Assembler: enforces sentence-count discipline ───────────────── */
 function _assemble(real, fill, dataScore) {
   if (dataScore === 0) {
-    // No player data → 1 honest sentence, homepage-ineligible
-    return { reasons: [fill[0]], dataQuality: 'low' };
+    // No player data → 3 opinionated sentences, homepage-ineligible
+    return { reasons: fill.slice(0, 3), dataQuality: 'low' };
   }
   if (dataScore === 1) {
     // One player → 2 sentences total

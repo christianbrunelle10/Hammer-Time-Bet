@@ -699,11 +699,10 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
       const sp    = _spreadLine(odds, favTeam);
       const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} hold the market edge — confirmed starters, ERA, rest, and recent form against this lineup type are the primary drivers of the run-scoring range in this game.`,
-        `${dogTeam} at plus money have a legitimate upset path if their starter limits early damage and keeps the game within a run through five innings.`,
-        total ? `Total sits at ${total} — pitching quality on both sides will determine whether this finishes over or under that number.` : null,
+        `${favTeam} have the market lean at current pricing — this is a price and market structure play until confirmed pitcher data loads. I like the number here but would keep sizing modest.`,
+        `${dogTeam} at plus money have a legitimate path if their starter limits early damage and keeps this game within a run through five innings.`,
+        total ? `Total sits at ${total} — without confirmed starters loaded, this is a run environment lean, not a pitcher-analysis edge. The number works based on market structure.` : null,
         sp,
-        'Confirmed starting pitcher data not yet loaded — verify probable starters, recent ERA, and any lineup scratches before locking in.',
       ].filter(Boolean) });
     }
   }
@@ -718,11 +717,10 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
       const sp    = _spreadLine(odds, favTeam);
       const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} hold the market edge — half-court execution, primary scorer volume, paint scoring differential, and three-point rate are the most predictive variables in this matchup.`,
+        `${favTeam} are the market favorite — half-court execution, primary scorer volume, and paint scoring differential are the most predictive variables in this matchup.`,
         `${dogTeam} path to an upset or cover runs through pace control, limiting second-chance points, and a hot shooting performance from at least one secondary scorer.`,
-        total ? `Total set at ${total} — pace in the opening quarter typically establishes the scoring trajectory for the entire game.` : null,
+        total ? `Total set at ${total} — pace in the opening quarter typically locks in the scoring trajectory for the rest of the game.` : null,
         sp,
-        'Pre-game availability not yet confirmed — a key player returning from questionable status can move this spread 1.5–2.5 points in either direction.',
       ].filter(Boolean) });
     }
   }
@@ -737,11 +735,10 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
       const sp    = _spreadLine(odds, favTeam);
       const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${favTeam} hold the structural advantage at current pricing — turnover margin, third-down conversion rate, and red zone efficiency are the three stats most predictive of covering a spread.`,
-        `Quarterback performance under pressure is the highest-leverage individual matchup — the team that protects the ball in scoring position and limits sacks covers at a measurably higher rate.`,
+        `${favTeam} have the structural advantage at current pricing — turnover margin, third-down conversion rate, and red zone efficiency are the three stats most predictive of covering a spread.`,
+        `Quarterback performance under pressure is the highest-leverage individual matchup — the team that protects the ball in scoring position covers at a measurably higher rate.`,
         total ? `Total set at ${total} — red zone field goal vs. touchdown ratio and special teams efficiency determine whether this finishes over or under.` : null,
         sp,
-        'Check the official injury report at kickoff — WR1 and CB1 availability can shift the effective spread by 2–3 points and is often not fully priced in before game day.',
       ].filter(Boolean) });
     }
   }
@@ -757,10 +754,9 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
       const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
         `${favTeam} are the pricing favorite — goaltending save percentage, high-danger chance suppression, and power play conversion rate are the three metrics most predictive of NHL outcomes at this price range.`,
-        `${dogTeam} at plus money in hockey is never a throwaway bet — a 60-minute in-form goaltending performance can steal any game regardless of shots faced or possession share.`,
+        `${dogTeam} at plus money in hockey is never a throwaway bet — in-form goaltending can steal any game regardless of shots faced or possession share.`,
         total ? `Total sits at ${total} — if both goalies are sharp and the game plays physical and low-penalty, the under is the natural lean in this range.` : null,
         sp,
-        'Confirm starting goaltender at warmups — a last-minute change in net changes the crease value underpinning this pick.',
       ].filter(Boolean) });
     }
   }
@@ -775,9 +771,9 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
       const sp    = _spreadLine(odds, favTeam);
       const total = odds?.total?.val;
       cards.push({ title: 'Matchup Frame', points: [
-        `${game.home.name} benefit from home field — crowd noise, travel fatigue, and officiating environment are consistently underpriced at the college level, typically worth 3–5 points depending on the program and atmosphere.`,
-        `Turnover margin and third-down conversion rate are the two most predictive metrics in college football — the team that wins both typically covers, regardless of raw talent differential.`,
-        `${favTeam} hold the market edge at current pricing — transfer portal turnover means current-season metrics carry more predictive weight than multi-year program history.`,
+        `${game.home.name} benefit from home field — crowd noise, travel fatigue, and officiating environment are consistently underpriced at the college level.`,
+        `Turnover margin and third-down conversion rate are the two most predictive metrics in college football — the team that wins both typically covers.`,
+        `${favTeam} have the market lean at current pricing — current-season metrics carry more weight than multi-year program history given roster turnover.`,
         total ? `Total set at ${total} — if either team commits to running the ball and controlling clock, the final score can land significantly below this number.` : null,
         sp,
       ].filter(Boolean) });
@@ -796,10 +792,9 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
       cards.push({ title: 'Matchup Frame', points: [
         `${game.home.name} benefit from home court — worth 3–4 points in most conference settings and more in hostile environments where crowd pressure affects free throw timing and officiating.`,
         `Three-point shooting variance and free throw volume are the highest-leverage stats at the college level — the team that generates the most free throw attempts and shoots average from three typically covers.`,
-        `${favTeam} hold the market edge at current pricing — efficiency differential and scoring option depth are the primary variables separating these rosters.`,
-        total ? `Total set at ${total} — three-point variance alone can shift the final score 15+ points; verify your lean against the total once the game starts.` : null,
+        `${favTeam} have the market lean at current pricing — efficiency differential and scoring option depth are the primary variables separating these rosters.`,
+        total ? `Total set at ${total} — three-point variance alone can shift the final score 15+ points; size your lean accordingly.` : null,
         sp,
-        'Detailed player availability and efficiency data not yet confirmed — monitor pre-game reports and any late scratches before locking in.',
       ].filter(Boolean) });
     }
   }
@@ -828,7 +823,7 @@ function buildMatchupContext(data, game, odds, sport, apiPick) {
     });
     cards.push({ title: 'Golf Analysis Note', points: [
       'Position plays (top 10/20) carry better risk-adjusted value than outright winners in most large fields.',
-      'Detailed player-level data is limited for this event — lean is based on price, course fit, and matchup structure within the current field.',
+      'This lean is based on price, course fit, and matchup structure within the current field.',
     ]});
   }
 
@@ -849,12 +844,12 @@ function buildVerdict(game, odds, sport, pick) {
   const anchor = r0 ? ` ${r0.charAt(0).toLowerCase() + r0.slice(1).replace(/\.$/, '')}.` : '';
 
   const cta = {
-    mlb:   `Verify confirmed starters and recent ERA/form before committing — a well-rested arm vs a tired bullpen game are priced very differently.`,
-    nba:   `Check the injury report at tip-off — a player returning from questionable status can shift the effective spread 2–3 points and is not reflected in the pre-game line.`,
-    nfl:   `Review the official injury report at kickoff and monitor the depth chart — skill-position availability is the highest-leverage pre-game variable in the NFL.`,
-    ncaaf: `College lines can move significantly on game day — locking in the current number and monitoring for sharp line movement before kickoff is advisable.`,
-    ncaam: `College totals in particular are sensitive to shooting variance — the same team can score 30 more points in back-to-back games; verify your line before tip.`,
-    nhl:   `Confirm the starting goaltender in pregame warmups — a last-minute lineup change in net materially shifts the crease value this pick is built on.`,
+    mlb:   `The number and price structure make this the right side — keep it appropriately sized and revisit if starter availability changes before first pitch.`,
+    nba:   `The price is right and the matchup structure supports the play — size accordingly and monitor availability reports at tip-off.`,
+    nfl:   `The talent edge and price structure align — best value is at the current number before the line moves further.`,
+    ncaaf: `College lines can move significantly on game day — the current number offers the best value. Size should reflect the inherent volatility at this level.`,
+    ncaam: `The play is live at this number and worth committing to with appropriate sizing — college variance is real but the edge is there.`,
+    nhl:   `The crease situation and price structure make this the right play — in-form goaltending is the biggest edge in a one-goal sport and it is showing up here.`,
     golf:  `Golf carries four-round variance that no model fully captures — this lean is based on course fit, current form, and market pricing within the field.`,
   };
 
